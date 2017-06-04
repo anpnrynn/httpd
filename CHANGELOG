@@ -1,0 +1,62 @@
+29/04/2016
+==========
+Made changes to the way session variables are read and stored, new functions added.
+
+16/04/2016
+==========
+Makefile addition for mingw32 compilation
+Addition of libcopy.sh for copying libraries to a folder containing binaries
+Miniupnp integration for windows. 
+Sucessful windows build using mingw32 on linux fedora 22, basic functions working properly
+
+
+27/March/2016
+=============
+Changed functions to 64Bit functions
+Changed some printf to fprintf 
+Added some fprintf beautification
+Added postfileName for postData
+Added multipart header file
+
+
+26/March/2016
+=============
+added processContentType function to process multipart content type and retrieving boundary.
+
+
+25/March/2016
+=============
+Changed the size of encoded url to 1024
+Made modifications to query 
+added getReqFileAuth 
+added getReqFileType
+added filetype based access control
+added ip based file chooser no need for login
+added signal handlers for SIGINT SIGSTOP SIGTERM 
+added a function for clean of threads on abort
+
+
+24/March/2016
+=============
+Added printing of ip address as a string 
+
+
+21/March/2016
+=============
+removed plugins p1 and p2 
+changed comments from printf to fprintf 
+changed version number in the source code
+created DEPENDENCY file
+
+
+20/March/2016
+=============
+removed login.cpp from makefile
+removed login plugin usage from source code
+changed type to time_t in time_t * time_t expression
+Upgraded version number to 0.0.6
+Added changelog
+Removed Warnings from core source files
+
+
+
