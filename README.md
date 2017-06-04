@@ -23,6 +23,8 @@ Features:
 4. Supports Plugins based dynamic pages
 5. Supports Multithreads
 6. Supports Chunked data transfer. 
+7. Supports Upnp, if you want to run the server behind an UPNP supported router. (Only Linux)
+8. Supports Windows platform (using cross compiler on Fedora)
 
 
 Dependency:
