@@ -6,12 +6,13 @@
 #include <defines.h>
 #include <session.h>
 
-
+//this gets reset by main()
 int MAX_THREADS = 3;
 
-CmdPipe::CmdPipe()
+CmdPipe::CmdPipe(int id)
 {
 	cmdQueue = new CmdQueue();
+	cmdQueueId = id;
 #ifndef USE_PTHREAD
 	lock     = PR_NewLock();
 	if( !lock)
@@ -41,8 +42,8 @@ void CmdPipe::pushCmd( Connection *conn)
 #else
     pthread_mutex_lock( &lock );
 #endif
-	//printf("INFO: Pushing Connection Data\n");
 	cmdQueue->push( conn );
+	printf("INFO: Pushing Connection Data to CmdQueue = %d, Size=%ld\n",cmdQueueId, cmdQueue->size());
 	usage++;
 
 #ifndef USE_PTHREAD
@@ -62,8 +63,8 @@ Connection* CmdPipe::popCmd ()
 #endif
 	if( cmdQueue->size() > 0 && ((conn = cmdQueue->front()) != NULL) )
 	{
-        //printf("INFO: Poping Connection Data Address:0x%x, %d\n",conn, cmdQueue->size());
 		cmdQueue->pop();
+        	printf("INFO: Poping Connection from CmdQueue=%d, Size= %ld\n",cmdQueueId, cmdQueue->size());
 	}
 #ifndef USE_PTHREAD
 	PR_Unlock(lock);
@@ -112,7 +113,7 @@ ThreadMgr::ThreadMgr()
     cIndex = 0;
 	for( i=0; i<MAX_THREADS; i++ )
 	{
-		cmdPipe[i] = new CmdPipe();
+		cmdPipe[i] = new CmdPipe(i);
 		index[i]   = i;
 		db[i] = NULL;
 		//int rc = sqlite3_open(INFO_STORE, &db[i], getEncryptionStructure(ENC_KEY_DATABASE) );
@@ -241,6 +242,8 @@ void* ThreadMgr::thread(void *data)
    		 			{
 						tempResp->setContentLen( 0 );
 						sendConnRespHdr ( conn, HTTP_RESP_INTERNALERR );
+						PR_Shutdown( conn->socket, PR_SHUTDOWN_BOTH );
+						fprintf(stderr, "INFO: Shuting down socket \n");
 						PR_Close(conn->socket);
 						conn->socket = NULL;
 						delete  conn;
@@ -252,10 +255,15 @@ void* ThreadMgr::thread(void *data)
 						tempResp->setStatus(HTTP_RESP_OK);
 						conn->db    = db;
 						conn->udata = NULL;
-						temp->processReq(conn);
+						int rc = temp->processReq(conn);
+						fprintf(stderr, "INFO: Plugin execution completed = %d \n", rc );
+						PR_Shutdown( conn->socket, PR_SHUTDOWN_BOTH );
+						fprintf(stderr, "INFO: Shuting down socket \n");
 						PR_Close(conn->socket);
+						fprintf(stderr, "INFO: Closing socket \n");
 						conn->socket = NULL;
 						delete (conn);
+						fprintf(stderr, "INFO: Deleted connection \n");
 					}
 				}
 				else

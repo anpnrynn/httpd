@@ -37,9 +37,10 @@ class CmdPipe
 #endif
 		CmdQueue *cmdQueue;
 		int  usage;
+		int  cmdQueueId;
 
 	public:
-		 CmdPipe();
+		 CmdPipe(int id);
 		~CmdPipe();
 
 		int  getUsage();

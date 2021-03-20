@@ -617,7 +617,9 @@ start:
 						if( nClients < MAXCLIENTS )
 						{
 							//if( PR_SetSocketOption(client, &opt) == PR_FAILURE )
-							if( fcntl ( *client, F_SETFL, O_NONBLOCK) != 0 ) 
+							int flags = fcntl( *client, F_GETFL );
+							flags |= O_NONBLOCK;
+							if( fcntl ( *client, F_SETFL, flags) != 0 ) 
 							{
 								printf("ERRR: Unable to set socket option \n");
 							}
@@ -625,7 +627,7 @@ start:
 							pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
 							pollfds[nClients].revents = 0;
 							conn[nClients] = new Connection;
-							conn[nClients]->socket = client;
+							*(conn[nClients]->socket) = *client;
 							conn[nClients]->ip     = PR_ntohl(clientAddr.sin_addr.s_addr);
 							conn[nClients]->setAuthLvl();
 							nClients++;

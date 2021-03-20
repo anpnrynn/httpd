@@ -993,12 +993,12 @@ unsigned int sendConnectionData( 	PRFileDesc *sock,
         }
 		else
 		{
-            fprintf(stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len);
+            fprintf(stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len);
 			error = PR_GetError();
 			if( error == EWOULDBLOCK || error == EAGAIN )
 			{
                 fprintf(stderr, "WARN: Blocking, temp=%d \n",temp);
-				PR_Sleep(10);
+				PR_Sleep(1);
 			}
 			else
 			{
