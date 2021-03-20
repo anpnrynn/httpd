@@ -5,8 +5,7 @@
 #include <string>
 #include <apptypes.h>
 #include <httpconn.h>
-//#include <prlink.h>
-#include <prwrapper.h>
+#include <prlink.h>
 using namespace std;
 
 #define  HANDLER_TYPE_FILE   0

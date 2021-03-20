@@ -2,7 +2,7 @@
 #define HTTP_SESSION_H
 
 #include <tools.h>
-//#include <prlong.h>
+#include <prlong.h>
 #include <ctime>
 #include <apptypes.h>
 #include <cookie.h>
@@ -37,8 +37,7 @@ class SessionVar
 			isCookie = i;
 			time_t temp = time(NULL);
 			expires  = e;
-			//LL_SUB( tdiff, expires, temp); 
-			tdiff = expires - temp;
+			LL_SUB( tdiff, expires, temp); 
 		}
 
 		void setValues(const char* n , char *v, short int i, time_t e)
@@ -48,15 +47,13 @@ class SessionVar
 			isCookie = i;
 			time_t temp = time(NULL);
 			expires  = e;
-			//LL_SUB( tdiff, expires, temp);
-			tdiff = expires - temp;
+			LL_SUB( tdiff, expires, temp);
 		}
 
 		void resetExpiry()
 		{
 			time_t temp = time(NULL);
-			//LL_ADD( expires, temp, tdiff );
-			expires = temp + tdiff;
+			LL_ADD( expires, temp, tdiff );
 		}
 
 		~SessionVar(){}

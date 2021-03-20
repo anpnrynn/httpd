@@ -1,8 +1,7 @@
 #ifndef HTTPD_PLUGINS_H
 #define HTTPD_PLUGINS_H
 
-//#include <prlink.h>
-#include <prwrapper.h>
+#include <prlink.h>
 #include <httphandlers.h>
 #include <sqlite3.h>
 

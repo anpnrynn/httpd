@@ -3,11 +3,10 @@
 #include <ctype.h>
 #include <string.h>
 #include <math.h>
-#include <strings.h>
 
 #ifndef LINUX_BUILD
 #include <string.h>
-//#define strncasecmp _strnicmp
+#define strncasecmp _strnicmp
 #endif // LINUX_BUILD
 
 void httpencode( char *to, char *from, int len )
@@ -246,13 +245,13 @@ int convertHttpDateToNsprDate(char *date, struct tm *eDate)
 		if( (hMonth = convertMonthToIndex(tempMonth)) == -1 )
 			return 0;
 
-		eDate->tm_year  = (uint16_t) hYear;
-		eDate->tm_mon   = (int32_t) hMonth;
-		eDate->tm_mday  = (int32_t) hDate;
-		eDate->tm_hour  = (int32_t) hHour;
-		eDate->tm_min   = (int32_t) hMin;
-		eDate->tm_sec   = (int32_t) hSec;
-		eDate->tm_wday  = (int8_t)  hWDay;
+		eDate->tm_year  = (PRInt16) hYear;
+		eDate->tm_mon   = (PRInt32) hMonth;
+		eDate->tm_mday  = (PRInt32) hDate;
+		eDate->tm_hour  = (PRInt32) hHour;
+		eDate->tm_min   = (PRInt32) hMin;
+		eDate->tm_sec   = (PRInt32) hSec;
+		eDate->tm_wday  = (PRInt8)  hWDay;
 		return 1;
 	}
 	else

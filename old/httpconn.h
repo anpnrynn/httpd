@@ -6,12 +6,10 @@
 #include <tools.h>
 #include <httpcodes.h>
 #include <ctime>
-//#include <prlong.h>
+#include <prlong.h>
 //#include <ifs.h>
 #include <session.h>
 #include <sqlite3.h>
-
-#include <prwrapper.h>
 
 using namespace std;
 
@@ -145,8 +143,7 @@ class HttpReq
 		int         len;
 		size_t      cLen;
 		size_t      hLen;
-		int          postfd;
-		PRFileDesc  *post;
+		PRFileDesc *post;
 		unsigned char buf[MAXBUF];
 		unsigned char *dataPtr;
 		char* getCookie()  { return cookie; }
@@ -154,15 +151,15 @@ class HttpReq
  		char* getReqFileType();
 
 		char* getReqFileAuth(int auth);
-		int   getMethod () { return method; }
+        int   getMethod () { return method; }
 		bool  isMultipart () { return (bool) multipart; }
 		char* getBoundary () { return boundary; }
 		void  readHttpHeader();
 		int   processHttpPostData( int , int );
 		void  convertGetDataToMap(MapStrStr *paramMap ); //converts get parameters to a Map
-		void  convertGetDataToVector(Vector *param);
+        void  convertGetDataToVector(Vector *param);
 		int   convertPostDataToMap(MapStrStr *paramMap, const char *stopAt); //converts post parameters to a Map
-		int   convertPostDataToVector ( Vector *param, const char *stopAt );
+        int   convertPostDataToVector ( Vector *param, const char *stopAt );
 };
 
 
@@ -231,10 +228,8 @@ class Connection
 	unsigned int  ip;
 	unsigned int  authLvl;
 	unsigned int  cmd;
-	int32_t        filefd;
 	PRFileDesc    *file;
 	PRFileInfo64  fInfo;
-	int32_t        socketfd;
 	PRFileDesc    *socket;
 	sqlite3       *db;
 	//FileIndexData *fid;
@@ -252,8 +247,8 @@ class Connection
 		ip     = 0;
 		authLvl = AUTH_CUSTOMER;
 		cmd    = 0;
-		file = &filefd;
-		socket = &socketfd;
+		file = NULL;
+		socket = NULL;
 		fid = NULL;
 		udata = NULL;
 		sess  = NULL;
@@ -263,17 +258,15 @@ class Connection
   ~Connection()
 	{
 		if( socket )
-		close(*socket);
+		PR_Close(socket);
 		if( file )
-		close(*file);
+		PR_Close(file);
 		len    = 0;
 		sent   = 0;
 		offset = 0;
 		ip     = 0;
 		authLvl = AUTH_CUSTOMER;
 		cmd    = 0;
-		filefd = -1;
-		socketfd = -1;
 		socket = NULL;
 		file   = NULL;
 		fid    = NULL;

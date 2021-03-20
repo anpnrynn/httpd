@@ -4,7 +4,7 @@
 
 #ifndef LINUX_BUILD
 #include <cstring>
-//#define strcasecmp _stricmp
+#define strcasecmp _stricmp
 #endif // LINUX_BUILD
 
 
@@ -452,9 +452,8 @@ int HttpReq::processHttpPostData(int hPkt, int dLen)
 		sprintf( postFileName,"%s\\post_%d.tmp","tmp",postCount );
 #endif
 		postCount++;
-		post = &postfd;
 		//post = PR_Open( fName, PR_CREATE_FILE|PR_TRUNCATE|PR_RDWR, 660 );
-		*post = PR_Open( postFileName, PR_CREATE_FILE|PR_TRUNCATE|PR_RDWR, PR_IRWXO|PR_IRWXG|PR_IRWXU );
+		post = PR_Open( postFileName, PR_CREATE_FILE|PR_TRUNCATE|PR_RDWR, PR_IRWXO|PR_IRWXG|PR_IRWXU );
 		if( !post )
 		{
 			fprintf(stderr,"ERRR: Unable to open post data file '%s'\n",postFileName);
@@ -654,10 +653,10 @@ int HttpReq::convertPostDataToVector(Vector *param, const char *stopAt)
 
 	char  name[256];
     char *value  = (char *)malloc(16384);
-    if( value == NULL )
+    if( !value )
         return 1;
-    char *varPtr = name;
-    unsigned int  j=0, dataLen=0;
+	char *varPtr = name;
+	unsigned int  j=0, dataLen=0;
 
 	//TODO:
     PR_Seek64(post, 0, PR_SEEK_SET);
@@ -993,16 +992,16 @@ unsigned int sendConnectionData( 	PRFileDesc *sock,
         }
 		else
 		{
-            fprintf(stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len);
+            fprintf(stderr, "DBUG: Nent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len);
 			error = PR_GetError();
-			if( error == EWOULDBLOCK || error == EAGAIN )
+			if( error == PR_WOULD_BLOCK_ERROR )
 			{
                 fprintf(stderr, "WARN: Blocking, temp=%d \n",temp);
 				PR_Sleep(10);
 			}
 			else
 			{
-				fprintf(stderr,"ERRR: Problem sending data %d,%d\n",error, errno);
+				fprintf(stderr,"ERRR: Problem sending data %d,%d\n",error, PR_GetOSError());
 				bytesW = 0;
 				break;
 			}

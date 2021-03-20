@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <prwrapper.h>
 #include <session.h>
 //#include <openssl/ripemd.h>
 #include <pass.h>
@@ -147,13 +146,13 @@ void HttpSession::expireAllCookies()
 	//LL_MUL ( expiryDate, 14400, 1000000);
 	expiryDate = (time_t) ( ((time_t)14400) * ((time_t)1000000) );
 	while( i != sVars->end() )
-	{
+  {
 		if( i->second )
 		{
-			i->second->expires = expiryDate;
+	    LL_ADD(i->second->expires,0, expiryDate);
 		}
-		i++;
-	}
+    i++;
+  }
 }
 
 int HttpSession::dumpSessionCookies(char *buf)

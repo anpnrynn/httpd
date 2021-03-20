@@ -1,0 +1,95 @@
+CXX=g++
+#INC_DIR=-I./ -I./nspr-4.6.4/include/ -I/usr/local/include -I../Encode
+INC_DIR=-I./ -I/usr/include -I/usr/local/include/ -I../
+
+LIB_DIR=-L./
+LIBS=-lsqlite3 /bin/msys-2.0.dll -lpthread
+ELIBS=-lhttp 
+#-lplc4 -lplds4
+CFLAGS=-Wall -Wwrite-strings -DUSE_PTHREAD -Wconversion-null
+CPPFLAGS=-std=c++11
+LFLAGS=-DCOMPILER_C_LINKAGE
+DEBUG=-g3
+#DEBUG=-O2
+OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o Md5.o 
+#upnp.o
+#SOBJS=threadmgr.o server.o login.o
+SOBJS=threadmgr.o server.o
+#httpconn.o tools.o httpcodes.o mimetypes.o session.o threadmgr.o httphandlers.o plugin.o base64.o pass.o
+MAKELIBS=
+
+#all:libhttp.dll libpass.so libp1.so libp2.so httpdsrv.exe 
+all:libhttp.dll httpdsrv.exe 
+
+
+#httpdsrv.exe:libhttp.dll libp1.so libp2.so libp3.dll $(SOBJS) 
+httpdsrv.exe:libhttp.dll p3.dll $(SOBJS) 
+	$(CXX) -o httpdsrv.exe $(SOBJS) $(INC_DIR) $(LIB_DIR) $(LIBS) $(ELIBS) $(CFLAGS) $(DEBUG)
+
+libhttp.dll:$(OBJS)
+	$(CXX) $(OBJS) -shared -o libhttp.dll $(INC_DIR) $(LIB_DIR) $(LIBS) $(CFLAGS) $(DEBUG)
+
+server.o:server.cpp mozhdr.h
+	$(CXX) server.cpp -c -o server.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
+
+tools.o:tools.cpp tools.h
+	$(CXX) tools.cpp -c -o tools.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+upnp.o:upnp.cpp upnp.h
+	$(CXX) upnp.cpp -c -o upnp.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+Md5.o:Md5.c
+	$(CXX) Md5.c -c -o Md5.o $(INC_DIR) $(CFLAGS) $(DEBUG)
+
+httpconn.o:httpconn.cpp httpconn.h tools.o
+	$(CXX) httpconn.cpp -c -o httpconn.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+cookie.o:cookie.cpp cookie.h
+	$(CXX) cookie.cpp -c -o cookie.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+httphandlers.o: httphandlers.cpp httphandlers.h 
+	$(CXX) httphandlers.cpp -c -o httphandlers.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+httpcodes.o: httpcodes.cpp httpcodes.h 
+	$(CXX) httpcodes.cpp -c -o httpcodes.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+mimetypes.o: mimetypes.cpp mimetypes.h
+	$(CXX) mimetypes.cpp -c -o mimetypes.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+session.o: session.cpp session.h
+	$(CXX) session.cpp -c -o session.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
+
+plugin.o: plugin.cpp plugin.h
+	$(CXX) plugin.cpp -c -o plugin.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+threadmgr.o: threadmgr.cpp threadmgr.h
+	$(CXX) threadmgr.cpp -c -o threadmgr.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
+
+libpass.so:pass.o base64.o 
+	$(CXX) pass.o base64.o -shared -o libpass.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
+
+pass.o: pass.c pass.h base64.o
+	$(CXX) pass.c -c -o pass.o  -DIS_HTTPD $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
+
+base64.o: base64.c base64.h
+	$(CXX) base64.c -c -o base64.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+#login.o: login.cpp
+#	$(CXX) login.cpp -c -o login.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+#
+#libp1.so: p1.cpp
+#	$(CXX) p1.cpp -shared -o libp1.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
+#
+#libp2.so: p2.cpp
+#	$(CXX) p2.cpp -shared -o libp2.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
+
+p3.dll: p3.cpp
+	$(CXX) p3.cpp -shared -o p3.dll $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(ELIBS) $(CPPFLAGS) 
+
+clean:
+	rm -f *.o *.so *.dll *.exe httpdsrv.exe libp1.so libp2.so libp3.dll libhttp.dll libpass.so core.*
+
+installexe:
+	cp *.dll *.exe ../Binaries
+	cp admin_* power_* all_* ../Binaries
+	cp ins3.sh ../Binaries

@@ -1,6 +1,6 @@
 #include <threadmgr.h>
 #include <httphandlers.h>
-#include <prwrapper.h>
+#include <prerror.h>
 #include <tools.h>
 #include <pass.h>
 #include <defines.h>

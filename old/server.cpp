@@ -1,6 +1,5 @@
 #include <iostream>
-//#include <mozhdr.h>
-#include <prwrapper.h>
+#include <mozhdr.h>
 #include <sqlite3.h>
 #include <httpconn.h>
 //#include <ifs.h>
@@ -13,7 +12,6 @@
 #include <defines.h>
 #include <malloc.h>
 
-#undef USE_MINIUPNP
 #ifdef USE_MINIUPNP
 #include <upnp.h>
 #endif
@@ -33,9 +31,8 @@
 using namespace std;
 PRLibrary *lib[MAXPLUGINS];
 
-int srvSocket = 0;
-int clientSocket = 0;
-PRFileDesc *srv = &srvSocket, *client = &clientSocket;
+
+PRFileDesc *srv, *client;
 unsigned short int SRVPORT = 0;
 bool isBound = false;
 
@@ -218,16 +215,11 @@ int installTheNeededStuff()
 
 	//FileIndexData *fData= NULL;
 	//RFileDesc *file = PR_Open( "ins3.sh", &fData );
-	int filefd = 0;
-	PRFileDesc *file = &filefd;
-	*file = PR_Open( "install.sql", PR_RDONLY, 0 );
-	
+	PRFileDesc *file = PR_Open( "ins3.sh", PR_RDONLY, 0 );
 
 	//if( !file || !fData )
-	if( !file && *file == -1 ) {
-		printf("ERRR: Unable to open install.sql file \n");
+	if( !file )
 		return 3;
-	}
 
 	int i=0, j=0, bRead=0;
 
@@ -268,7 +260,6 @@ int installTheNeededStuff()
     rc = sqlexecute( db, "COMMIT;", NULL, NULL , NULL);
 	sqlite3_close(db);
 	PR_Close(file);
-        printf("INFO: Done installing prerequisites \n");
 //#endif
 	return 0;
 }
@@ -338,8 +329,6 @@ int main(int argc , char *argv[])
 		}
 	}
 
-	fprintf ( stderr, "INFO: Proceeding with the boot \n");
-#if 0
 
 #ifdef USE_MINIUPNP
 
@@ -370,24 +359,19 @@ int main(int argc , char *argv[])
 	signal ( SIGABRT, signalStop);
 #endif
 
-#endif
-
 start:
 	PRNetAddr  srvAddr;
 	PRNetAddr  clientAddr;
 
-	printf("INFO: Creating socket \n");
 
-	*srv = PR_NewTCPSocket();
-	srvAddr.sin_family  = PR_AF_INET;
-	srvAddr.sin_addr.s_addr     = 0x00000000;
-	srvAddr.sin_port   = PR_htons(SRVPORT);
-	printf("INFO: Socket created successfully \n");
-	fflush(stdout);
+	srv = PR_NewTCPSocket();
+	srvAddr.inet.family = PR_AF_INET;
+	srvAddr.inet.ip     = 0x00000000;
+	srvAddr.inet.port   = PR_htons(SRVPORT);
 
 	//if( PR_Bind(srv, &srvAddr) ==  PR_FAILURE )
 	int count = 0;
-	while ( bind(*srv, (const sockaddr *)&srvAddr, sizeof(sockaddr_in ) ) !=  0 )
+	while ( PR_Bind(srv, &srvAddr) ==  PR_FAILURE )
 	{
 		printf("ERRR: Unable to Bind \n");
 		PR_Cleanup();
@@ -401,7 +385,6 @@ start:
 	}
 	isBound = true;
 
-	printf("INFO: Bound successfully \n");
 	if( PR_Listen(srv, 20) == PR_FAILURE)
 	{
 		printf("ERRR: Unable to setup backlog \n");
@@ -409,21 +392,17 @@ start:
 		return 2;
 	}
 
-	printf("INFO: Listening successfully \n");
-	//PRSocketOptionData  opt;
-	//opt.option = PR_SockOpt_Nonblocking;
-	//opt.value.non_blocking = true;
+	PRSocketOptionData  opt;
+	opt.option = PR_SockOpt_Nonblocking;
+	opt.value.non_blocking = true;
 
-	//if( PR_SetSocketOption(srv, &opt) == PR_FAILURE )
-	if( fcntl( *srv, F_SETFL, O_NONBLOCK) != 0 )
+	if( PR_SetSocketOption(srv, &opt) == PR_FAILURE )
 	{
 		printf("ERRR: Unable to set socket option \n");
 		PR_Cleanup();
 		return 3;
 	}
 
-	printf("INFO: Non blocking successfully \n");
-	fflush(stdout);
 #if 0
 	if( 0 != acquireEncryptionKeys(&firstTime) )
 	{
@@ -443,12 +422,9 @@ start:
 	{
 		isRestart = true;
 
-		int infostoreFd = 0;
-		PRFileDesc *infoStore = &infostoreFd;
-		*infoStore = PR_Open( INFO_STORE, PR_RDONLY, 0 );
-		if( infoStore && *infoStore != -1 )
+		PRFileDesc *infoStore = PR_Open( INFO_STORE, PR_RDONLY, 0 );
+		if( infoStore )
 		{
-			printf("WARN: Database present \n");
 			PR_Close(infoStore);
 			if( firstTime )
 			{
@@ -460,7 +436,6 @@ start:
 		}
 		else
 		{
-			printf("WARN: Database not present, installing the needed stuff \n");
 			//if( firstTime )
 			//{
 				/*
@@ -481,7 +456,6 @@ start:
 			//	return 12;
 			//}
 		}
-		printf("WARN: Starting session manager \n");
 		hSMgr = HttpSessionMgr::createInstance();
 		/*
 		 *  Restore persistent sessions
@@ -497,11 +471,9 @@ start:
 			printf("INFO: Reading stored data completed \n");
 		}
 #endif
-		printf("WARN: Clearning plugins \n");
 		clearPlugins();
 		loadInfo();
 		initPlugins();
-		printf("WARN: Starting plugins \n");
 #ifdef LINUX_BUILD
 		malloc_trim(0);
 #endif
@@ -530,9 +502,9 @@ start:
 	for( i=0; i<MAXCLIENTS; i++ )
 	{
 		conn[i]   = NULL;
-		pollfds[i].fd = 0;
-		pollfds[i].events = 0;
-		pollfds[i].revents =0;
+		pollfds[i].fd = NULL;
+		pollfds[i].in_flags = 0;
+		pollfds[i].out_flags =0;
 	}
 
 	bool allowConnect = false;
@@ -542,22 +514,22 @@ start:
 	{
 		if(shrink)
 		{
-			pollfds[0].fd = *srv;
-			pollfds[0].events = PR_POLL_READ | PR_POLL_EXCEPT;
-			pollfds[0].revents = 0;
+			pollfds[0].fd = srv;
+			pollfds[0].in_flags = PR_POLL_READ | PR_POLL_EXCEPT;
+			pollfds[0].out_flags = 0;
 			nClients = 1;
 			offset = 1;
 			shift  = 0;
 			for( i=1; i<MAXCLIENTS; i++ )
 			{
-				if(pollfds[i].fd == 0 )
+				if(pollfds[i].fd == NULL)
 				{
 					shift = i + offset;
 					if(shift >= MAXCLIENTS)
 						break;
-					if(pollfds[shift].fd == 0 )
+					if(pollfds[shift].fd ==  NULL )
 					{
-						while(pollfds[i+offset].fd == 0 && i+offset < MAXCLIENTS)
+						while(pollfds[i+offset].fd == NULL && i+offset < MAXCLIENTS)
 						{
 							offset++;
 						}
@@ -566,11 +538,11 @@ start:
 					{
 						cout<<"Shifting "<<shift<<" to "<<i<<endl;
 						pollfds[i].fd = pollfds[shift].fd;
-						pollfds[i].events  =  pollfds[shift].events;
-						pollfds[i].revents = 0;
-						pollfds[shift].fd = 0;
-						pollfds[shift].events  = 0;
-						pollfds[shift].revents = 0;
+						pollfds[i].in_flags  =  pollfds[shift].in_flags;
+						pollfds[i].out_flags = 0;
+						pollfds[shift].fd = NULL;
+						pollfds[shift].in_flags  = 0;
+						pollfds[shift].out_flags = 0;
 						conn[i] = conn[shift];
 						conn[shift] = NULL;
 						nClients++;
@@ -586,15 +558,14 @@ start:
 		}
 		if( ( retVal = PR_Poll (pollfds, nClients, 100) ) > 0 )
 		{
-			if(pollfds[0].revents & PR_POLL_READ )
+			if(pollfds[0].out_flags & PR_POLL_READ )
 			{
-				socklen_t addrlen = 0;
-				if( (*client = accept(*srv, (sockaddr *) &clientAddr, &addrlen) ) )
+				if( (client = PR_Accept(srv, &clientAddr, 1) ) )
 				{
 					//TODO:
 					//allowConnect = false;
 					allowConnect = true;
-					tempIp = PR_ntohl(clientAddr.sin_addr.s_addr);
+					tempIp = PR_ntohl(clientAddr.inet.ip);
 #if 0
 					for( n=0; n<aclCount; n++ )
 					{
@@ -606,27 +577,25 @@ start:
 					}
 #endif
 					char clientAddress[256];
-					strcpy ( clientAddress, inet_ntoa( clientAddr.sin_addr ) );
-					//if ( PR_SUCCESS == PR_NetAddrToString ( &clientAddr , clientAddress, 256 ) ){
+					if ( PR_SUCCESS == PR_NetAddrToString ( &clientAddr , clientAddress, 256 ) ){
 						printf("INFO: Connection Received from 0x%x, %s \n",tempIp, clientAddress);
-					//} else {
-					//	printf("INFO: Connection Received from 0x%x \n",tempIp);
-					//}
+					} else {
+						printf("INFO: Connection Received from 0x%x \n",tempIp);
+					}
 					if( allowConnect )
 					{
 						if( nClients < MAXCLIENTS )
 						{
-							//if( PR_SetSocketOption(client, &opt) == PR_FAILURE )
-							if( fcntl ( *client, F_SETFL, O_NONBLOCK) != 0 ) 
+							if( PR_SetSocketOption(client, &opt) == PR_FAILURE )
 							{
 								printf("ERRR: Unable to set socket option \n");
 							}
-							pollfds[nClients].fd = *client;
-							pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
-							pollfds[nClients].revents = 0;
+							pollfds[nClients].fd = client;
+							pollfds[nClients].in_flags = PR_POLL_READ | PR_POLL_EXCEPT;
+							pollfds[nClients].out_flags = 0;
 							conn[nClients] = new Connection;
 							conn[nClients]->socket = client;
-							conn[nClients]->ip     = PR_ntohl(clientAddr.sin_addr.s_addr);
+							conn[nClients]->ip     = PR_ntohl(clientAddr.inet.ip);
 							conn[nClients]->setAuthLvl();
 							nClients++;
 						}
@@ -646,10 +615,10 @@ start:
 			}
 			else
 			{
-				if (pollfds[0].revents & PR_POLL_NVAL || pollfds[0].revents & PR_POLL_ERR )
+				if (pollfds[0].out_flags & PR_POLL_NVAL || pollfds[0].out_flags & PR_POLL_ERR )
 				{
-					PR_Closefd(pollfds[0].fd);
-					pollfds[0].fd = 0;
+					PR_Close(pollfds[0].fd);
+					pollfds[0].fd = NULL;
 					goto start;
 				}
 			}
@@ -658,21 +627,21 @@ start:
 				if(!conn[i] )
 				{
 							cout<<"ERRR: Unable to locate connection data  "<<endl;
-							PR_Shutdownfd(pollfds[i].fd, PR_SHUTDOWN_BOTH );
-							PR_Closefd(pollfds[i].fd);
-							pollfds[i].fd = 0;
-							pollfds[i].events = 0;
-							pollfds[i].revents= 0;
+							PR_Shutdown(pollfds[i].fd, PR_SHUTDOWN_BOTH );
+							PR_Close(pollfds[i].fd);
+							pollfds[i].fd = NULL;
+							pollfds[i].in_flags = 0;
+							pollfds[i].out_flags= 0;
 							shrink = true;
 				}
-				if( pollfds[i].revents & PR_POLL_READ )
+				if( pollfds[i].out_flags & PR_POLL_READ )
 				{
 						HttpReq *temp = &conn[i]->req;
 						int tempLen =0;
 						if( temp->hLen <= 0 )
-							tempLen   = PR_Recvfd(pollfds[i].fd, &temp->buf[temp->len], MAXBUF - temp->len, 0, 1 );
+							tempLen   = PR_Recv(pollfds[i].fd, &temp->buf[temp->len], MAXBUF - temp->len, 0, 1 );
 						else
-							tempLen   = PR_Recvfd(pollfds[i].fd, &temp->buf[temp->hLen], MAXBUF - temp->hLen, 0 , 1);
+							tempLen   = PR_Recv(pollfds[i].fd, &temp->buf[temp->hLen], MAXBUF - temp->hLen, 0 , 1);
 
 						if(tempLen > 0)
 						{
@@ -683,7 +652,7 @@ start:
 								if( temp->hLen <= 0 )
 								{
 									printf("WARN: Incomplete header received\n");
-									pollfds[i].revents = 0;
+									pollfds[i].out_flags = 0;
 									continue;
 								}
 								else
@@ -693,7 +662,7 @@ start:
     									temp->processHttpPostData( temp->hLen , temp->len-temp->hLen);
     									if(  temp->cLen > temp->len - temp->hLen )
     									{
-    										pollfds[i].revents = 0;
+    										pollfds[i].out_flags = 0;
     										continue;
     									}
                                     }
@@ -709,7 +678,7 @@ start:
     								}
     								if( temp->cLen > temp->len - temp->hLen )
     								{
-    									pollfds[i].revents = 0;
+    									pollfds[i].out_flags = 0;
     									continue;
     								}
                                 }
@@ -754,8 +723,8 @@ start:
 								{
 									fprintf ( stderr, "WARN: Requesting html/scriptfile file type \n");
 									char *authFile = temp->getReqFileAuth(conn[i]->authLvl);
-									*(conn[i]->file)  = PR_Open( authFile, PR_RDONLY, 0 );
-									fInfoStatus    = PR_GetFileInfo64( *(conn[i]->file), &(conn[i]->fInfo) );
+									conn[i]->file  = PR_Open( authFile, PR_RDONLY, 0 );
+									fInfoStatus    = PR_GetFileInfo64( authFile, &(conn[i]->fInfo) );
 								}
 								else
 								if( ( strcmp( fileType, ".png")   == 0 ) ||
@@ -766,8 +735,8 @@ start:
 								  )
 								{
 									fprintf ( stderr, "WARN: Requesting image file type \n");
-									*(conn[i]->file) = PR_Open( temp->getReqFile(), PR_RDONLY, 0 );
-									fInfoStatus   = PR_GetFileInfo64( *(conn[i]->file), &(conn[i]->fInfo) );
+									conn[i]->file = PR_Open( temp->getReqFile(), PR_RDONLY, 0 );
+									fInfoStatus   = PR_GetFileInfo64( temp->getReqFile(), &(conn[i]->fInfo) );
 								}
 								else
 								{
@@ -778,7 +747,7 @@ start:
 									tempResp->setStatus(403);
 									tempResp->setContentLen(0);
 									tempResp->setAddOn (1);
-									pollfds[i].events  = PR_POLL_READ | PR_POLL_EXCEPT | PR_POLL_WRITE;
+									pollfds[i].in_flags  = PR_POLL_READ | PR_POLL_EXCEPT | PR_POLL_WRITE;
 									tempResp->setContentType( (char *)identifyContentType( temp->getReqFile() ) );
 									conn[i]->len = tempResp->getHeader( (char *)conn[i]->buf );
 									conn[i]->len += conn[i]->sess->dumpSessionCookies( (char *)&( conn[i]->buf[conn[i]->len] ) );
@@ -810,9 +779,9 @@ start:
 									//{
 										HttpResp *tempResp   = &conn[i]->resp;
 										//tempResp->setContentLen( conn[i]->fid->fileSize);
-										tempResp->setContentLen( conn[i]->fInfo.st_size);
+										tempResp->setContentLen( conn[i]->fInfo.size);
 										tempResp->setAddOn (1);
-										pollfds[i].events  = PR_POLL_READ | PR_POLL_EXCEPT | PR_POLL_WRITE;
+										pollfds[i].in_flags  = PR_POLL_READ | PR_POLL_EXCEPT | PR_POLL_WRITE;
 										tempResp->setContentType( (char *)identifyContentType( temp->getReqFile() ) );
 										conn[i]->len = tempResp->getHeader( (char *)conn[i]->buf );
 										conn[i]->len += conn[i]->sess->dumpSessionCookies( (char *)&( conn[i]->buf[conn[i]->len] ) );
@@ -832,9 +801,9 @@ start:
 					                    conn[i]->socket = NULL;
 					                    delete (conn[i]);
 										conn[i]       = NULL;
-										pollfds[i].fd = 0;
-										pollfds[i].events = 0;
-										pollfds[i].revents= 0;
+										pollfds[i].fd = NULL;
+										pollfds[i].in_flags = 0;
+										pollfds[i].out_flags= 0;
 										shrink = true;
 									}
 									#endif
@@ -845,9 +814,9 @@ start:
 										conn[i]->cmd  = THREAD_CMD_PTASK;
 										tMgr->assignTask ( conn[i] );
 										conn[i]       = NULL;
-										pollfds[i].fd = 0;
-										pollfds[i].events = 0;
-										pollfds[i].revents= 0;
+										pollfds[i].fd = NULL;
+										pollfds[i].in_flags = 0;
+										pollfds[i].out_flags= 0;
 										shrink = true;
 									}
 								}
@@ -857,7 +826,7 @@ start:
 						/*if( tempLen == 0 )
 						{
 							printf("WARN: Did not read Data: hdrPacket=%d Clen=%d, Hdr=%d, Tlen=%d \n",hdrPacket,temp->cLen,temp->hLen,temp->len);
-							pollfds[i].revents= 0;
+							pollfds[i].out_flags= 0;
 							continue;
 						}
 						else*/
@@ -865,18 +834,18 @@ start:
 							char ERRRSTR[256];
 							PR_GetErrorText(ERRRSTR);
 							cout<<" Client Disconnected :"<<tempLen<<", PRError: "<<ERRRSTR<<endl;
-							PR_Shutdownfd(pollfds[i].fd, PR_SHUTDOWN_BOTH );
+							PR_Shutdown(pollfds[i].fd, PR_SHUTDOWN_BOTH );
 							delete conn[i];
 							conn[i] = NULL;
-							pollfds[i].fd = 0;
-							pollfds[i].events = 0;
-							pollfds[i].revents= 0;
+							pollfds[i].fd = NULL;
+							pollfds[i].in_flags = 0;
+							pollfds[i].out_flags= 0;
 							shrink = true;
 						}
-						pollfds[i].revents = 0;
+						pollfds[i].out_flags = 0;
 				}
 				else
-				if( pollfds[i].revents & PR_POLL_WRITE )
+				if( pollfds[i].out_flags & PR_POLL_WRITE )
 				{
 						int len = conn[i]->len;
 						if( len < SMALLBUF && conn[i]->file )
@@ -930,11 +899,11 @@ start:
 							else
 							{
 								cout<<"ERRR: Socket Write Error "<<endl;
-								PR_Shutdownfd(pollfds[i].fd, PR_SHUTDOWN_BOTH );
+								PR_Shutdown(pollfds[i].fd, PR_SHUTDOWN_BOTH );
 								delete conn[i];
-								pollfds[i].fd = 0;
-								pollfds[i].events = 0;
-								pollfds[i].revents= 0;
+								pollfds[i].fd = NULL;
+								pollfds[i].in_flags = 0;
+								pollfds[i].out_flags= 0;
 								shrink = true;
 							}
 						}
@@ -942,21 +911,21 @@ start:
 						{
 								printf("INFO: Sent File='%s' Total bytes=%d (including header)\n", conn[i]->req.getReqFile(),conn[i]->sent);
 								printf("INFO: --------------------------------------------------------------------------\n\n\n");
-								PR_Shutdownfd(pollfds[i].fd, PR_SHUTDOWN_BOTH );
+								PR_Shutdown(pollfds[i].fd, PR_SHUTDOWN_BOTH );
 								delete conn[i];
-								pollfds[i].fd = 0;
-								pollfds[i].events = 0;
-								pollfds[i].revents= 0;
+								pollfds[i].fd = NULL;
+								pollfds[i].in_flags = 0;
+								pollfds[i].out_flags= 0;
 								shrink = true;
 						}
 				}
 				else
 				{
-					if (pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR )
+					if (pollfds[i].out_flags & PR_POLL_NVAL || pollfds[i].out_flags & PR_POLL_ERR )
 					{
-							PR_Shutdownfd(pollfds[i].fd, PR_SHUTDOWN_BOTH );
+							PR_Shutdown(pollfds[i].fd, PR_SHUTDOWN_BOTH );
 							delete conn[i];
-							pollfds[i].fd = 0;
+							pollfds[i].fd = NULL;
 							shrink = true;
 					}
 				}

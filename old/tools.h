@@ -3,10 +3,10 @@
 
 #include <sqlite3.h>
 #include <apptypes.h>
-//#include <prio.h>
-//#include <prlong.h>
-//#include <prerror.h>
-//#include <prthread.h>
+#include <prio.h>
+#include <prlong.h>
+#include <prerror.h>
+#include <prthread.h>
 #include <ctime>
 using namespace std;
 
@@ -57,37 +57,36 @@ class CSVReader
         int parseData (char *, int);
 };
 
-#define SEND_THREAD_DATA( socket, buffer, length ) \
-{ \
-unsigned int bytesW = 0; \
-int temp; \
-do{ \
-	temp = PR_Write( (socket), (buffer)+bytesW, (length)-bytesW  ); \
-	if( temp > 0 ) \
-		bytesW += temp; \
-	else \
-	{ \
-		PRErrorCode error = PR_GetError(); \
-		if( error == PR_WOULD_BLOCK_ERROR ) \
-		{ \
-			PR_Sleep(1); \
-		} \
-		else \
-		{ \
-			bytesW = 0; \
-			break; \
-		} \
-	} \
-} \
-while( bytesW < (length) ); \
-if( bytesW != (length) ) \
-{ \
-	printf("Error: Unable to send data \n"); \
-	(length) = -1; \
-} else { \
-	(length) = 0; \
-} \
-}
+#define SEND_THREAD_DATA( socket, buffer, length ) { \
+			unsigned int bytesW = 0; \
+			int temp; \
+			do{ \
+				temp = PR_Write( (socket), (buffer)+bytesW, (length)-bytesW  ); \
+				if( temp > 0 ) \
+					bytesW += temp; \
+				else \
+				{ \
+					PRErrorCode error = PR_GetError(); \
+                    if( error == PR_WOULD_BLOCK_ERROR ) \
+                    { \
+						PR_Sleep(1); \
+                    } \
+                    else \
+                    { \
+                    	bytesW = 0; \
+                    	break; \
+                    } \
+				} \
+			} \
+			while( bytesW < (length) ); \
+			if( bytesW != (length) ) \
+			{ \
+				printf("Error: Unable to send data \n"); \
+				(length) = -1; \
+			} else { \
+				(length) = 0; \
+			} \
+		}
 
 char  hexCharToHexBin(char c );
 void  httpencode( char *to, char *from, int length);
