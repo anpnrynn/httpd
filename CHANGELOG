@@ -1,6 +1,26 @@
+21/03/2021
+==========
+Removal of upnp and md5
+Addition of rand_reentrant as a replacement of rand_r (which is not present on msys64) [copied from bsd version of source]
+Updated makefiles (makefile for linux and makefile.msys64 for windows msys64 environment)
+Removed mingw32 makefile
+Updated session id creation using random numbers instead of MD5
+Added astyle scripts to autoindent the source
+Fixed indentation of the whole project
+Moved upnp and md5 related source to unused.
+
+
+20/03/2021
+==========
+Support for msys64
+Removal of nspr libraries, wrappers created for functions and structures
+Removal of miniupnpc libraries
+
+
 29/04/2016
 ==========
 Made changes to the way session variables are read and stored, new functions added.
+
 
 16/04/2016
 ==========
