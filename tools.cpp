@@ -498,3 +498,26 @@ int mergeremaining ( char *result, char *buf ) {
     *result = 0;
     return 0;
 }
+
+static int do_rand(uint32_t *context)
+{
+	uint32_t hi, lo, x;
+	hi = *context / 127773;
+	lo = *context % 127773;
+	x = 16807 * lo - 2836 * hi;
+	if (x < 0)
+		x += 0x7fffffff;
+	*context = x;
+	return (x - 1);
+}
+
+int rand_reentrant(uint32_t *context)
+{
+	uint32_t val;
+	int r;
+	val = (*context % 0x7ffffffe) + 1;
+	r = do_rand(&val);
+	*context = (unsigned int)(val - 1);
+	return (r);
+}
+

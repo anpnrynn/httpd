@@ -6,6 +6,7 @@
 #include <sqlite3.h>
 #include <defines.h>
 //#include <sfeac.h>
+#include <tools.h>
 
 #ifndef LINUX_BUILD
 #define random rand
@@ -25,22 +26,23 @@ HttpSession:: HttpSession ( unsigned int i, unsigned int addr, time_t e ) {
     char sessionId[128];
 	memset( buf, 0, 64 );
 	memset( sessionId, 0, 64 );
+
 	uint32_t randr = (uint32_t)i;
 	uint32_t *randoms = (uint32_t*)buf;
 
-	randoms[0] = rand_r( &randr );
-	randoms[1] = rand_r( &randr );
-	randoms[2] = rand_r( &randr );
-	randoms[3] = rand_r( &randr );
-	randoms[4] = rand_r( &randr );
-	randoms[5] = rand_r( &randr );
-	randoms[6] = rand_r( &randr );
-	randoms[7] = rand_r( &randr );
+	randoms[0] = rand_reentrant( &randr );
+	randoms[1] = rand_reentrant( &randr );
+	randoms[2] = rand_reentrant( &randr );
+	randoms[3] = rand_reentrant( &randr );
+	randoms[4] = rand_reentrant( &randr );
+	randoms[5] = rand_reentrant( &randr );
+	randoms[6] = rand_reentrant( &randr );
+	randoms[7] = rand_reentrant( &randr );
 
     convertRandomsToHex( buf, sessionId );
     sid = sessionId;
-    //fprintf ( stderr, "INFO: SessionId for id=%d randoms=%08u %08u %08u %08u %08u %08u %08u %08u \n",
-    //    id, randoms[0], randoms[1], randoms[2], randoms[3], randoms[4], randoms[5], randoms[6], randoms[7] );
+    fprintf ( stderr, "INFO: SessionId for id=%d randoms=%08u %08u %08u %08u %08u %08u %08u %08u \n",
+        id, randoms[0], randoms[1], randoms[2], randoms[3], randoms[4], randoms[5], randoms[6], randoms[7] );
     fprintf ( stderr, "INFO: SessionId for id=%d sessionId='%s'\n", id, sessionId );
 }
 
@@ -431,7 +433,7 @@ HttpSessionMgr* HttpSessionMgr::hsmgr;
 HttpSessionMgr::HttpSessionMgr() {
     mapSid = new MapSidSess();
     time_t temp = time ( NULL );
-    srandom ( ( unsigned int ) temp );
+    srand ( ( unsigned int ) temp );
     randomNum = 0;
 }
 
@@ -495,10 +497,12 @@ HttpSession* HttpSessionMgr::startSession ( unsigned int ipaddr, time_t expires 
 
     if ( randomNum == 0 ) {
         time_t temp = time ( NULL );
-        randomNum   = random() ^ temp;
-    }
+        randomNum   = rand() ^ temp;
+    } else {
+		randomNum   = rand();
+	}
 
-    randomNum++;
+    //randomNum++;
 
     HttpSession *temp = new HttpSession ( randomNum, ipaddr, expires );
     temp->addVariable ( db, "auth",      ( char * ) "1", 0, 0 );

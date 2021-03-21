@@ -113,4 +113,6 @@ char* strtok_r ( char *buf, char *delim, char **restart );
 void gmtime_r ( const time_t *date,  struct tm *temp );
 #endif
 
+int rand_reentrant(unsigned int *ctx);
+
 #endif
