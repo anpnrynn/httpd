@@ -1,8 +1,13 @@
 #ifndef PR_WRAPPER_H
 #define PR_WRAPPER_H
 
-#define _LARGEFILE64_SOURCE
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE 1
+#endif
+
+#ifndef _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
+#endif
 
 #include <sys/socket.h>
 #include <sys/types.h>

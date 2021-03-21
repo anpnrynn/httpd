@@ -1,17 +1,17 @@
 #INC_DIR=-I./ -I./nspr-4.6.4/include/ -I/usr/local/include -I../Encode
-INC_DIR=-I./ -I/usr/local/include -I/usr/include/nspr4 
+INC_DIR=-I./ -I/usr/include -I/usr/local/include
 
 #LIB_DIR=-L./nspr-4.6.4/lib/ -L/usr/local/lib -L./
-LIB_DIR=-L/usr/local/lib -L./
-LIBS=-lsqlite3 -lplds4 -lplc4 -lnspr4 -lpthread -ldl -lminiupnpc -lpthread
+LIB_DIR=-L/usr/lib -L/usr/local/lib -L./
+LIBS=-lsqlite3 -lpthread -ldl -lpthread
 ELIBS=-lhttp 
 #-lplc4 -lplds4
-CFLAGS=-Wall -DLINUX_BUILD -DUSE_MINIUPNP -DUSE_PTHREAD -fPIC -Wwrite-strings
+CFLAGS=-Wall -DLINUX_BUILD -DUSE_PTHREAD -fPIC 
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-g3
 #DEBUG=-O2
-OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o Md5.o upnp.o
+OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o Md5.o
 #SOBJS=threadmgr.o server.o login.o
 SOBJS=threadmgr.o server.o
 #httpconn.o tools.o httpcodes.o mimetypes.o session.o threadmgr.o httphandlers.o plugin.o base64.o pass.o
