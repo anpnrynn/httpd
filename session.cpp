@@ -41,8 +41,8 @@ HttpSession:: HttpSession ( unsigned int i, unsigned int addr, time_t e ) {
 
     convertRandomsToHex( buf, sessionId );
     sid = sessionId;
-    fprintf ( stderr, "INFO: SessionId for id=%d randoms=%08u %08u %08u %08u %08u %08u %08u %08u \n",
-        id, randoms[0], randoms[1], randoms[2], randoms[3], randoms[4], randoms[5], randoms[6], randoms[7] );
+    //fprintf ( stderr, "INFO: SessionId for id=%d randoms=%08u %08u %08u %08u %08u %08u %08u %08u \n",
+    //    id, randoms[0], randoms[1], randoms[2], randoms[3], randoms[4], randoms[5], randoms[6], randoms[7] );
     fprintf ( stderr, "INFO: SessionId for id=%d sessionId='%s'\n", id, sessionId );
 }
 
