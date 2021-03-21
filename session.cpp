@@ -13,13 +13,6 @@
 #endif // LINUX_BUILD
 
 
-//#ifndef LINUX_BUILD
-//extern "C" void MDString( char *instring, char *outstring );
-//#else
-extern void MDString ( char *instring, char *outstring );
-//#endif
-
-
 HttpSession:: HttpSession ( unsigned int i, unsigned int addr, time_t e ) {
     sVars = new MapVarSess();
     /*
