@@ -4,8 +4,7 @@
 
 #ifdef  LINUX_BUILD
 #define FILE_STORE  "/var/local/filestore"
-//#define INFO_STORE  "/var/local/infostore"
-#define INFO_STORE  "infostore.sqlite3"
+#define INFO_STORE  "/var/local/infostore.sqlite3"
 #define KEYFILE     "/var/local/db.key"
 #else
 #define FILE_STORE  "filestore"

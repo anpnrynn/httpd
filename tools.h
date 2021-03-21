@@ -93,6 +93,7 @@ int   convertHttpDateToNsprDate ( char *date, struct tm * );
 const char* convertIndexToWeekDay ( int wdayIndex );
 const char* convertIndexToMonth  ( int monthIndex );
 void  convertMd5ToHexMd5  ( char *md5, char *hexmd5 );
+void  convertRandomsToHex ( char *randoms, char *hex );
 int   addDate ( char *hdr, const char *field, struct tm &temp );
 
 unsigned int createChunk   ( unsigned char *buffer, unsigned int &buflen, unsigned char **start,  unsigned char **clength );

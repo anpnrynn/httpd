@@ -29,21 +29,25 @@ HttpSession:: HttpSession ( unsigned int i, unsigned int addr, time_t e ) {
     ipaddr = addr;
     exp    = e;
     char buf[64];
-    char md5[64];
-    char sessionId[64];
-    //sprintf(buf,"%d",id);
-    //sprintf(buf,"SID=%d",id);
-    sprintf ( buf, "SID=%d;ADDR=%d;time=%d", id, addr, ( int ) e );
-    MDString ( buf, md5 );
-    //strcpy(md5,buf);
-    //
-    //if( RIPEMD160( (unsigned char *)buf, strlen(buf),(unsigned char*) md5 ) == NULL )
-    //{
-    //    printf("ERRR: MD5 Password Hashing\n");
-    //}
-    //convertMd5ToHexMd5( md5, sessionId );
-    strcpy ( sessionId, md5 );
+    char sessionId[128];
+	memset( buf, 0, 64 );
+	memset( sessionId, 0, 64 );
+	uint32_t randr = (uint32_t)i;
+	uint32_t *randoms = (uint32_t*)buf;
+
+	randoms[0] = rand_r( &randr );
+	randoms[1] = rand_r( &randr );
+	randoms[2] = rand_r( &randr );
+	randoms[3] = rand_r( &randr );
+	randoms[4] = rand_r( &randr );
+	randoms[5] = rand_r( &randr );
+	randoms[6] = rand_r( &randr );
+	randoms[7] = rand_r( &randr );
+
+    convertRandomsToHex( buf, sessionId );
     sid = sessionId;
+    //fprintf ( stderr, "INFO: SessionId for id=%d randoms=%08u %08u %08u %08u %08u %08u %08u %08u \n",
+    //    id, randoms[0], randoms[1], randoms[2], randoms[3], randoms[4], randoms[5], randoms[6], randoms[7] );
     fprintf ( stderr, "INFO: SessionId for id=%d sessionId='%s'\n", id, sessionId );
 }
 

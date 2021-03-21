@@ -11,7 +11,7 @@ CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-g3
 #DEBUG=-O2
-OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o Md5.o
+OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o
 #SOBJS=threadmgr.o server.o login.o
 SOBJS=threadmgr.o server.o
 #httpconn.o tools.o httpcodes.o mimetypes.o session.o threadmgr.o httphandlers.o plugin.o base64.o pass.o
@@ -33,12 +33,6 @@ server.o:server.cpp mozhdr.h
 
 tools.o:tools.cpp tools.h
 	g++ tools.cpp -c -o tools.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
-
-upnp.o:upnp.cpp upnp.h
-	g++ upnp.cpp -c -o upnp.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
-
-Md5.o:Md5.c
-	g++ Md5.c -c -o Md5.o $(INC_DIR) $(CFLAGS) $(DEBUG)
 
 httpconn.o:httpconn.cpp httpconn.h tools.o version.h
 	g++ httpconn.cpp -c -o httpconn.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)

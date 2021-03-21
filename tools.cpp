@@ -213,6 +213,17 @@ void convertMd5ToHexMd5 ( char *md5, char *hexmd5 ) {
     hexmd5[40] = 0;
 }
 
+void convertRandomsToHex ( char *randoms, char *hex ) {
+    int i, j = 0;
+
+    for ( i = 0; i < 32; i++ ) {
+        sprintf ( &hex[j], "%02x", ( int ) randoms[i] & 0xff );
+		j+=2;
+    }
+
+    hex[64] = 0;
+}
+
 int addDate ( char *hdr, const char *field, struct tm &temp ) {
     return sprintf ( hdr, "%s=%s, %s%d %s %4d %s%d:%s%d:%s%d GMT",
                      field, convertIndexToWeekDay ( temp.tm_wday ), temp.tm_mday < 10 ? "0" : "", temp.tm_mday, convertIndexToMonth ( temp.tm_mon ),
