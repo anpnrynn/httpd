@@ -3,22 +3,22 @@
 
 #include <apptypes.h>
 
-class CookieMgr{
+class CookieMgr {
 
-	private:
+    private:
 
-	protected:
-		COOKIES *cookies;
-	public:
-		 CookieMgr();
-		~CookieMgr();
+    protected:
+        COOKIES *cookies;
+    public:
+        CookieMgr();
+        ~CookieMgr();
 
-		bool getCookie   (string, string&);
-		void delCookie   (string );
-		bool checkCookie (string, string);
-		void setCookie   (string, string);
-		void readCookies (unsigned char *, int , int );
-		void clearCookies();
+        bool getCookie   ( string, string& );
+        void delCookie   ( string );
+        bool checkCookie ( string, string );
+        void setCookie   ( string, string );
+        void readCookies ( unsigned char *, int, int );
+        void clearCookies();
 };
 
 #endif

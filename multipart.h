@@ -14,46 +14,46 @@
 using namespace std;
 
 class MultipartElement {
-	private:
-		bool   isFile;
-		bool   isFormData;
-		string name;
-		string fileName;
-		string value;	
-		string contentType;
+    private:
+        bool   isFile;
+        bool   isFormData;
+        string name;
+        string fileName;
+        string value;
+        string contentType;
 
-	public:
+    public:
 
-		MultipartElement ();
-		MultipartElemtn  ( char *nameValue );
-		~MultipartElement ();
+        MultipartElement ();
+        MultipartElemtn  ( char *nameValue );
+        ~MultipartElement ();
 
-		bool isElementFile();
-		char * getName();
-		void   setName(char *nameValue );
-	
-		char *getFileName ();
-		char *getFileAbsPath ();
-		void  setFileName ( char *fileNameValue);
+        bool isElementFile();
+        char * getName();
+        void   setName ( char *nameValue );
 
-		char *getValue ();
-		void  setValue (char *elementValue );
+        char *getFileName ();
+        char *getFileAbsPath ();
+        void  setFileName ( char *fileNameValue );
 
-		char *getContentType();
-		void  setContentType();
+        char *getValue ();
+        void  setValue ( char *elementValue );
 
-		bool operator <( MultiPartElement & );
+        char *getContentType();
+        void  setContentType();
+
+        bool operator < ( MultiPartElement & );
 };
 
 
-enum MpParseState{
-	MP_START     = 0,
-	MP_HEADER       ,
-	MP_HEADEREND    ,
-	MP_DATA         ,
-	MP_EMPTYLINE    ,
-	MP_END          ,
-	MP_MAXSTATE
+enum MpParseState {
+    MP_START     = 0,
+    MP_HEADER,
+    MP_HEADEREND,
+    MP_DATA,
+    MP_EMPTYLINE,
+    MP_END,
+    MP_MAXSTATE
 };
 
 
@@ -61,21 +61,21 @@ enum MpParseState{
 
 class MultipartParser {
 
-	private:
+    private:
 
-		char mpBoundary[128];
-		unsigned char mpBuf [MAX_MPLINE_SIZE];
-		MpParseState state;
-		int  mpCount;
-		int  mpLineCharCount;
+        char mpBoundary[128];
+        unsigned char mpBuf [MAX_MPLINE_SIZE];
+        MpParseState state;
+        int  mpCount;
+        int  mpLineCharCount;
 
 
-	public:
+    public:
 
-		MultipartParser( PRFileDesc *mpFile, char *boundaryValue);
-		~MultipartParser();
+        MultipartParser ( PRFileDesc *mpFile, char *boundaryValue );
+        ~MultipartParser();
 
-		
+
 };
 
 

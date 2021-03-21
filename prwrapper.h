@@ -45,7 +45,7 @@
 //IO defines
 
 #define PR_CREATE_FILE O_CREAT
-#define PR_TRUNCATE    O_TRUNC 
+#define PR_TRUNCATE    O_TRUNC
 #define PR_RDWR        O_RDWR
 #define PR_RDONLY      O_RDONLY
 #define PR_WRONLY      O_WRONLY
@@ -63,8 +63,8 @@
 //IO functions
 
 #define PR_Open(filename,flags,mode)     open((filename),(flags),(mode))
-#define PR_Read(fd,buf,len)              read(*(fd),(buf),(len)) 
-#define PR_Write(fd,buf,len)             write(*(fd),(buf),(len)) 
+#define PR_Read(fd,buf,len)              read(*(fd),(buf),(len))
+#define PR_Write(fd,buf,len)             write(*(fd),(buf),(len))
 #define PR_Close(fd)                     close(*(fd))
 #define PR_Closefd(fd)                   close((fd))
 #define PR_Seek64(fd,offset,whence)      lseek((*fd),(offset),(whence))
@@ -89,7 +89,7 @@
 #define PR_Bind(fd,addr)               bind((*fd),((const sockaddr*)(addr)),sizeof(*(addr))
 #define PR_SUCCESS                     0
 #define PR_FAILURE                     !(PR_SUCCESS)
-#define PR_Cleanup()                   	
+#define PR_Cleanup()
 #define PR_Listen(fd,count)            listen((*fd),(count))
 
 #define PR_SHUTDOWN_BOTH               SHUT_RDWR

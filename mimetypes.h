@@ -5,7 +5,7 @@
 using namespace std;
 
 void setupContentTypes();
-const char * identifyContentType( char *url );
+const char * identifyContentType ( char *url );
 
 
 #endif

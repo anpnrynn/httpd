@@ -34,8 +34,7 @@
  * @{
  */
 
-typedef enum
-{
+typedef enum {
     TR_UPNP_IDLE,
     TR_UPNP_ERR,
     TR_UPNP_DISCOVER,
@@ -44,8 +43,7 @@ typedef enum
 }
 tr_upnp_state;
 
-struct tr_upnp
-{
+struct tr_upnp {
     bool               hasDiscovered;
     struct UPNPUrls    urls;
     struct IGDdatas    data;
@@ -58,13 +56,13 @@ struct tr_upnp
 
 typedef struct tr_upnp tr_upnp;
 
-tr_upnp * tr_upnpInit (void);
+tr_upnp * tr_upnpInit ( void );
 
-void      tr_upnpClose (tr_upnp *);
+void      tr_upnpClose ( tr_upnp * );
 
 int       tr_upnpPulse (      tr_upnp *,
-                            int port,
-                            int isEnabled,
-                            int doPortCheck);
+                              int port,
+                              int isEnabled,
+                              int doPortCheck );
 /* @} */
 #endif

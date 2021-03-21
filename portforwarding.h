@@ -1,8 +1,7 @@
 #ifndef PORTFORWARDING_H
 #define PORTFORWARDING_H
 
-typedef enum
-{
+typedef enum {
     TR_PORT_ERROR,
     TR_PORT_UNMAPPED,
     TR_PORT_UNMAPPING,

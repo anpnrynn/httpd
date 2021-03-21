@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 
-#define HTTP_RESP_CONTINUE 		              100
+#define HTTP_RESP_CONTINUE                    100
 #define HTTP_RESP_SWITCHPROTO               101
 #define HTTP_RESP_PROCESSING     102
 #define HTTP_RESP_OK     200
@@ -39,7 +39,7 @@ using namespace std;
 #define HTTP_RESP_URILONG     414
 #define HTTP_RESP_UNSUPPORTEDMEDIA     415
 #define HTTP_RESP_REQRANGENOTSATISFIABLE     416
-#define HTTP_RESP_EXPFAILED 		417
+#define HTTP_RESP_EXPFAILED         417
 #define HTTP_RESP_UNPROCESSABELENTITY     422
 #define HTTP_RESP_LOCKED     423
 #define HTTP_RESP_FAILEDDEP   424
@@ -54,6 +54,6 @@ using namespace std;
 
 
 void setupStatusCodes();
-const char *getStatusInfo(int code);
+const char *getStatusInfo ( int code );
 
 #endif

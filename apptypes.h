@@ -17,18 +17,18 @@ using namespace std;
 #define  SMALLBUF  4096
 
 #ifdef LINUX_BUILD
-typedef unordered_map<int,string>    MapIntStr;
-typedef unordered_map<int,string>    HttpCodes;
-typedef unordered_map<string,string> MapStrStr;
-typedef unordered_map<string,string> COOKIES;
-typedef unordered_map<string,void*>  MapHttpHdlr;
+typedef unordered_map<int, string>    MapIntStr;
+typedef unordered_map<int, string>    HttpCodes;
+typedef unordered_map<string, string> MapStrStr;
+typedef unordered_map<string, string> COOKIES;
+typedef unordered_map<string, void*>  MapHttpHdlr;
 typedef vector<string>     Vector;
 #else
-typedef map<int,string>    MapIntStr;
-typedef map<int,string>    HttpCodes;
-typedef map<string,string> MapStrStr;
-typedef map<string,string> COOKIES;
-typedef map<string,void*>  MapHttpHdlr;
+typedef map<int, string>    MapIntStr;
+typedef map<int, string>    HttpCodes;
+typedef map<string, string> MapStrStr;
+typedef map<string, string> COOKIES;
+typedef map<string, void*>  MapHttpHdlr;
 typedef vector<string>     Vector;
 #endif
 

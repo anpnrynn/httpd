@@ -17,33 +17,32 @@ using namespace std;
 #define  PERM_ADMIN      2
 #define  PERM_ROOT       3
 
-struct PluginHandler{
-	unsigned char type;
-	unsigned char authLvlReq;
-	unsigned int  version;
-	char sname[40];
-	char aname[40];
-	PRLibrary    *lib;
-	int (*init)();
-	int (*processReq)(Connection *);
-	int (*exit)();
+struct PluginHandler {
+    unsigned char type;
+    unsigned char authLvlReq;
+    unsigned int  version;
+    char sname[40];
+    char aname[40];
+    PRLibrary    *lib;
+    int ( *init ) ();
+    int ( *processReq ) ( Connection * );
+    int ( *exit ) ();
 };
 
-class HttpHandler
-{
-	private:
+class HttpHandler {
+    private:
 
-		MapHttpHdlr *httpHdlrs;
-		HttpHandler();
-		static HttpHandler *hdlrObj;
+        MapHttpHdlr *httpHdlrs;
+        HttpHandler();
+        static HttpHandler *hdlrObj;
 
-	public:
-		~HttpHandler();
-			
-		static HttpHandler* createInstance();
-		void*  getHandler(string );
-		void   addHandler(string, void *data);		 
-		void   delHandler(string );
+    public:
+        ~HttpHandler();
+
+        static HttpHandler* createInstance();
+        void*  getHandler ( string );
+        void   addHandler ( string, void *data );
+        void   delHandler ( string );
 };
 
 #endif
