@@ -577,6 +577,8 @@ start:
                         nClients++;
                     }
                 } else {
+                    pollfds[i].events  =  PR_POLL_READ | PR_POLL_WRITE | PR_POLL_EXCEPT;
+                    pollfds[i].revents = 0;
                     nClients++;
                 }
             }
