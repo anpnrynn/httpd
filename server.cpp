@@ -566,7 +566,8 @@ start:
                     if ( ( shift = i + offset ) < MAXCLIENTS ) {
                         cout << "Shifting " << shift << " to " << i << endl;
                         pollfds[i].fd = pollfds[shift].fd;
-                        pollfds[i].events  =  pollfds[shift].events;
+                        //pollfds[i].events  =  pollfds[shift].events;
+                        pollfds[i].events  =  PR_POLL_READ | PR_POLL_WRITE | PR_POLL_EXCEPT;
                         pollfds[i].revents = 0;
                         pollfds[shift].fd = 0;
                         pollfds[shift].events  = 0;
@@ -675,14 +676,16 @@ start:
 
                             if ( temp->hLen <= 0 ) {
                                 printf ( "WARN: Incomplete header received\n" );
-                                pollfds[i].revents = 0;
+                                //pollfds[i].revents = 0;
+                                pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                 continue;
                             } else {
                                 if ( temp->getMethod() == HTTP_POST ) {
                                     temp->processHttpPostData ( temp->hLen, temp->len - temp->hLen );
 
                                     if (  temp->cLen > temp->len - temp->hLen ) {
-                                        pollfds[i].revents = 0;
+                                        //pollfds[i].revents = 0;
+                                        pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                         continue;
                                     }
                                 }
@@ -694,7 +697,8 @@ start:
                                 }
 
                                 if ( temp->cLen > temp->len - temp->hLen ) {
-                                    pollfds[i].revents = 0;
+                                    //pollfds[i].revents = 0;
+                                    pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                     continue;
                                 }
                             }
@@ -768,29 +772,11 @@ start:
                                 fprintf ( stderr, "DBUG: ____________________________________\n" );
                             }
 
-#if 0
-
-                            if ( strcmp ( temp->getReqFile(), "HTTP/1.1" ) != 0 ) {
-                                fprintf ( stderr, "WARN: Requesting %s html file \n", temp->getReqFile() );
-                                conn[i]->file = PR_Open ( temp->getReqFile(), PR_RDONLY, 0 );
-                                fInfoStatus = PR_GetFileInfo ( temp->getReqFile(), & ( conn[i]->fInfo ) );
-                            } else {
-                                fprintf ( stderr, "WARN: Requesting root html file \n" );
-                                conn[i]->file = PR_Open ( "index.html", PR_RDONLY, 0 );
-                                fInfoStatus = PR_GetFileInfo ( "index.html", & ( conn[i]->fInfo ) );
-                            }
-
-#endif
-
-                            //conn[i]->file = 0;//ifs->getFilePointer(temp->getReqFile(), &(conn[i]->fid) );
                             /*
                              * Validate Authorization
                              */
-                            //if( conn[i]->file && conn[i]->fid )
                             if ( conn[i]->file && fInfoStatus == PR_SUCCESS ) {
                                 //TODO:
-                                //if(conn[i]->fid->auth <=  atoi (conn[i]->sess->getVariable("auth")) )
-                                //{
                                 HttpResp *tempResp   = &conn[i]->resp;
                                 //tempResp->setContentLen( conn[i]->fid->fileSize);
                                 tempResp->setContentLen ( conn[i]->fInfo.st_size );
@@ -802,102 +788,89 @@ start:
                                 conn[i]->len += tempResp->finishHdr ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
                                 fprintf ( stderr, "\nDBUG: Response Header: \n%s\n", ( char * ) conn[i]->buf );
                                 fprintf ( stderr, "DBUG: ____________________________________\n" );
-#if 0
                             } else {
-                                printf ( "WARN: Required Auth Lvl:%d, Present Auth Lvl:%d \n", conn[i]->fid->auth, atoi ( conn[i]->sess->getVariable ( "auth" ) ) );
-                                HttpResp *tempResp   = &conn[i]->resp;
-                                tempResp->setContentLen ( 0 );
-                                sendConnRespHdr ( conn[1], HTTP_RESP_FORBIDDEN );
-                                PR_Close ( conn[i]->socket );
-                                PR_Close ( conn[i]->file );
-                                conn[i]->socket = NULL;
-                                delete ( conn[i] );
-                                conn[i]       = NULL;
-                                pollfds[i].fd = 0;
-                                pollfds[i].events = 0;
-                                pollfds[i].revents = 0;
-                                shrink = true;
+                                if ( ! isForbidden ) {
+                                    conn[i]->cmd  = THREAD_CMD_PTASK;
+                                    tMgr->assignTask ( conn[i] );
+                                    conn[i]       = NULL;
+                                    pollfds[i].fd = 0;
+                                    pollfds[i].events = 0;
+                                    pollfds[i].revents = 0;
+                                    shrink = true;
+                                }
                             }
+                        }
+                    } else {
+                        char ERRRSTR[256];
+                        PR_GetErrorText ( ERRRSTR );
+                        cout << " Client Disconnected :" << tempLen << ", PRError: " << ERRRSTR << endl;
+                        PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
+                        delete conn[i];
+                        conn[i] = NULL;
+                        pollfds[i].fd = 0;
+                        pollfds[i].events = 0;
+                        pollfds[i].revents = 0;
+                        shrink = true;
+                    }
 
-#endif
+                    //pollfds[i].revents = 0;
+                    pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
+                }
+
+                if ( pollfds[i].revents & PR_POLL_WRITE ) {
+                    int len = conn[i]->len;
+
+                    if ( len < SMALLBUF && conn[i]->file ) {
+                        //read in some more data
+                        //int temp = ifs->ifsRead( conn[i]->file, conn[i]->fid, &(conn[i]->buf[len]), SMALLBUF-len, (int *)&(conn[i]->offset) );
+                        int temp = PR_Read ( conn[i]->file, & ( conn[i]->buf[len] ), SMALLBUF - len );
+
+                        //TODO: use fread
+                        if ( temp <= 0 ) {
+                            PR_Close ( conn[i]->file );
+                            conn[i]->file = NULL;
                         } else {
-                            if ( ! isForbidden ) {
-                                conn[i]->cmd  = THREAD_CMD_PTASK;
-                                tMgr->assignTask ( conn[i] );
-                                conn[i]       = NULL;
-                                pollfds[i].fd = 0;
-                                pollfds[i].events = 0;
-                                pollfds[i].revents = 0;
-                                shrink = true;
-                            }
+                            len += temp;
+                            conn[i]->len = len;
                         }
                     }
-                } else
-                    /*if( tempLen == 0 )
-                    {
-                        printf("WARN: Did not read Data: hdrPacket=%d Clen=%d, Hdr=%d, Tlen=%d \n",hdrPacket,temp->cLen,temp->hLen,temp->len);
-                        pollfds[i].revents= 0;
-                        continue;
-                    }
-                    else*/
-                {
-                    char ERRRSTR[256];
-                    PR_GetErrorText ( ERRRSTR );
-                    cout << " Client Disconnected :" << tempLen << ", PRError: " << ERRRSTR << endl;
-                    PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-                    delete conn[i];
-                    conn[i] = NULL;
-                    pollfds[i].fd = 0;
-                    pollfds[i].events = 0;
-                    pollfds[i].revents = 0;
-                    shrink = true;
-                }
 
-                pollfds[i].revents = 0;
-            } else if ( pollfds[i].revents & PR_POLL_WRITE ) {
-                int len = conn[i]->len;
+                    if ( len > 0 ) {
+                        int bytesW = 0;
 
-                if ( len < SMALLBUF && conn[i]->file ) {
-                    //read in some more data
-                    //int temp = ifs->ifsRead( conn[i]->file, conn[i]->fid, &(conn[i]->buf[len]), SMALLBUF-len, (int *)&(conn[i]->offset) );
-                    int temp = PR_Read ( conn[i]->file, & ( conn[i]->buf[len] ), SMALLBUF - len );
+                        do {
+                            int temp = PR_Write ( conn[i]->socket, conn[i]->buf, conn[i]->len );
 
-                    //TODO: use fread
-                    if ( temp <= 0 ) {
-                        PR_Close ( conn[i]->file );
-                        conn[i]->file = NULL;
-                    } else {
-                        len += temp;
-                        conn[i]->len = len;
-                    }
-                }
+                            if ( temp >= 0 )
+                            { bytesW += temp; }
+                            else {
+                                PRErrorCode error = PR_GetError();
 
-                if ( len > 0 ) {
-                    int bytesW = 0;
-
-                    do {
-                        int temp = PR_Write ( conn[i]->socket, conn[i]->buf, conn[i]->len );
-
-                        if ( temp >= 0 )
-                        { bytesW += temp; }
-                        else {
-                            PRErrorCode error = PR_GetError();
-
-                            if ( error == PR_WOULD_BLOCK_ERROR ) {
-                                memcpy ( conn[i]->buf, & ( conn[i]->buf[bytesW] ), len - bytesW );
-                                break;
-                            } else {
-                                bytesW = -999;
-                                break;
+                                if ( error == PR_WOULD_BLOCK_ERROR ) {
+                                    memcpy ( conn[i]->buf, & ( conn[i]->buf[bytesW] ), len - bytesW );
+                                    break;
+                                } else {
+                                    bytesW = -999;
+                                    break;
+                                }
                             }
-                        }
-                    } while ( bytesW < len );
+                        } while ( bytesW < len );
 
-                    if ( bytesW != -999 ) {
-                        conn[i]->len   = len - bytesW;
-                        conn[i]->sent += bytesW;
+                        if ( bytesW != -999 ) {
+                            conn[i]->len   = len - bytesW;
+                            conn[i]->sent += bytesW;
+                        } else {
+                            cout << "ERRR: Socket Write Error " << endl;
+                            PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
+                            delete conn[i];
+                            pollfds[i].fd = 0;
+                            pollfds[i].events = 0;
+                            pollfds[i].revents = 0;
+                            shrink = true;
+                        }
                     } else {
-                        cout << "ERRR: Socket Write Error " << endl;
+                        printf ( "INFO: Sent File='%s' Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), conn[i]->sent );
+                        printf ( "INFO: --------------------------------------------------------------------------\n\n\n" );
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                         delete conn[i];
                         pollfds[i].fd = 0;
@@ -905,9 +878,9 @@ start:
                         pollfds[i].revents = 0;
                         shrink = true;
                     }
-                } else {
-                    printf ( "INFO: Sent File='%s' Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), conn[i]->sent );
-                    printf ( "INFO: --------------------------------------------------------------------------\n\n\n" );
+                }
+
+                if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                     delete conn[i];
                     pollfds[i].fd = 0;
@@ -915,25 +888,19 @@ start:
                     pollfds[i].revents = 0;
                     shrink = true;
                 }
-            } else {
-                if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
-                    PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-                    delete conn[i];
-                    pollfds[i].fd = 0;
-                    shrink = true;
-                }
+
+                pollfds[i].revents = 0;
+            }
+        } else {
+            if ( retVal < 0 ) {
+                PR_Sleep ( 1000 );
+                printf ( "ERRR: Poll failed \n" );
             }
         }
-    } else {
-        if ( retVal < 0 ) {
-            PR_Sleep ( 1000 );
-            printf ( "ERRR: Poll failed \n" );
-        }
     }
-}
 
-PR_Shutdown ( srv, PR_SHUTDOWN_BOTH );
-PR_Close ( srv );
-PR_Cleanup();
+    PR_Shutdown ( srv, PR_SHUTDOWN_BOTH );
+    PR_Close ( srv );
+    PR_Cleanup();
 }
 
