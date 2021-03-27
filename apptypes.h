@@ -12,9 +12,11 @@
 
 using namespace std;
 
-#define  MAXBUF   16384
+//#define  MAXBUF    16384
+#define  MAXBUF    65536
 #define  GMT_INDIA 19800
-#define  SMALLBUF  4096
+//#define  SMALLBUF  4096
+#define  SMALLBUF  65536
 
 #ifdef LINUX_BUILD
 typedef unordered_map<int, string>    MapIntStr;

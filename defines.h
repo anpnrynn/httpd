@@ -13,7 +13,7 @@
 #endif
 
 #define MAXPATH     256
-#define MAXBUF      16384
+//#define MAXBUF      16384
 //#define SRVPORT     3333
 #define MAXCLIENTS  1024
 #define MAXPLUGINS  64
