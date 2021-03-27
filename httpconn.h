@@ -243,9 +243,9 @@ class Connection {
             ip     = 0;
             authLvl = AUTH_CUSTOMER;
             cmd    = 0;
-			filefd   = -1;
+            filefd   = -1;
             file = &filefd;
-			socketfd = -1;
+            socketfd = -1;
             socket = &socketfd;
             fid = NULL;
             udata = NULL;
