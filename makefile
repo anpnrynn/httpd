@@ -6,7 +6,8 @@ LIB_DIR=-L/usr/lib -L/usr/local/lib -L./
 LIBS=-lsqlite3 -lpthread -ldl -lpthread
 ELIBS=-lhttp 
 #-lplc4 -lplds4
-CFLAGS=-Wall -DLINUX_BUILD -DUSE_PTHREAD -fPIC 
+#CFLAGS=-Wall -DLINUX_BUILD -DUSE_PTHREAD -fPIC 
+CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD -fPIC 
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-g3
