@@ -19,9 +19,7 @@
 #endif
 
 
-#ifndef USE_PTHREAD
-#include <prthread.h>
-#else
+#ifndef USE_CPP11THREAD
 #include <pthread.h>
 #endif
 
@@ -29,6 +27,9 @@
 #ifdef LINUX_BUILD
 #include <signal.h>
 #endif
+
+#include <thread>
+#include <chrono>
 
 using namespace std;
 PRLibrary *lib[MAXPLUGINS];
@@ -269,43 +270,6 @@ int installTheNeededStuff() {
 }
 
 
-#ifdef USE_MINIUPNP
-#ifndef USE_PTHREAD
-void upnpThread ( void * data ) {
-#else
-void* upnpThread ( void * data ) {
-#endif
-    std::cerr << "DBUG: Upnp thread started " << std::endl;
-    tr_upnp *upnp = tr_upnpInit();
-
-    while ( 1 ) {
-        int err = tr_upnpPulse ( upnp, SRVPORT, true, true );
-
-        if ( err != TR_PORT_MAPPED ) {
-            PR_Sleep ( 1000 );
-
-            if ( err == TR_PORT_ERROR ) {
-                std::cerr << "ERRR: Upnp port forwarding error... exiting " << std::endl;
-                PR_Sleep ( 100000 );
-                break;
-            }
-
-            std::cerr << "DBUG: Upnp thread short sleep" << std::endl;
-            continue;
-        } else {
-            PR_Sleep ( 1000000 );
-        }
-
-        std::cerr << "DBUG: Upnp thread sleeping " << std::endl;
-    }
-
-    tr_upnpClose ( upnp );
-#ifdef USE_PTHREAD
-    return 0;
-#endif
-}
-#endif
-
 extern int MAX_THREADS;
 
 int main ( int argc, char *argv[] ) {
@@ -345,39 +309,11 @@ int main ( int argc, char *argv[] ) {
     }
 
     fprintf ( stderr, "INFO: Proceeding with the boot \n" );
-#if 0
-
-#ifdef USE_MINIUPNP
-
-
-#ifndef USE_PTHREAD
-    PRThread* upnpThreadPtr = PR_CreateThread ( PR_SYSTEM_THREAD, upnpThread, 0,
-                              PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 8388608 );
-
-    if ( upnpThreadPtr == 0 ) {
-        fprintf ( stderr, "ERRR: upnp thread creation failed \n" );
-    }
-
-    fprintf ( stderr, "INFO: Started Upnp Thread... \n" );
-#else
-    pthread_t upnpThreadPtr;
-    int rc = pthread_create ( &upnpThreadPtr, 0, upnpThread, 0 );
-
-    if ( rc != 0 ) {
-        fprintf ( stderr, "ERRR: upnp thread creation failed \n" );
-    }
-
-    PR_Sleep ( 10 );
-#endif
-
-#endif
 
 #ifdef LINUX_BUILD
     signal ( SIGINT, signalStop );
     signal ( SIGSTOP, signalStop );
     signal ( SIGABRT, signalStop );
-#endif
-
 #endif
 
 start:
@@ -399,7 +335,8 @@ start:
     while ( bind ( *srv, ( const sockaddr * ) &srvAddr, sizeof ( sockaddr_in ) ) !=  0 ) {
         fprintf ( stderr, "ERRR: Unable to Bind \n" );
         PR_Cleanup();
-        PR_Sleep ( 1000 );
+        //PR_Sleep ( 1000 );
+        std::this_thread::sleep_for(std::chrono::microseconds(1000));  
 
         if ( count > 1000 ) {
             return 1;
@@ -967,7 +904,8 @@ start:
             }
         } else {
             if ( retVal < 0 ) {
-                PR_Sleep ( 1 );
+                //PR_Sleep ( 1 );
+                std::this_thread::sleep_for(std::chrono::microseconds(100)); 
                 fprintf ( stderr, "ERRR: Poll failed \n" );
             }
         }

@@ -7,6 +7,10 @@
 //#define strcasecmp _stricmp
 #endif // LINUX_BUILD
 
+#include <thread>
+#include <chrono>
+using namespace std;
+
 
 //int gmtOffset =  GMT_INDIA;
 //const char *srvName = "AppServer v0.0.6";
@@ -899,7 +903,7 @@ unsigned int sendConnectionData (    PRFileDesc *sock,
 
             if ( error == EWOULDBLOCK || error == EAGAIN ) {
                 fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
-                PR_Sleep ( 1 );
+                std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 1 );*/
             } else {
                 fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
                 bytesW = 0;

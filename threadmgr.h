@@ -3,13 +3,12 @@
 
 #include <iostream>
 #include <queue>
-#ifndef  USE_PTHREAD
-#include <prthread.h>
-#include <prlock.h>
-#else
+#include <thread>
+#include <chrono>
+#include <mutex>
+using namespace std;
 #include <pthread.h>
 #include <time.h>
-#endif
 #include <httpconn.h>
 #include <tools.h>
 
@@ -28,11 +27,7 @@ enum  ThreadCmd {
 typedef queue  <Connection *> CmdQueue;
 class CmdPipe {
     private:
-#ifndef USE_PTHREAD
-        PRLock   *lock;
-#else
-        pthread_mutex_t lock;
-#endif
+        mutex lock;
         CmdQueue *cmdQueue;
         int  usage;
         int  cmdQueueId;
@@ -53,10 +48,14 @@ class ThreadMgr {
     private:
         CmdPipe  *cmdPipe[MAX_POSSIBLE_THREADS];
         int       index  [MAX_POSSIBLE_THREADS];
+#ifdef  USE_CPP11THREAD
+        std::thread *tdata[MAX_POSSIBLE_THREADS];
+#else
 #ifndef USE_PTHREAD
         PRThread *tdata  [MAX_POSSIBLE_THREADS];
 #else
         pthread_t tdata [MAX_POSSIBLE_THREADS];
+#endif
 #endif
         sqlite3  *db     [MAX_POSSIBLE_THREADS];
         int       cIndex;
@@ -69,10 +68,14 @@ class ThreadMgr {
         void       stopThreads();
 
         ~ThreadMgr();
-#ifndef USE_PTHREAD
-        static void  thread ( void * );
+#ifdef  USE_CPP11THREAD
+        static void  httpthread ( int * );
 #else
-        static void*  thread ( void * );
+#ifndef USE_PTHREAD
+        static void  httpthread ( void * );
+#else
+        static void*  httpthread ( void * );
+#endif
 #endif
         void assignTask    ( Connection * );
 };

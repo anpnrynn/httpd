@@ -13,6 +13,10 @@
 #define srandom srand
 #endif // LINUX_BUILD
 
+#include <chrono>
+#include <thread>
+using namespace std;
+
 
 HttpSession:: HttpSession ( unsigned int i, unsigned int addr, time_t e ) {
     sVars = new MapVarSess();
@@ -251,7 +255,7 @@ int HttpSession::saveSession ( sqlite3 *db ) {
 
             if ( rc != SQLITE_OK ) {
                 if ( rc == SQLITE_BUSY )
-                { PR_Sleep ( 10 ); }
+                { std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 10 );*/ }
                 else {
                     fprintf(stderr, "ERRR: Unable to store session while saving '%s'\n", error );
 
@@ -289,7 +293,7 @@ int HttpSession::saveSessionVariable ( sqlite3 *db, const char *name ) {
                 if ( rc == SQLITE_OK )
                 { break; }
                 else if ( rc == SQLITE_BUSY )
-                { PR_Sleep ( 10 ); }
+                { std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 10 );*/ }
                 else {
                     fprintf(stderr, "ERRR: Unable to store session variable: %s,  '%s'\n", name, error );
 
@@ -327,7 +331,7 @@ int HttpSession::updateSaveSession ( sqlite3 *db ) {
 
                 if ( rc != SQLITE_OK ) {
                     if ( rc == SQLITE_BUSY )
-                    { PR_Sleep ( 10 ); }
+                    { std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 10 );*/ }
                     else {
                         fprintf(stderr, "ERRR: Unable to store session while updating '%s'\n", error );
 
@@ -368,7 +372,7 @@ int HttpSession::updateSessionVariable ( sqlite3 *db, const char *name ) {
                 if ( rc == SQLITE_OK )
                 { break; }
                 else if ( rc == SQLITE_BUSY )
-                { PR_Sleep ( 10 ); }
+                { std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 10 );*/ }
                 else {
                     fprintf(stderr, "ERRR: Unable to update session variable: %s, '%s'\n", sVar->name, error );
 
@@ -408,7 +412,7 @@ int HttpSession::deleteSessionVariable ( sqlite3 *db, const char *name ) {
                 if ( rc == SQLITE_OK )
                 { break; }
                 else if ( rc == SQLITE_BUSY )
-                { PR_Sleep ( 10 ); }
+                { std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 10 );*/ }
                 else {
                     fprintf(stderr, "ERRR: Unable to update session variable: %s, '%s'\n", sVar->name, error );
 

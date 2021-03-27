@@ -1,4 +1,8 @@
 #include <plugin.h>
+#include <thread>
+#include <chrono>
+
+using namespace std;
 
 void registerPlugin ( PluginHandler *pInfo ) {
     HttpHandler *httpHdlr = HttpHandler::createInstance();
@@ -64,7 +68,7 @@ int   getqcmd  ( sqlite3 *db, int qid, int power, struct qcmdinfo *qcmd ) {
 
             if ( rc != SQLITE_OK ) {
                 if ( rc == SQLITE_BUSY )
-                { PR_Sleep ( 10 ); }
+                { std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 10 );*/ }
                 else {
                     if ( error )
                     { sqlite3_free ( error ); }
@@ -199,7 +203,7 @@ int sqlexecute ( sqlite3 *db, const char *sql,
 
         if ( rc != SQLITE_OK ) {
             if ( rc == SQLITE_BUSY )
-            { PR_Sleep ( 10 ); }
+            { std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 10 );*/ }
             else {
                 if ( error ) {
                     fprintf ( stderr, "%s:SQL error (%s): %s\n", __FUNCTION__, sql, error );

@@ -6,100 +6,52 @@
 #include <defines.h>
 #include <session.h>
 
+#include <chrono>
+
 //this gets reset by main()
 int MAX_THREADS = 3;
 
 CmdPipe::CmdPipe ( int id ) {
     cmdQueue = new CmdQueue();
     cmdQueueId = id;
-#ifndef USE_PTHREAD
-    lock     = PR_NewLock();
-
-    if ( !lock )
-    { fprintf ( stderr, "ERRR: Unable to create Locks \n" ); }
-
-#else
-    pthread_mutex_init ( &lock, NULL );
-#endif
     usage    = 0;
 }
 
 CmdPipe::~CmdPipe() {
     delete cmdQueue;
-#ifndef USE_PTHREAD
-    PR_DestroyLock ( lock );
-#else
-    pthread_mutex_destroy ( &lock );
-#endif
 }
 
 void CmdPipe::pushCmd ( Connection *conn ) {
     if ( !conn )
     { return; }
-
-#ifndef USE_PTHREAD
-    PR_Lock  ( lock );
-#else
-    pthread_mutex_lock ( &lock );
-#endif
+    lock.lock();
     cmdQueue->push ( conn );
     fprintf(stderr, "INFO: Pushing Connection Data to CmdQueue = %d, Size=%ld\n", cmdQueueId, cmdQueue->size() );
     usage++;
-
-#ifndef USE_PTHREAD
-    PR_Unlock ( lock );
-#else
-    pthread_mutex_unlock ( &lock );
-#endif
+    lock.unlock();
 }
 
 Connection* CmdPipe::popCmd () {
     Connection* conn = NULL;
-#ifndef USE_PTHREAD
-    PR_Lock  ( lock );
-#else
-    pthread_mutex_lock ( &lock );
-#endif
-
+    lock.lock();
     if ( cmdQueue->size() > 0 && ( ( conn = cmdQueue->front() ) != NULL ) ) {
         cmdQueue->pop();
         fprintf(stderr, "INFO: Poping Connection from CmdQueue=%d, Size= %ld\n", cmdQueueId, cmdQueue->size() );
     }
-
-#ifndef USE_PTHREAD
-    PR_Unlock ( lock );
-#else
-    pthread_mutex_unlock ( &lock );
-#endif
+    lock.unlock();
     return conn;
 }
 
 void CmdPipe::reduceUsage() {
-#ifndef USE_PTHREAD
-    PR_Lock  ( lock );
-#else
-    pthread_mutex_lock ( &lock );
-#endif
+    lock.lock();
     usage--;
-#ifndef USE_PTHREAD
-    PR_Unlock ( lock );
-#else
-    pthread_mutex_unlock ( &lock );
-#endif
+    lock.unlock();
 }
 
 int CmdPipe::getUsage () {
-#ifndef USE_PTHREAD
-    PR_Lock  ( lock );
-#else
-    pthread_mutex_lock ( &lock );
-#endif
+    lock.lock();
     int temp = usage;
-#ifndef USE_PTHREAD
-    PR_Unlock ( lock );
-#else
-    pthread_mutex_unlock ( &lock );
-#endif
+    lock.unlock();
     return temp;
 }
 
@@ -139,8 +91,12 @@ void ThreadMgr::startThreads() {
     int i;
 
     for ( i = 0; i < MAX_THREADS; i++ ) {
+#ifdef  USE_CPP11THREAD
+        tdata[i]   = new std::thread( ThreadMgr::httpthread, &index[i] );
+        fprintf ( stderr, "INFO: Created CPP 11 Thread with Index=%d \n", i );
+#else
 #ifndef USE_PTHREAD
-        tdata[i]   = PR_CreateThread ( PR_SYSTEM_THREAD, ThreadMgr::thread, &index[i],
+        tdata[i]   = PR_CreateThread ( PR_SYSTEM_THREAD, ThreadMgr::httpthread, &index[i],
                                        PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 8388608 );
 
         if ( !tdata[i] ) {
@@ -150,7 +106,7 @@ void ThreadMgr::startThreads() {
         }
 
 #else
-        int rc = pthread_create ( &tdata[i], NULL, ThreadMgr::thread, &index[i] );
+        int rc = pthread_create ( &tdata[i], NULL, ThreadMgr::httpthread, &index[i] );
 
         if ( rc != 0 ) {
             fprintf ( stderr, "ERRR: Unable to create thread \n" );
@@ -158,6 +114,7 @@ void ThreadMgr::startThreads() {
             fprintf ( stderr, "INFO: Created Thread with Index=%d \n", i );
         }
 
+#endif
 #endif
     }
 }
@@ -170,24 +127,34 @@ void ThreadMgr::stopThreads() {
         Connection *conn = new Connection();
         conn->cmd = THREAD_CMD_EXIT;
         cmdPipe[i]->pushCmd ( conn );
+#ifdef  USE_CPP11THREAD
+        if( tdata[i] ){
+            tdata[i]->join();
+            fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
+            tdata[i] = 0;
+	}
+#else
 #ifndef USE_PTHREAD
         PR_JoinThread ( tdata[i] );
-#else
-        pthread_join ( tdata[i], NULL );
-#endif
         fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
-#ifndef USE_PTHREAD
         tdata[i] = NULL;
 #else
+        pthread_join ( tdata[i], NULL );
+        fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
         tdata[i] = 0;
+#endif
 #endif
     }
 }
 
-#ifndef USE_PTHREAD
-void ThreadMgr::thread ( void *data )
+#ifdef  USE_CPP11THREAD
+void ThreadMgr::httpthread ( int *data )
 #else
-void* ThreadMgr::thread ( void *data )
+#ifndef USE_PTHREAD
+void ThreadMgr::httpthread ( void *data )
+#else
+void* ThreadMgr::httpthread ( void *data )
+#endif
 #endif
 {
     int* index = ( int* ) data;
@@ -204,16 +171,7 @@ void* ThreadMgr::thread ( void *data )
         conn = NULL;
 
         if ( ( conn = mgr->cmdPipe[*index]->popCmd() ) == NULL || conn == ( Connection * ) 0xFFFFFFFF ) {
-#ifndef USE_PTHREAD
-            PR_Sleep ( 10 );
-#else
-
-            struct timespec req, resp;
-            req.tv_sec = 0;
-            req.tv_nsec = 1000000;
-            nanosleep ( &req, &resp );
-#endif
-            //printf("Thread %d Sleeping \n",*index);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         } else {
             //Process the request here

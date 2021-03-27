@@ -6,10 +6,11 @@ LIB_DIR=-L./
 LIBS=-lsqlite3 /bin/msys-2.0.dll -lpthread
 ELIBS=-lhttp 
 #-lplc4 -lplds4
-CFLAGS=-Wall -DUSE_PTHREAD
+CFLAGS=-Wall -DUSE_CPP11THREAD
+#CFLAGS=-Wall -DUSE_CPP11THREAD -DUSE_PTHREAD
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
-#DEBUG=-g3
+DEBUG=-g3
 #DEBUG=-O2
 OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o
 #upnp.o
