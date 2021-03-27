@@ -311,14 +311,14 @@ extern int MAX_THREADS;
 int main ( int argc, char *argv[] ) {
     bool  isRestart = false;
     short firstTime = 0;
-    
+
     fclose(stderr);
     stderr = NULL;
     stderr = fopen(LOGFILE, "a+");
-    
+
     if(!stderr)
         exit(56);
-    
+
     if ( argc < 2 ) {
         fprintf ( stderr, "%s Exited \n", argv[0] );
         fprintf ( stderr, "Format: %s port count \n", argv[0] );
@@ -547,7 +547,7 @@ start:
     bool allowConnect = false;
     bool displayfds = true;
     unsigned int tempIp = 0;
-
+    cout<<"App Server up !"<<endl;
     while ( !exitMain ) {
         fflush(stderr);
         if ( shrink ) {
