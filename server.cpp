@@ -539,6 +539,7 @@ start:
     }
 
     bool allowConnect = false;
+	bool displayfds = true;
     unsigned int tempIp = 0;
 
     while ( !exitMain ) {
@@ -585,12 +586,27 @@ start:
 
             cout << "Number of clients = " << nClients << endl;
             shrink = false;
+			displayfds = true;
         }
+		
+		if( displayfds ) {
+		    int l = 0;
+		    printf("\n");
+			printf("____________________________________\n");
+		    printf("Active fds=%d \n", nClients);
+		    while  ( l < nClients ){
+			    printf("%d, ", pollfds[l].fd);
+			    l++;
+		    }
+		    printf("\n");
+		    printf("____________________________________\n");
+			displayfds = false;
+		}
 
         if ( ( retVal = PR_Poll ( pollfds, nClients, 100 ) ) > 0 ) {
             if ( pollfds[0].revents & PR_POLL_READ ) {
                 socklen_t addrlen = 0;
-
+				//printf("INFO: Received socket accepting \n");
                 if ( ( *client = accept ( *srv, ( sockaddr * ) &clientAddr, &addrlen ) ) ) {
                     //TODO:
                     //allowConnect = false;
@@ -623,7 +639,7 @@ start:
                             if ( fcntl ( *client, F_SETFL, flags ) != 0 ) {
                                 printf ( "ERRR: Unable to set socket option \n" );
                             }
-
+                            printf("INFO: Received Connection on fd=%d\n", *client );
                             pollfds[nClients].fd = *client;
                             pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                             pollfds[nClients].revents = 0;
@@ -642,15 +658,33 @@ start:
                         PR_Close ( client );
                     }
                 }
+				//printf("INFO: Received socket accept finished \n");
             } else {
                 if ( pollfds[0].revents & PR_POLL_NVAL || pollfds[0].revents & PR_POLL_ERR ) {
+					printf("ERRR: Receive socket invalid !!!!!!!!!!! \n");
                     PR_Closefd ( pollfds[0].fd );
                     pollfds[0].fd = 0;
-                    goto start;
+                    //goto start;
+					exit(1);
                 }
             }
 
             for ( i = 1; i < nClients; i++ ) {
+				
+				
+                if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
+					printf("INFO: Invalid fd , closing \n");
+                    PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
+					PR_Closefd ( pollfds[i].fd );
+                    delete conn[i];
+					conn[i] = 0;
+                    pollfds[i].fd = 0;
+                    pollfds[i].events = 0;
+                    pollfds[i].revents = 0;
+                    shrink = true;
+					continue;
+                }
+				
                 if ( !conn[i] ) {
                     cout << "ERRR: Unable to locate connection data  " << endl;
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -661,7 +695,7 @@ start:
                     shrink = true;
                 }
 
-                if ( pollfds[i].revents & PR_POLL_READ ) {
+                if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_READ ) {
                     HttpReq *temp = &conn[i]->req;
                     int tempLen = 0;
 
@@ -819,9 +853,10 @@ start:
                     pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                 }
 
-                if ( pollfds[i].revents & PR_POLL_WRITE ) {
+                if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_WRITE && *(conn[i]->file) > *srv) {
                     int len = conn[i]->len;
 
+					//printf("DBUG: reading file %s \n", conn[i]->file );
                     if ( len < SMALLBUF && conn[i]->file ) {
                         //read in some more data
                         //int temp = ifs->ifsRead( conn[i]->file, conn[i]->fid, &(conn[i]->buf[len]), SMALLBUF-len, (int *)&(conn[i]->offset) );
@@ -836,6 +871,7 @@ start:
                             conn[i]->len = len;
                         }
                     }
+					//printf("DBUG: reading file done\n");
 
                     if ( len > 0 ) {
                         int bytesW = 0;
@@ -871,31 +907,26 @@ start:
                             shrink = true;
                         }
                     } else {
-                        printf ( "INFO: Sent File='%s' Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), conn[i]->sent );
-                        printf ( "INFO: --------------------------------------------------------------------------\n\n\n" );
+						printf ("\nINFO: --------------------------------------------------------------------------\n" );
+                        printf ("INFO: Sent File='%s' Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), conn[i]->sent );
+						printf ("DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
+                        printf ("INFO: --------------------------------------------------------------------------\n\n\n" );
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                         delete conn[i];
                         pollfds[i].fd = 0;
+						printf ("DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
                         shrink = true;
                     }
                 }
 
-                if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
-                    PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-                    delete conn[i];
-                    pollfds[i].fd = 0;
-                    pollfds[i].events = 0;
-                    pollfds[i].revents = 0;
-                    shrink = true;
-                }
 
                 pollfds[i].revents = 0;
             }
         } else {
             if ( retVal < 0 ) {
-                PR_Sleep ( 1000 );
+                PR_Sleep ( 1 );
                 printf ( "ERRR: Poll failed \n" );
             }
         }
