@@ -43,7 +43,7 @@ void CmdPipe::pushCmd ( Connection *conn ) {
     pthread_mutex_lock ( &lock );
 #endif
     cmdQueue->push ( conn );
-    printf ( "INFO: Pushing Connection Data to CmdQueue = %d, Size=%ld\n", cmdQueueId, cmdQueue->size() );
+    fprintf(stderr, "INFO: Pushing Connection Data to CmdQueue = %d, Size=%ld\n", cmdQueueId, cmdQueue->size() );
     usage++;
 
 #ifndef USE_PTHREAD
@@ -63,7 +63,7 @@ Connection* CmdPipe::popCmd () {
 
     if ( cmdQueue->size() > 0 && ( ( conn = cmdQueue->front() ) != NULL ) ) {
         cmdQueue->pop();
-        printf ( "INFO: Poping Connection from CmdQueue=%d, Size= %ld\n", cmdQueueId, cmdQueue->size() );
+        fprintf(stderr, "INFO: Poping Connection from CmdQueue=%d, Size= %ld\n", cmdQueueId, cmdQueue->size() );
     }
 
 #ifndef USE_PTHREAD

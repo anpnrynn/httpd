@@ -6,10 +6,12 @@
 #define FILE_STORE  "/var/local/filestore"
 #define INFO_STORE  "/var/local/infostore.sqlite3"
 #define KEYFILE     "/var/local/db.key"
+#define LOGFILE     "/var/log/appserver.log"
 #else
 #define FILE_STORE  "filestore"
 #define INFO_STORE  "infostore"
 #define KEYFILE     "db.key"
+#define LOGFILE     "appserver.log"
 #endif
 
 #define MAXPATH     256

@@ -95,24 +95,24 @@ int pluginLoader ( void *udata, int argc, char **argv, char **col ) {
         lib[libCount] = PR_LoadLibrary ( lName );
 
         if ( !lib[libCount] ) {
-            printf ( "WARN: Unable to load library:%s \n", lName );
+            fprintf ( stderr, "WARN: Unable to load library:%s \n", lName );
             sprintf ( lName, "/usr/local/lib/lib%s.so", argv[0] );
             lib[libCount] = PR_LoadLibrary ( lName );
 
             if ( !lib[libCount] ) {
-                printf ( "WARN: Unable to load library:%s \n", lName );
+                fprintf ( stderr, "WARN: Unable to load library:%s \n", lName );
                 sprintf ( lName, "./lib%s.so", argv[0] );
                 lib[libCount] = PR_LoadLibrary ( lName );
 
                 if ( !lib[libCount] ) {
-                    printf ( "ERRR: Library:%s NOT FOUND\n", lName );
+                    fprintf ( stderr, "ERRR: Library:%s NOT FOUND\n", lName );
                     lib[libCount] = NULL;
                 }
             }
         }
 
         if ( lib[libCount] ) {
-            printf ( "Loaded Library:%s \n", lName );
+            fprintf ( stderr, "Loaded Library:%s \n", lName );
             libCount++;
         }
 
@@ -121,9 +121,9 @@ int pluginLoader ( void *udata, int argc, char **argv, char **col ) {
         lib[libCount] = PR_LoadLibrary ( lName );
 
         if ( !lib[libCount] ) {
-            printf ( "ERRR: Library: %s NOT FOUND\n", lName );
+            fprintf ( stderr, "ERRR: Library: %s NOT FOUND\n", lName );
         } else {
-            printf ( "Loaded Library: %s\n", lName );
+            fprintf ( stderr, "Loaded Library: %s\n", lName );
             libCount++;
         }
 
@@ -143,7 +143,7 @@ int loadInfo() {
     //login_init ();
 
     if ( rc != SQLITE_OK ) {
-        printf ( "ERRR: Unable to open db, Corrupted ? \n" );
+        fprintf ( stderr, "ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 1;
@@ -152,7 +152,7 @@ int loadInfo() {
     rc = sqlite3_exec ( db, "select name,active from plugins;", pluginLoader, NULL, &error );
 
     if ( rc != SQLITE_OK ) {
-        printf ( "ERRR: Unable to load necessary plugins \n" );
+        fprintf ( stderr, "ERRR: Unable to load necessary plugins \n" );
         sqlite3_close ( db );
         db = NULL;
         return 2;
@@ -161,7 +161,7 @@ int loadInfo() {
     rc = sqlite3_exec ( db, "select ipaddr from acl;", aclLoad, NULL, &error );
 
     if ( rc != SQLITE_OK ) {
-        printf ( "ERRR: Unable to load necessary plugins \n" );
+        fprintf ( stderr, "ERRR: Unable to load necessary plugins \n" );
         sqlite3_close ( db );
         db = NULL;
         return 3;
@@ -184,13 +184,13 @@ void initPlugins() {
                 plugin->init();
                 //if ( 0 == plugin->init() )
                 //{
-                //  printf("INFO: Plugin Initialized \n");
+                //  fprintf(stderr,"INFO: Plugin Initialized \n");
                 //}
             } else {
-                printf ( "ERRR: Unable to locate symbol in object code \n" );
+                fprintf ( stderr, "ERRR: Unable to locate symbol in object code \n" );
             }
         } else {
-            printf ( "ERRR: Plugin Data Structure Empty \n" );
+            fprintf ( stderr, "ERRR: Plugin Data Structure Empty \n" );
         }
     }
 }
@@ -205,7 +205,7 @@ int installTheNeededStuff() {
     rc = sqlite3_open ( INFO_STORE, &db );
 
     if ( rc ) {
-        printf ( "ERRR: Unable to open db, Corrupted ? \n" );
+        fprintf ( stderr, "ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 2;
@@ -220,7 +220,7 @@ int installTheNeededStuff() {
 
     //if( !file || !fData )
     if ( !file && *file == -1 ) {
-        printf ( "ERRR: Unable to open install.sql file \n" );
+        fprintf ( stderr, "ERRR: Unable to open install.sql file \n" );
         return 3;
     }
 
@@ -238,7 +238,7 @@ int installTheNeededStuff() {
             else if ( buf[i] == '\n' ) {
                 cmd[j] = 0;
                 error  = NULL;
-                printf ( "INFO: Running Cmd '%s' \n", cmd );
+                fprintf ( stderr, "INFO: Running Cmd '%s' \n", cmd );
                 rc = sqlite3_exec ( db, cmd, NULL, NULL, &error );
 
                 if ( rc != SQLITE_OK ) {
@@ -246,7 +246,7 @@ int installTheNeededStuff() {
                         sqlite3_free ( error );
                     }
 
-                    printf ( "ERRR: Unable to run command '%s'\n", cmd );
+                    fprintf ( stderr, "ERRR: Unable to run command '%s'\n", cmd );
                     sqlite3_close ( db );
                     PR_Close ( file );
                     return 4;
@@ -263,7 +263,7 @@ int installTheNeededStuff() {
     rc = sqlexecute ( db, "COMMIT;", NULL, NULL, NULL );
     sqlite3_close ( db );
     PR_Close ( file );
-    printf ( "INFO: Done installing prerequisites \n" );
+    fprintf ( stderr, "INFO: Done installing prerequisites \n" );
 //#endif
     return 0;
 }
@@ -311,8 +311,14 @@ extern int MAX_THREADS;
 int main ( int argc, char *argv[] ) {
     bool  isRestart = false;
     short firstTime = 0;
-
-
+    
+    fclose(stderr);
+    stderr = NULL;
+    stderr = fopen(LOGFILE, "a+");
+    
+    if(!stderr)
+        exit(56);
+    
     if ( argc < 2 ) {
         fprintf ( stderr, "%s Exited \n", argv[0] );
         fprintf ( stderr, "Format: %s port count \n", argv[0] );
@@ -378,20 +384,20 @@ start:
     PRNetAddr  srvAddr;
     PRNetAddr  clientAddr;
 
-    printf ( "INFO: Creating socket \n" );
+    fprintf ( stderr, "INFO: Creating socket \n" );
 
     *srv = PR_NewTCPSocket();
     srvAddr.sin_family  = PR_AF_INET;
     srvAddr.sin_addr.s_addr     = 0x00000000;
     srvAddr.sin_port   = PR_htons ( SRVPORT );
-    printf ( "INFO: Socket created successfully \n" );
+    fprintf ( stderr, "INFO: Socket created successfully \n" );
     fflush ( stdout );
 
     //if( PR_Bind(srv, &srvAddr) ==  PR_FAILURE )
     int count = 0;
 
     while ( bind ( *srv, ( const sockaddr * ) &srvAddr, sizeof ( sockaddr_in ) ) !=  0 ) {
-        printf ( "ERRR: Unable to Bind \n" );
+        fprintf ( stderr, "ERRR: Unable to Bind \n" );
         PR_Cleanup();
         PR_Sleep ( 1000 );
 
@@ -406,32 +412,32 @@ start:
 
     isBound = true;
 
-    printf ( "INFO: Bound successfully \n" );
+    fprintf ( stderr, "INFO: Bound successfully \n" );
 
     if ( PR_Listen ( srv, 20 ) == PR_FAILURE ) {
-        printf ( "ERRR: Unable to setup backlog \n" );
+        fprintf ( stderr, "ERRR: Unable to setup backlog \n" );
         PR_Cleanup();
         return 2;
     }
 
-    printf ( "INFO: Listening successfully \n" );
+    fprintf ( stderr, "INFO: Listening successfully \n" );
     //PRSocketOptionData  opt;
     //opt.option = PR_SockOpt_Nonblocking;
     //opt.value.non_blocking = true;
 
     //if( PR_SetSocketOption(srv, &opt) == PR_FAILURE )
     if ( fcntl ( *srv, F_SETFL, O_NONBLOCK ) != 0 ) {
-        printf ( "ERRR: Unable to set socket option \n" );
+        fprintf ( stderr, "ERRR: Unable to set socket option \n" );
         PR_Cleanup();
         return 3;
     }
 
-    printf ( "INFO: Non blocking successfully \n" );
+    fprintf ( stderr, "INFO: Non blocking successfully \n" );
     fflush ( stdout );
 #if 0
 
     if ( 0 != acquireEncryptionKeys ( &firstTime ) ) {
-        printf ( "ERRR: Acquiring Encryption Keys Failed \n" );
+        fprintf ( stderr, "ERRR: Acquiring Encryption Keys Failed \n" );
         PR_Cleanup();
         return 4;
     }
@@ -452,17 +458,17 @@ start:
         *infoStore = PR_Open ( INFO_STORE, PR_RDONLY, 0 );
 
         if ( infoStore && *infoStore != -1 ) {
-            printf ( "WARN: Database present \n" );
+            fprintf ( stderr, "WARN: Database present \n" );
             PR_Close ( infoStore );
 
             if ( firstTime ) {
-                printf ( "WARN: Database key file not present, but database present \n" );
-                printf ( "WARN: Please backup the database to another location and restart this program \n" );
+                fprintf ( stderr, "WARN: Database key file not present, but database present \n" );
+                fprintf ( stderr, "WARN: Please backup the database to another location and restart this program \n" );
                 PR_Cleanup();
                 return 10;
             }
         } else {
-            printf ( "WARN: Database not present, installing the needed stuff \n" );
+            fprintf ( stderr, "WARN: Database not present, installing the needed stuff \n" );
 
             //if( firstTime )
             //{
@@ -470,7 +476,7 @@ start:
              *  If first time (Setup the datastore)
              */
             if ( 0 != installTheNeededStuff() ) {
-                printf ( "ERRR: Unable to perform internal installation \n" );
+                fprintf ( stderr, "ERRR: Unable to perform internal installation \n" );
                 PR_Cleanup();
                 return 11;
             }
@@ -478,14 +484,14 @@ start:
             //}
             //else
             //{
-            //  printf("WARN: The database is missing, but this isn't the first time \n");
+            //  fprintf(stderr,"WARN: The database is missing, but this isn't the first time \n");
             //printf("WARN: Please backup the keyfile to another location, and restart this program \n");
             //  PR_Cleanup();
             //  return 12;
             //}
         }
 
-        printf ( "WARN: Starting session manager \n" );
+        fprintf ( stderr, "WARN: Starting session manager \n" );
         hSMgr = HttpSessionMgr::createInstance();
         /*
          *  Restore persistent sessions
@@ -493,18 +499,18 @@ start:
 #if 1
 
         if ( hSMgr->loadStoredSessions() != 0 ) {
-            printf ( "ERRR: Unable to restore session data \n" );
+            fprintf ( stderr, "ERRR: Unable to restore session data \n" );
             return 13;
         } else {
-            printf ( "INFO: Reading stored data completed \n" );
+            fprintf ( stderr, "INFO: Reading stored data completed \n" );
         }
 
 #endif
-        printf ( "WARN: Clearing plugins \n" );
+        fprintf ( stderr, "WARN: Clearing plugins \n" );
         clearPlugins();
         loadInfo();
         initPlugins();
-        printf ( "WARN: Starting plugins \n" );
+        fprintf ( stderr, "WARN: Starting plugins \n" );
 #ifdef LINUX_BUILD
         malloc_trim ( 0 );
 #endif
@@ -539,10 +545,11 @@ start:
     }
 
     bool allowConnect = false;
-	bool displayfds = true;
+    bool displayfds = true;
     unsigned int tempIp = 0;
 
     while ( !exitMain ) {
+        fflush(stderr);
         if ( shrink ) {
             pollfds[0].fd = *srv;
             pollfds[0].events = PR_POLL_READ | PR_POLL_EXCEPT;
@@ -565,7 +572,7 @@ start:
                     }
 
                     if ( ( shift = i + offset ) < MAXCLIENTS ) {
-                        cout << "Shifting " << shift << " to " << i << endl;
+                        //cout << "Shifting " << shift << " to " << i << endl;
                         pollfds[i].fd = pollfds[shift].fd;
                         //pollfds[i].events  =  pollfds[shift].events;
                         pollfds[i].events  =  PR_POLL_READ | PR_POLL_WRITE | PR_POLL_EXCEPT;
@@ -584,29 +591,32 @@ start:
                 }
             }
 
-            cout << "Number of clients = " << nClients << endl;
+            fprintf(stderr, "Number of clients = %d \n", nClients); //cout << "Number of clients = " << nClients << endl;
             shrink = false;
-			displayfds = true;
+            displayfds = true;
         }
-		
-		if( displayfds ) {
-		    int l = 0;
-		    printf("\n");
-			printf("____________________________________\n");
-		    printf("Active fds=%d \n", nClients);
-		    while  ( l < nClients ){
-			    printf("%d, ", pollfds[l].fd);
-			    l++;
-		    }
-		    printf("\n");
-		    printf("____________________________________\n");
-			displayfds = false;
-		}
+
+        if ( displayfds ) {
+            int l = 0;
+            fprintf ( stderr, "\n" );
+            fprintf(stderr, "____________________________________\n" );
+            fprintf ( stderr, "Active fds=%d \n", nClients );
+
+            while  ( l < nClients ) {
+                fprintf ( stderr, "%d, ", pollfds[l].fd );
+                l++;
+            }
+
+            fprintf ( stderr, "\n" );
+            fprintf ( stderr, "____________________________________\n" );
+            displayfds = false;
+        }
 
         if ( ( retVal = PR_Poll ( pollfds, nClients, 100 ) ) > 0 ) {
             if ( pollfds[0].revents & PR_POLL_READ ) {
                 socklen_t addrlen = 0;
-				//printf("INFO: Received socket accepting \n");
+
+                //printf("INFO: Received socket accepting \n");
                 if ( ( *client = accept ( *srv, ( sockaddr * ) &clientAddr, &addrlen ) ) ) {
                     //TODO:
                     //allowConnect = false;
@@ -625,10 +635,10 @@ start:
                     char clientAddress[256];
                     strcpy ( clientAddress, inet_ntoa ( clientAddr.sin_addr ) );
                     //if ( PR_SUCCESS == PR_NetAddrToString ( &clientAddr , clientAddress, 256 ) ){
-                    printf ( "INFO: Connection Received from 0x%x, %s \n", tempIp, clientAddress );
+                    fprintf ( stderr, "INFO: Connection Received from 0x%x, %s \n", tempIp, clientAddress );
 
                     //} else {
-                    //  printf("INFO: Connection Received from 0x%x \n",tempIp);
+                    //  fprintf(stderr,"INFO: Connection Received from 0x%x \n",tempIp);
                     //}
                     if ( allowConnect ) {
                         if ( nClients < MAXCLIENTS ) {
@@ -637,9 +647,10 @@ start:
                             flags |= O_NONBLOCK;
 
                             if ( fcntl ( *client, F_SETFL, flags ) != 0 ) {
-                                printf ( "ERRR: Unable to set socket option \n" );
+                                fprintf ( stderr, "ERRR: Unable to set socket option \n" );
                             }
-                            printf("INFO: Received Connection on fd=%d\n", *client );
+
+                            fprintf ( stderr, "INFO: Received Connection on fd=%d\n", *client );
                             pollfds[nClients].fd = *client;
                             pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                             pollfds[nClients].revents = 0;
@@ -649,42 +660,44 @@ start:
                             conn[nClients]->setAuthLvl();
                             nClients++;
                         } else {
-                            printf ( "INFO: Connection closed due to max clients exceeded 0x%x \n", tempIp );
+                            fprintf ( stderr, "INFO: Connection closed due to max clients exceeded 0x%x \n", tempIp );
                             PR_Close ( client );
                         }
                     } else {
-                        printf ( "WARN: Connection closed because of ACL list entry not present 0x%x \n", tempIp );
+                        fprintf ( stderr, "WARN: Connection closed because of ACL list entry not present 0x%x \n", tempIp );
                         PR_Shutdown ( client, PR_SHUTDOWN_BOTH );
                         PR_Close ( client );
                     }
                 }
-				//printf("INFO: Received socket accept finished \n");
+
+                //printf("INFO: Received socket accept finished \n");
             } else {
                 if ( pollfds[0].revents & PR_POLL_NVAL || pollfds[0].revents & PR_POLL_ERR ) {
-					printf("ERRR: Receive socket invalid !!!!!!!!!!! \n");
+                    fprintf(stderr, "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
                     PR_Closefd ( pollfds[0].fd );
                     pollfds[0].fd = 0;
                     goto start;
-					//exit(1);
+                    //exit(1);
                 }
             }
 
             for ( i = 1; i < nClients; i++ ) {
-				
-				
+
+
                 if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
-					printf("INFO: Invalid fd , closing \n");
+                    fprintf(stderr, "INFO: Invalid fd , closing \n" );
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-					PR_Closefd ( pollfds[i].fd );
-                    delete conn[i];
-					conn[i] = 0;
+                    PR_Closefd ( pollfds[i].fd );
+                    if( conn[i] )
+                        delete conn[i];
+                    conn[i] = 0;
                     pollfds[i].fd = 0;
                     pollfds[i].events = 0;
                     pollfds[i].revents = 0;
                     shrink = true;
-					continue;
+                    continue;
                 }
-				
+
                 if ( !conn[i] ) {
                     cout << "ERRR: Unable to locate connection data  " << endl;
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -693,7 +706,7 @@ start:
                     pollfds[i].events = 0;
                     pollfds[i].revents = 0;
                     shrink = true;
-					continue;
+                    continue;
                 }
 
                 if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_READ ) {
@@ -712,7 +725,7 @@ start:
                             temp->readHttpHeader();
 
                             if ( temp->hLen <= 0 ) {
-                                printf ( "WARN: Incomplete header received\n" );
+                                fprintf ( stderr, "WARN: Incomplete header received\n" );
                                 //pollfds[i].revents = 0;
                                 pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                 continue;
@@ -751,14 +764,14 @@ start:
                                 conn[i]->sess = hSMgr->getSession ( conn[i]->ip, itr->second );
 
                                 if ( conn[i]->sess )
-                                { printf ( "INFO: Session Active, SID: %s\n", conn[i]->sess->sid.c_str() ); }
+                                { fprintf ( stderr, "INFO: Session Active, SID: %s\n", conn[i]->sess->sid.c_str() ); }
                             }
 
                             delete cookies;
                         }
 
                         if ( !conn[i]->sess ) {
-                            printf ( "WARN: No valid Session Present, creating new \n" );
+                            fprintf ( stderr, "WARN: No valid Session Present, creating new \n" );
                             time_t now = time ( NULL );
                             now += 86400;
                             conn[i]->sess = hSMgr->startSession ( conn[i]->ip, now );
@@ -838,12 +851,13 @@ start:
                             }
                         }
                     } else {
-                        char ERRRSTR[256];
-                        PR_GetErrorText ( ERRRSTR );
-                        cout << " Client Disconnected :" << tempLen << ", PRError: " << ERRRSTR << endl;
+                        //char ERRRSTR[256];
+                        //PR_GetErrorText ( ERRRSTR );
+                        //cout << " Client Disconnected :" << tempLen << ", PRError: " << ERRRSTR << endl;
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-                        delete conn[i];
-                        conn[i] = NULL;
+			if( conn[i] )
+                            delete conn[i];
+                        conn[i] = 0;
                         pollfds[i].fd = 0;
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
@@ -854,10 +868,10 @@ start:
                     pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                 }
 
-                if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_WRITE && *(conn[i]->file) > *srv) {
+                if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_WRITE && * ( conn[i]->file ) > *srv ) {
                     int len = conn[i]->len;
 
-					//printf("DBUG: reading file %s \n", conn[i]->file );
+                    //printf("DBUG: reading file %s \n", conn[i]->file );
                     if ( len < SMALLBUF && conn[i]->file ) {
                         //read in some more data
                         //int temp = ifs->ifsRead( conn[i]->file, conn[i]->fid, &(conn[i]->buf[len]), SMALLBUF-len, (int *)&(conn[i]->offset) );
@@ -872,7 +886,8 @@ start:
                             conn[i]->len = len;
                         }
                     }
-					//printf("DBUG: reading file done\n");
+
+                    //printf("DBUG: reading file done\n");
 
                     if ( len > 0 ) {
                         int bytesW = 0;
@@ -901,21 +916,23 @@ start:
                         } else {
                             cout << "ERRR: Socket Write Error " << endl;
                             PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-                            delete conn[i];
+                            if( conn[i] )
+                                delete conn[i];
                             pollfds[i].fd = 0;
                             pollfds[i].events = 0;
                             pollfds[i].revents = 0;
                             shrink = true;
                         }
                     } else {
-						printf ("\nINFO: --------------------------------------------------------------------------\n" );
-                        printf ("INFO: Sent File='%s' Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), conn[i]->sent );
-						printf ("DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
-                        printf ("INFO: --------------------------------------------------------------------------\n\n\n" );
+                        fprintf(stderr, "\nINFO: --------------------------------------------------------------------------\n" );
+                        fprintf ( stderr, "INFO: Sent File='%s' Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), conn[i]->sent );
+                        fprintf(stderr, "DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
+                        fprintf ( stderr, "INFO: --------------------------------------------------------------------------\n\n\n" );
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-                        delete conn[i];
+                        if( conn[i] )
+                            delete conn[i];
                         pollfds[i].fd = 0;
-						printf ("DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
+                        fprintf(stderr, "DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
                         shrink = true;
@@ -928,7 +945,7 @@ start:
         } else {
             if ( retVal < 0 ) {
                 PR_Sleep ( 1 );
-                printf ( "ERRR: Poll failed \n" );
+                fprintf ( stderr, "ERRR: Poll failed \n" );
             }
         }
     }

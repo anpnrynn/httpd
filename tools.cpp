@@ -84,7 +84,7 @@ const char* convertIndexToWeekDay ( int wdayIndex ) {
     static const char *wDay[10] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
     if ( wdayIndex < 0 || wdayIndex > 6 ) {
-        printf ( "Error: invalid weekday index \n" );
+        fprintf(stderr, "Error: invalid weekday index \n" );
         return wDay[0];
     } else
     { return wDay[wdayIndex]; }
@@ -94,7 +94,7 @@ const char* convertIndexToMonth ( int monthIndex ) {
     static const char *month[16] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
     if ( monthIndex < 0 || monthIndex > 11 ) {
-        printf ( "Error: invalid month index \n" );
+        fprintf(stderr, "Error: invalid month index \n" );
         return month[0];
     } else
     { return month[monthIndex]; }
@@ -116,7 +116,7 @@ int convertWeekDayToIndex ( char *wday ) {
     else if ( strncasecmp ( "sat", wday, 3 ) == 0 )
     { return 6; }
     else {
-        printf ( "Error: No matching weekday found in the date string\n" );
+        fprintf(stderr, "Error: No matching weekday found in the date string\n" );
         return -1;
     }
 }
@@ -147,7 +147,7 @@ int convertMonthToIndex ( char *month ) {
     else if ( strncasecmp ( "dec", month, 3 ) == 0 )
     { return 11; }
     else {
-        printf ( "Error: No matching month found in the date string\n" );
+        fprintf(stderr, "Error: No matching month found in the date string\n" );
         return -1;
     }
 }
@@ -180,7 +180,7 @@ int convertHttpDateToNsprDate ( char *date, struct tm *eDate ) {
                          tempWday, tempMonth, &hDate, &hHour, &hMin, &hSec, &hYear ) == 7 ) {
         proceed = 1;
     } else {
-        printf ( "Error: No Matching Date format found \n" );
+        fprintf(stderr, "Error: No Matching Date format found \n" );
         proceed = 0;
     }
 

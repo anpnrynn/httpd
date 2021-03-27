@@ -253,7 +253,7 @@ int HttpSession::saveSession ( sqlite3 *db ) {
                 if ( rc == SQLITE_BUSY )
                 { PR_Sleep ( 10 ); }
                 else {
-                    printf ( "ERRR: Unable to store session while saving '%s'\n", error );
+                    fprintf(stderr, "ERRR: Unable to store session while saving '%s'\n", error );
 
                     if ( error )
                     { sqlite3_free ( error ); }
@@ -291,7 +291,7 @@ int HttpSession::saveSessionVariable ( sqlite3 *db, const char *name ) {
                 else if ( rc == SQLITE_BUSY )
                 { PR_Sleep ( 10 ); }
                 else {
-                    printf ( "ERRR: Unable to store session variable: %s,  '%s'\n", name, error );
+                    fprintf(stderr, "ERRR: Unable to store session variable: %s,  '%s'\n", name, error );
 
                     if ( error )
                     { sqlite3_free ( error ); }
@@ -329,7 +329,7 @@ int HttpSession::updateSaveSession ( sqlite3 *db ) {
                     if ( rc == SQLITE_BUSY )
                     { PR_Sleep ( 10 ); }
                     else {
-                        printf ( "ERRR: Unable to store session while updating '%s'\n", error );
+                        fprintf(stderr, "ERRR: Unable to store session while updating '%s'\n", error );
 
                         if ( error )
                         { sqlite3_free ( error ); }
@@ -370,7 +370,7 @@ int HttpSession::updateSessionVariable ( sqlite3 *db, const char *name ) {
                 else if ( rc == SQLITE_BUSY )
                 { PR_Sleep ( 10 ); }
                 else {
-                    printf ( "ERRR: Unable to update session variable: %s, '%s'\n", sVar->name, error );
+                    fprintf(stderr, "ERRR: Unable to update session variable: %s, '%s'\n", sVar->name, error );
 
                     if ( error )
                     { sqlite3_free ( error ); }
@@ -410,7 +410,7 @@ int HttpSession::deleteSessionVariable ( sqlite3 *db, const char *name ) {
                 else if ( rc == SQLITE_BUSY )
                 { PR_Sleep ( 10 ); }
                 else {
-                    printf ( "ERRR: Unable to update session variable: %s, '%s'\n", sVar->name, error );
+                    fprintf(stderr, "ERRR: Unable to update session variable: %s, '%s'\n", sVar->name, error );
 
                     if ( error )
                     { sqlite3_free ( error ); }
@@ -466,11 +466,11 @@ HttpSession* HttpSessionMgr::loadSession ( unsigned int rand, unsigned int ipadd
         MapSidSess::iterator itr1 = mapSid->find ( temp->sid );
 
         if ( itr1 != mapSid->end() ) {
-            printf ( "INFO: Retrieved session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
+            fprintf(stderr, "INFO: Retrieved session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
             delete temp;
             temp = itr1->second;
         } else {
-            printf ( "INFO: Adding Session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
+            fprintf(stderr, "INFO: Adding Session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
             mapSid->insert ( pair<string, HttpSession*> ( temp->sid, temp ) );
         }
     }
@@ -489,7 +489,7 @@ HttpSession* HttpSessionMgr::startSession ( unsigned int ipaddr, time_t expires 
     rc = sqlite3_open ( INFO_STORE, &db );
 
     if ( rc ) {
-        printf ( "ERRR: Unable to open db, Corrupted ? \n" );
+        fprintf(stderr, "ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 0;
@@ -553,7 +553,7 @@ int  HttpSessionMgr::loadStoredSessions() {
     rc = sqlite3_open ( INFO_STORE, &db );
 
     if ( rc ) {
-        printf ( " ERRR: Unable to open db, Corrupted ? \n" );
+        fprintf(stderr, " ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 1;
@@ -596,7 +596,7 @@ int  HttpSessionMgr::deleteStoredSessions() {
     rc = sqlite3_open ( INFO_STORE, &db );
 
     if ( rc ) {
-        printf ( " ERRR: Unable to open db, Corrupted ? \n" );
+        fprintf(stderr, " ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 1;
@@ -621,13 +621,13 @@ int  HttpSessionMgr::deleteStoredSessions() {
 
 int  HttpSessionMgr::readSessionInfo ( void *udata, int argc, char **argv, char **cName ) {
     HttpSessionMgr *hTemp = ( HttpSessionMgr * ) udata;
-    printf ( "INFO: Reading Session Data \n" );
+    fprintf(stderr, "INFO: Reading Session Data \n" );
 
     if ( argv[0] && argv[1] && argv[2] ) {
         HttpSession *temp = hTemp ->loadSession ( atoi ( argv[0] ), atoi ( argv[1] ), atoi ( argv[2] ) );
 
         if ( argv[3] && argv[4] && argv[5] ) {
-            printf ( "INFO: Adding Variable %s %s %s\n", argv[3], argv[4], argv[5] );
+            fprintf(stderr, "INFO: Adding Variable %s %s %s\n", argv[3], argv[4], argv[5] );
             temp->loadVariable ( ( const char * ) argv[4], argv[5], atoi ( argv[3] ), atoi ( argv[2] ) );
         }
     }
@@ -642,7 +642,7 @@ int HttpSessionMgr::saveSession() {
     rc = sqlite3_open ( INFO_STORE, &db );
 
     if ( rc ) {
-        printf ( "ERRR: Unable to open db, Corrupted ? \n" );
+        fprintf(stderr, "ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 1;
