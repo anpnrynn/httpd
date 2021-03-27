@@ -29,7 +29,7 @@ httpdsrv.exe:libhttp.dll p3.dll $(SOBJS)
 libhttp.dll:$(OBJS)
 	$(CXX) $(OBJS) -shared -o libhttp.dll $(INC_DIR) $(LIB_DIR) $(LIBS) $(CFLAGS) $(DEBUG)
 
-server.o:server.cpp mozhdr.h
+server.o:server.cpp
 	$(CXX) server.cpp -c -o server.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
 
 tools.o:tools.cpp tools.h

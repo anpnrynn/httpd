@@ -28,7 +28,7 @@ httpdsrv:libhttp.so libp3.so $(SOBJS)
 libhttp.so:$(OBJS)
 	g++ $(OBJS) -shared -o libhttp.so $(INC_DIR) $(LIB_DIR) $(LIBS) $(CFLAGS) $(DEBUG)
 
-server.o:server.cpp mozhdr.h
+server.o:server.cpp
 	g++ server.cpp -c -o server.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
 
 tools.o:tools.cpp tools.h
