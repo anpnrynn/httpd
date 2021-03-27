@@ -500,7 +500,7 @@ start:
         }
 
 #endif
-        printf ( "WARN: Clearning plugins \n" );
+        printf ( "WARN: Clearing plugins \n" );
         clearPlugins();
         loadInfo();
         initPlugins();
@@ -664,8 +664,8 @@ start:
 					printf("ERRR: Receive socket invalid !!!!!!!!!!! \n");
                     PR_Closefd ( pollfds[0].fd );
                     pollfds[0].fd = 0;
-                    //goto start;
-					exit(1);
+                    goto start;
+					//exit(1);
                 }
             }
 
@@ -693,6 +693,7 @@ start:
                     pollfds[i].events = 0;
                     pollfds[i].revents = 0;
                     shrink = true;
+					continue;
                 }
 
                 if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_READ ) {
