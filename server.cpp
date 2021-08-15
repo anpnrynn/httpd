@@ -276,9 +276,9 @@ int main ( int argc, char *argv[] ) {
     bool  isRestart = false;
     short firstTime = 0;
 
-    fclose ( stderr );
-    stderr = NULL;
-    stderr = fopen ( LOGFILE, "a+" );
+    //fclose ( stderr );
+    //stderr = NULL;
+    //stderr = fopen ( LOGFILE, "a+" );
 
     if ( !stderr )
     { exit ( 56 ); }
@@ -336,7 +336,7 @@ start:
         fprintf ( stderr, "ERRR: Unable to Bind \n" );
         PR_Cleanup();
         //PR_Sleep ( 1000 );
-        std::this_thread::sleep_for(std::chrono::microseconds(1000));  
+        std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
         if ( count > 1000 ) {
             return 1;
@@ -792,9 +792,6 @@ start:
                             }
                         }
                     } else {
-                        //char ERRRSTR[256];
-                        //PR_GetErrorText ( ERRRSTR );
-                        //cout << " Client Disconnected :" << tempLen << ", PRError: " << ERRRSTR << endl;
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                         if ( conn[i] )
@@ -811,7 +808,7 @@ start:
                     pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                 }
 
-                if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_WRITE && conn[i]->file && * ( conn[i]->file ) > *srv ) {
+                if ( pollfds[i].fd > *srv && pollfds[i].revents & PR_POLL_WRITE && conn[i] && conn[i]->file && * ( conn[i]->file ) > *srv ) {
                     int len = conn[i]->len;
 
                     //printf("DBUG: reading file %s \n", conn[i]->file );
@@ -885,7 +882,7 @@ start:
                         shrink = true;
                     }
                 } else {
-                    if ( conn[i]->file == 0 ) {
+                    if ( conn[i] && conn[i]->file == 0 ) {
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                         if ( conn[i] )
@@ -905,7 +902,7 @@ start:
         } else {
             if ( retVal < 0 ) {
                 //PR_Sleep ( 1 );
-                std::this_thread::sleep_for(std::chrono::microseconds(100)); 
+                std::this_thread::sleep_for ( std::chrono::microseconds ( 100 ) );
                 fprintf ( stderr, "ERRR: Poll failed \n" );
             }
         }
