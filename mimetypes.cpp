@@ -197,7 +197,6 @@ void setupContentTypes() {
         ( *contentType ) ["xsl"] = "text/xml";
         ( *contentType ) ["xul"] = "application/vnd.mozilla.xul+xml";
         ( *contentType ) ["xwd"] = "image/x-xwindowdump";
-        ( *contentType ) ["xyz"] = "chemical/x-xyz";
         ( *contentType ) ["zip"] = "application/zip";
     }
 }

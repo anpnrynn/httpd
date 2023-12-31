@@ -1,6 +1,7 @@
 #include <httpconn.h>
 #include <plugin.h>
 #include <httphandlers.h>
+#include <http.h>
 
 /*
 struct PluginHandler{
@@ -19,14 +20,14 @@ int login_init();
 int login_exit();
 int login_processReq ( Connection *conn );
 
-struct PluginHandler loginInfo = { 0x00, 0x01, 1, "login", "", NULL, login_init, login_processReq, login_exit };
+struct PluginHandler pInfo = { 0x00, 0x01, 1, "login.xyz", "", NULL, login_init, login_processReq, login_exit };
 
 int login_init() {
     HttpHandler *hHdlr = HttpHandler::createInstance();
 
     if ( hHdlr ) {
         fprintf ( stderr, "INFO: Starting Login Plugin\n" );
-        hHdlr->addHandler ( loginInfo.sname, ( void * ) &loginInfo );
+        hHdlr->addHandler ( pInfo.sname, ( void * ) &pInfo );
     }
 
     return 0;
@@ -42,25 +43,23 @@ int login_handler ( void *data, int argc, char **argv, char **col ) {
     if ( conn ) {
         // add will reset the value if already present
         if ( argv[0] )
-        { conn->sess->addVariable ( "auth", argv[0], 0, 0 ); }
+        { conn->sess->addVariable ( conn->db, "auth", argv[0], 0, 0 ); }
         else
-        { conn->sess->addVariable ( "auth", "1", 0, 0 ); }
+        { conn->sess->addVariable ( conn->db, "auth", "1", 0, 0 ); }
 
-        //if( argv[1] )
-        //{
-        //  char *lpage = (char *)malloc ( 256 );
-        //  strcpy ( lpage, argv[1] );
-        //  conn->udata = lpage;
-        //}
-        //else
-        //{
-        //  conn->udata = 0;
-        //}
+        if ( argv[1] ) {
+            char *lpage = ( char * ) malloc ( 256 );
+            strcpy ( lpage, argv[1] );
+            conn->udata = lpage;
+        } else {
+            conn->udata = 0;
+        }
+
         if ( argv[2] ) {
-            conn->sess->addVariable ( "uid", argv[2], 0, 0 );
-            //printf("Logging User: %s \n", argv[2] );
+            conn->sess->addVariable ( conn->db, "uid", argv[2], 0, 0 );
+            printf ( "Logging User: %s \n", argv[2] );
         } else
-        { conn->sess->addVariable ( "uid", "-1", 0, 0 ); }
+        { conn->sess->addVariable ( conn->db, "uid", "-1", 0, 0 ); }
     }
 
     return 0;
@@ -73,10 +72,8 @@ int login_processReq ( Connection *conn ) {
     int     rc = 0;
     int     gid = 0, tid = 0, qid = -1;
     char    *error = 0;
-    struct  qcmdinfo qcmd;
-    char    rcmd[512];
-    rcmd[0] = 0;
-    qcmd.qcmd[0]  = 0;
+    char    rcmd[256] = "";
+    char    cmd [128]  = "select power,lpage,id from ulogin where name=\"%s\" and passwd=\"%s\";";
 
     Vector *param = new Vector();
     conn->req.convertPostDataToVector ( param, NULL );
@@ -96,23 +93,16 @@ int login_processReq ( Connection *conn ) {
         return 0;
     }
 
-    rc = getqcmd ( conn->db, 0, 1, &qcmd );
-
     conn->resp.setContentType ( "text/xml" );
-    sendConnRespHdr ( conn, HTTP_RESP_OK );
-    xmlstart ( conn, gid, tid, qid, "-1" );
 
     if ( rc != 0 || param->size() < 5 ) {
-        xmlend ( conn, rc, "Bad Request or Command" );
-        //sendConnRespHdr ( conn, HTTP_RESP_BADREQ );
+        sendConnRespHdr ( conn, HTTP_RESP_BADREQ );
     } else {
         int  m = 0;
         int  n = 0;
-        char  *a = rcmd;
-        char  *b = qcmd.qcmd;
-        mergestring ( a, b, ( char * ) ( ( *param ) [3] ).c_str(), m, n );
-        mergestring ( a, b, ( char * ) ( ( *param ) [4] ).c_str(), m, n );
-        mergeremaining ( &a[m], &b[n] );
+        sprintf ( rcmd, cmd, ( char * ) ( ( *param ) [3] ).c_str(),  ( char * ) ( ( *param ) [4] ).c_str() );
+
+        conn->udata = 0;
 
         do {
             rc = sqlite3_exec ( conn->db, rcmd, login_handler, conn, &error );
@@ -134,22 +124,21 @@ int login_processReq ( Connection *conn ) {
         fprintf ( stderr, "Login User:%s Status:%s Power:%s\n", ( ( *param ) [0] ).c_str(),
                   rc == SQLITE_OK ? "Success" : "Failure",
                   conn->sess->getVariable ( "auth" ) );
-        conn->sess->saveSession ( conn->db );
-        conn->sess->updateSaveSession ( conn->db );
+        //conn->sess->saveSession ( conn->db );
+        //conn->sess->updateSaveSession ( conn->db );
 
-        //if( conn->udata )
-        //{
-        //conn->resp.setLocation ( (char *) conn->udata);
-        //printf("INFO: Setting Location: %s\n",(char *) conn->udata);
-        //free( conn->udata );
-        //}
-        if ( rc ) {
-            xmlend ( conn, rc, "Unable to login" );
+        if ( conn->udata ) {
+            conn->resp.setLocation ( ( char * ) conn->udata );
+            printf ( "INFO: Setting Location: %s\n", ( char * ) conn->udata );
+            free ( conn->udata );
         } else {
-            xmlend ( conn, rc, "Logged in" );
+            conn->resp.setLocation ( ( char * ) "403.html" );
+            printf ( "INFO: Setting Location: 403.html\n" );
+            free ( conn->udata );
         }
     }
 
+    sendConnRespHdr ( conn, HTTP_RESP_REDIRECT );
     sendRemainderData ( conn );
     conn->len = 0;
 

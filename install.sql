@@ -1,5 +1,10 @@
 create table plugins ( id integer primary key autoincrement , name varchar(32), active integer  );
 insert into  plugins ( name, active) values ( 'p3', 1 );
+insert into  plugins ( name, active) values ( 'login', 1);
 create table acl     ( id integer primary key autoincrement, ipaddr integer );
 insert into  acl     ( ipaddr ) values (2130706433);
 create table sessions( id integer , ipaddr integer, eos integer, cookie integer, name varchar(32), value varchar(32), primary key ( id, ipaddr, eos, name) );
+create table ulogin  ( id integer primary key autoincrement , name varchar(40), passwd varchar(40), power integer , lpage varchar(20));
+insert into ulogin values ( 0, 'root',  'rootpassword',  4 , 'root.html' );
+insert into ulogin values ( 1, 'root2', 'root2password', 3 , 'root2.html' );
+insert into ulogin values ( 2, 'admin', 'adminpassword', 2 , 'admin.html' );
