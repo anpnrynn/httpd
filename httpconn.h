@@ -111,7 +111,7 @@ class HttpReq {
         int  i;
         int  j;
         int  postNum;
-        char postFileName[256];
+        char postFileName[1024];
         bool hdrPartial;
         bool hdrReadComplete;
         bool isVal;
@@ -167,7 +167,7 @@ class HttpResp {
     private:
         float     protocol;
         int       status;
-        char      server[32];
+        char      server[64];
         int       contentLen;
         char      contentEnc[64];
         char      contentType[64];

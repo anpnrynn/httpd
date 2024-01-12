@@ -106,7 +106,7 @@ int login_processReq ( Connection *conn ) {
     }
 
     int isforbidden = 0;
-    conn->resp.setContentType ( "text/xml" );
+    conn->resp.setContentType ( "text/html" );
 
     if ( rc != 0 || param->size() < 5 ) {
         sendConnRespHdr ( conn, HTTP_RESP_BADREQ );
@@ -144,9 +144,9 @@ int login_processReq ( Connection *conn ) {
             fprintf ( stderr, "INFO: Setting Location: %s\n", ( char * ) conn->udata );
             free ( conn->udata );
         } else {
-            conn->resp.setLocation ( ( char * ) "403.html" );
+            conn->resp.setLocation ( ( char * ) "403.sthtml" );
             isforbidden = 1;
-            fprintf ( stderr, "INFO: Setting Location: 403.html\n" );
+            fprintf ( stderr, "INFO: Setting Location: 403.sthtml\n" );
         }
     }
 
