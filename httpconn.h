@@ -174,7 +174,7 @@ class HttpResp {
         unsigned short acceptRanges;
         unsigned short connection;
         unsigned short cCtrl;
-        char      location[256];
+        char      location[1024];
         time_t    date;
         time_t    lastModified;
         time_t    expires;
