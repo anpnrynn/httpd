@@ -2,17 +2,17 @@
 HTTP Server Written in C for (embedded) Linux systems
 
 # Description
-This is a http server written in C/C++ Programming language, that support multithreads, session management using SQLITE3 db and dynamic pages using C/C++ plugins.
-This application is meant to be used for embedded systems but there is no limitations on its usage as of now. 
-It was written in 2007 by me (Anoop Kumar Narayanan). I am right now cleaning up the code. 
-Removing some features and adding new features. 
+This is a http server written in C/C++ Programming language, that support multithreads, session management using SQLITE3 db and dynamic pages using C/C++ plugins.   
+This application is meant to be used for embedded systems but there is no limitations on its usage as of now.   
+It was written in 2007 by me (Anoop Kumar Narayanan). I am right now cleaning up the code.   
+Removing some features and adding new features.   
 
 Authors:
 --------
-Anoop Kumar Narayanan
-Bangalore
-India
-anoop.kumar.narayanan@gmail.com
+Anoop Kumar Narayanan   
+Bangalore   
+India   
+anoop.kumar.narayanan@gmail.com   
 
 LICENSE
 -------
