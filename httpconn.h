@@ -70,10 +70,12 @@ enum HTTP_TAG_CENC {
     CENC_MAX
 };
 
+/* same values should be present in ulogin table in INFO_STORE */
 enum AUTHLVL {
-    AUTH_CUSTOMER  = 0,
-    AUTH_POWERUSER = 1,
-    AUTH_ADMIN     = 2
+    AUTH_PUBLIC     = 1, /*lower power */
+    AUTH_ADMIN      = 2,
+    AUTH_ROOTUSER   = 3,
+    AUTH_SUPERUSER  = 4 /*higher power*/
 };
 
 class HttpReq {
@@ -241,7 +243,7 @@ class Connection {
             sent = 0;
             offset = 0;
             ip     = 0;
-            authLvl = AUTH_CUSTOMER;
+            authLvl = AUTH_PUBLIC;
             cmd    = 0;
             filefd   = -1;
             file = &filefd;
@@ -264,7 +266,7 @@ class Connection {
             sent   = 0;
             offset = 0;
             ip     = 0;
-            authLvl = AUTH_CUSTOMER;
+            authLvl = AUTH_PUBLIC;
             cmd    = 0;
             filefd = -1;
             socketfd = -1;
@@ -277,19 +279,29 @@ class Connection {
         }
 
         void setAuthLvl() {
-            fprintf ( stderr, "DBUG: ip = 0x%x and mask = 0x%x \n", ip, ( ip & 0xffff0000 ) );
+            if ( sess ) {
+                authLvl = atoi ( sess->getVariable ( "auth" ) );
 
-            if ( ip == 0x7f000001 ) {
-                authLvl = AUTH_ADMIN;
-                fprintf ( stderr, "INFO: Setting user to Admin LVl \n" );
-            } else if ( ( ip & 0xffff0000 ) == 0xc0a80000 ) {
-                authLvl = AUTH_POWERUSER;
-                fprintf ( stderr, "INFO: Setting user to Power User LVl \n" );
+                if ( authLvl < AUTH_PUBLIC || authLvl > AUTH_SUPERUSER )
+                { authLvl = AUTH_PUBLIC; }
             } else {
-                authLvl = AUTH_CUSTOMER;
-                fprintf ( stderr, "INFO: Setting user to Customer Lvl \n" );
+                authLvl = AUTH_PUBLIC;
             }
 
+            /*
+                fprintf ( stderr, "DBUG: ip = 0x%x and mask = 0x%x \n", ip, ( ip & 0xffff0000 ) );
+
+                if ( ip == 0x7f000001 ) {
+                    authLvl = AUTH_ADMIN;
+                    fprintf ( stderr, "INFO: Setting user to Admin LVl \n" );
+                } else if ( ( ip & 0xffff0000 ) == 0xc0a80000 ) {
+                    authLvl = AUTH_ROOTUSER;
+                    fprintf ( stderr, "INFO: Setting user to Root User LVl \n" );
+                } else {
+                    authLvl = AUTH_SUPERUSER;
+                    fprintf ( stderr, "INFO: Setting user to Power User Lvl \n" );
+                }
+            */
         }
 
 };

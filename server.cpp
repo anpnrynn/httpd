@@ -309,6 +309,7 @@ int main ( int argc, char *argv[] ) {
     }
 
     fprintf ( stderr, "INFO: Proceeding with the boot \n" );
+    fprintf ( stderr, "INFO: Using db : %s  \n", INFO_STORE );
 
 #ifdef LINUX_BUILD
     signal ( SIGINT, signalStop );
@@ -704,8 +705,11 @@ start:
                             if ( itr != cookies->end() ) {
                                 conn[i]->sess = hSMgr->getSession ( conn[i]->ip, itr->second );
 
-                                if ( conn[i]->sess )
-                                { fprintf ( stderr, "INFO: Session Active, SID: %s\n", conn[i]->sess->sid.c_str() ); }
+                                if ( conn[i]->sess ) {
+                                    conn[i]->setAuthLvl();
+                                    fprintf ( stderr, "INFO: Session Active, SID: %s -> Auth Level : %s \n",
+                                              conn[i]->sess->sid.c_str(), conn[i]->sess->getVariable ( "auth" ) );
+                                }
                             }
 
                             delete cookies;
@@ -726,26 +730,40 @@ start:
                             bool isForbidden = false;
 
                             char *fileType = temp->getReqFileType();
+                            int ftn = strlen ( fileType );
 
-                            if ( ( strcmp ( fileType, ".html" ) == 0 ) ||
-                                    ( strcmp ( fileType, ".js" )   == 0 ) ||
-                                    ( strcmp ( fileType, ".htm" )  == 0 ) ||
-                                    ( strcmp ( fileType, ".xyz" )  == 0 ) ||
-                                    ( strcmp ( fileType, ".css" )  == 0 )
+                            if ( fileType[ftn - 1] == '\n' ) {
+                                fileType[ftn - 1] = 0;
+                                fileType[ftn - 2] = 0;
+                            }
+
+                            fprintf ( stderr, "DBUG: Requesting %s type \n", fileType );
+
+                            if ( ( strcasecmp ( fileType, ".html" ) == 0 ) ||
+                                    ( strcasecmp ( fileType, ".js" )   == 0 ) ||
+                                    ( strcasecmp ( fileType, ".htm" )  == 0 ) ||
+                                    ( strcasecmp ( fileType, ".xyz" )  == 0 ) ||
+                                    ( strcasecmp ( fileType, ".css" )  == 0 )
                                ) {
                                 fprintf ( stderr, "WARN: Requesting html/scriptfile file type \n" );
                                 char *authFile = temp->getReqFileAuth ( conn[i]->authLvl );
                                 * ( conn[i]->file )  = PR_Open ( authFile, PR_RDONLY, 0 );
                                 fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
-                            } else if ( ( strcmp ( fileType, ".png" )   == 0 ) ||
-                                        ( strcmp ( fileType, ".jpg" )   == 0 ) ||
-                                        ( strcmp ( fileType, ".ico" )   == 0 ) ||
-                                        ( strcmp ( fileType, ".bmp" )   == 0 ) ||
-                                        ( strcmp ( fileType, ".jpeg" )  == 0 )
+                            } else if ( ( strcasecmp ( fileType, ".png" )   == 0 ) ||
+                                        ( strcasecmp ( fileType, ".jpg" )   == 0 ) ||
+                                        ( strcasecmp ( fileType, ".ico" )   == 0 ) ||
+                                        ( strcasecmp ( fileType, ".bmp" )   == 0 ) ||
+                                        ( strcasecmp ( fileType, ".sthtm" )   == 0 ) ||
+                                        ( strcasecmp ( fileType, ".sthtml" )   == 0 ) ||
+                                        ( strcasecmp ( fileType, ".jpeg" )  == 0 )
                                       ) {
-                                fprintf ( stderr, "WARN: Requesting image file type \n" );
-                                * ( conn[i]->file ) = PR_Open ( temp->getReqFile(), PR_RDONLY, 0 );
-                                fInfoStatus   = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
+                                //char *authFile = temp->getReqFileAuth ( conn[i]->authLvl );
+                                char localStaticFile[1024] = "Pages/";
+                                strcat ( localStaticFile, temp->getReqFile() );
+                                * ( conn[i]->file ) = PR_Open ( localStaticFile, PR_RDONLY, 0 );
+                                fprintf ( stderr, "WARN: Requesting file : %s \n", localStaticFile );
+                                //* ( conn[i]->file ) = PR_Open ( authFile, PR_RDONLY, 0 );
+                                fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
                             } else {
                                 isForbidden = true;
                                 fprintf ( stderr, "WARN: Requesting unsupported file type \n" );
@@ -766,7 +784,7 @@ start:
                             /*
                              * Validate Authorization
                              */
-                            if ( conn[i]->file && fInfoStatus == PR_SUCCESS ) {
+                            if ( conn[i]->file && * ( conn[i]->file ) > -1 && fInfoStatus == PR_SUCCESS ) {
                                 //TODO:
                                 HttpResp *tempResp   = &conn[i]->resp;
                                 //tempResp->setContentLen( conn[i]->fid->fileSize);
@@ -780,6 +798,8 @@ start:
                                 fprintf ( stderr, "\nDBUG: Response Header: \n%s\n", ( char * ) conn[i]->buf );
                                 fprintf ( stderr, "DBUG: ____________________________________\n" );
                             } else {
+                                fprintf ( stderr, "\nERRR: File not found : %d and %d \n", conn[i]->file ? * ( conn[i]->file ) : -1, fInfoStatus );
+
                                 if ( ! isForbidden ) {
                                     conn[i]->cmd  = THREAD_CMD_PTASK;
                                     tMgr->assignTask ( conn[i] );

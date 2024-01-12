@@ -385,15 +385,26 @@ char *HttpReq::getReqFileAuth ( int auth ) {
         strcat ( authUrl, "Pages\\" );
 #endif
 
+        if ( strcasecmp ( decodedUrl, "login.html" ) == 0 ||
+                strcasecmp ( decodedUrl, "public.html" ) == 0 ) {
+            strcat ( authUrl, decodedUrl );
+            return authUrl;
+        }
+
         switch ( auth ) {
-            case AUTH_POWERUSER:
-                strcat ( authUrl, "power_" );
+            case AUTH_SUPERUSER:
+                strcat ( authUrl, "super_" );
+                break;
+
+            case AUTH_ROOTUSER:
+                strcat ( authUrl, "root_" );
                 break;
 
             case AUTH_ADMIN:
                 strcat ( authUrl, "admin_" );
                 break;
 
+            case AUTH_PUBLIC:
             default:
                 strcat ( authUrl, "all_" );
                 break;
@@ -903,7 +914,7 @@ unsigned int sendConnectionData (    PRFileDesc *sock,
 
             if ( error == EWOULDBLOCK || error == EAGAIN ) {
                 fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
-                std::this_thread::sleep_for(std::chrono::microseconds(10)); /*PR_Sleep ( 1 );*/
+                std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
             } else {
                 fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
                 bytesW = 0;

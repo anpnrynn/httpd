@@ -84,7 +84,7 @@ const char* convertIndexToWeekDay ( int wdayIndex ) {
     static const char *wDay[10] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 
     if ( wdayIndex < 0 || wdayIndex > 6 ) {
-        fprintf(stderr, "Error: invalid weekday index \n" );
+        fprintf ( stderr, "Error: invalid weekday index \n" );
         return wDay[0];
     } else
     { return wDay[wdayIndex]; }
@@ -94,7 +94,7 @@ const char* convertIndexToMonth ( int monthIndex ) {
     static const char *month[16] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
     if ( monthIndex < 0 || monthIndex > 11 ) {
-        fprintf(stderr, "Error: invalid month index \n" );
+        fprintf ( stderr, "Error: invalid month index \n" );
         return month[0];
     } else
     { return month[monthIndex]; }
@@ -116,7 +116,7 @@ int convertWeekDayToIndex ( char *wday ) {
     else if ( strncasecmp ( "sat", wday, 3 ) == 0 )
     { return 6; }
     else {
-        fprintf(stderr, "Error: No matching weekday found in the date string\n" );
+        fprintf ( stderr, "Error: No matching weekday found in the date string\n" );
         return -1;
     }
 }
@@ -147,7 +147,7 @@ int convertMonthToIndex ( char *month ) {
     else if ( strncasecmp ( "dec", month, 3 ) == 0 )
     { return 11; }
     else {
-        fprintf(stderr, "Error: No matching month found in the date string\n" );
+        fprintf ( stderr, "Error: No matching month found in the date string\n" );
         return -1;
     }
 }
@@ -180,7 +180,7 @@ int convertHttpDateToNsprDate ( char *date, struct tm *eDate ) {
                          tempWday, tempMonth, &hDate, &hHour, &hMin, &hSec, &hYear ) == 7 ) {
         proceed = 1;
     } else {
-        fprintf(stderr, "Error: No Matching Date format found \n" );
+        fprintf ( stderr, "Error: No Matching Date format found \n" );
         proceed = 0;
     }
 
@@ -218,7 +218,7 @@ void convertRandomsToHex ( char *randoms, char *hex ) {
 
     for ( i = 0; i < 32; i++ ) {
         sprintf ( &hex[j], "%02x", ( int ) randoms[i] & 0xff );
-		j+=2;
+        j += 2;
     }
 
     hex[64] = 0;
@@ -499,25 +499,25 @@ int mergeremaining ( char *result, char *buf ) {
     return 0;
 }
 
-static int do_rand(uint32_t *context)
-{
-	uint32_t hi, lo, x;
-	hi = *context / 127773;
-	lo = *context % 127773;
-	x = 16807 * lo - 2836 * hi;
-	if (x < 0)
-		x += 0x7fffffff;
-	*context = x;
-	return (x - 1);
+static int do_rand ( uint32_t *context ) {
+    uint32_t hi, lo, x;
+    hi = *context / 127773;
+    lo = *context % 127773;
+    x = 16807 * lo - 2836 * hi;
+
+    if ( x < 0 )
+    { x += 0x7fffffff; }
+
+    *context = x;
+    return ( x - 1 );
 }
 
-int rand_reentrant(uint32_t *context)
-{
-	uint32_t val;
-	int r;
-	val = (*context % 0x7ffffffe) + 1;
-	r = do_rand(&val);
-	*context = (unsigned int)(val - 1);
-	return (r);
+int rand_reentrant ( uint32_t *context ) {
+    uint32_t val;
+    int r;
+    val = ( *context % 0x7ffffffe ) + 1;
+    r = do_rand ( &val );
+    *context = ( unsigned int ) ( val - 1 );
+    return ( r );
 }
 

@@ -142,6 +142,8 @@ void setupContentTypes() {
         ( *contentType ) ["src"] = "application/x-wais-source";
         ( *contentType ) ["stc"] = "application/vnd.sun.xml.calc.template";
         ( *contentType ) ["std"] = "application/vnd.sun.xml.draw.template";
+        ( *contentType ) ["sthtm"] = "text/html; charset]=%s";
+        ( *contentType ) ["sthtml"] = "text/html; charset]=%s";
         ( *contentType ) ["sti"] = "application/vnd.sun.xml.impress.template";
         ( *contentType ) ["stw"] = "application/vnd.sun.xml.writer.template";
         ( *contentType ) ["sv4cpio"] = "application/x-sv4cpio";

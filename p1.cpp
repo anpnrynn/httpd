@@ -74,8 +74,8 @@ int p1_processReq ( Connection *conn ) {
         xmlend ( conn, rc, "Bad Command" );
     } else {
         //printf("Command: (%d, %d) %s ", qcmd.pnum, qcmd.qtype, qcmd.qcmd );
-        fprintf(stderr, "ReqQuery: gid=%d, tid=%d, qid=%d, power=%d \n", gid, tid, qid, power );
-        fprintf(stderr, "QCmd:  nParam:%d, qcmdPNum:%d, qcmdQtype:%d, qcmdKey:%d, qcmd:%s \n", param->size(), qcmd.pnum, qcmd.qtype, qcmd.key, qcmd.qcmd );
+        fprintf ( stderr, "ReqQuery: gid=%d, tid=%d, qid=%d, power=%d \n", gid, tid, qid, power );
+        fprintf ( stderr, "QCmd:  nParam:%d, qcmdPNum:%d, qcmdQtype:%d, qcmdKey:%d, qcmd:%s \n", param->size(), qcmd.pnum, qcmd.qtype, qcmd.key, qcmd.qcmd );
 
         if ( qcmd.qtype == 0 ) {
             rc = sqlexecute ( conn->db, qcmd.qcmd, sqlhandlertype2, conn, NULL );
@@ -93,15 +93,15 @@ int p1_processReq ( Connection *conn ) {
             while ( ( unsigned int ) ( i + qcmd.pnum ) <= param->size() ) {
                 m = 0;
                 n = 0;
-                fprintf(stderr, "(" );
+                fprintf ( stderr, "(" );
 
                 for ( j = 0; j < qcmd.pnum; j++ ) {
-                    fprintf(stderr, "%d:%s, ", ( i + j ), ( ( *param ) [i + j] ).c_str() );
+                    fprintf ( stderr, "%d:%s, ", ( i + j ), ( ( *param ) [i + j] ).c_str() );
                     mergestring ( a, b, ( char * ) ( ( *param ) [i + j] ).c_str(), m, n );
                 }
 
                 mergeremaining ( &a[m], &b[n] );
-                fprintf(stderr, " ) RCmd: %s \n", rcmd );
+                fprintf ( stderr, " ) RCmd: %s \n", rcmd );
                 rc = sqlexecute ( conn->db, rcmd, NULL, NULL, NULL );
                 i += qcmd.pnum;
             }
@@ -122,7 +122,7 @@ int p1_processReq ( Connection *conn ) {
                 }
 
                 mergeremaining ( &a[m], &b[n] );
-                fprintf(stderr, "RCmd: %s \n", rcmd );
+                fprintf ( stderr, "RCmd: %s \n", rcmd );
                 rc = sqlexecute ( conn->db, rcmd, sqlhandler, conn, &qcmd );
             }
         } else if ( qcmd.qtype == 4 ) {

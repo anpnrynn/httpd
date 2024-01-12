@@ -24,9 +24,10 @@ CmdPipe::~CmdPipe() {
 void CmdPipe::pushCmd ( Connection *conn ) {
     if ( !conn )
     { return; }
+
     lock.lock();
     cmdQueue->push ( conn );
-    fprintf(stderr, "INFO: Pushing Connection Data to CmdQueue = %d, Size=%ld\n", cmdQueueId, cmdQueue->size() );
+    fprintf ( stderr, "INFO: Pushing Connection Data to CmdQueue = %d, Size=%ld\n", cmdQueueId, cmdQueue->size() );
     usage++;
     lock.unlock();
 }
@@ -34,10 +35,12 @@ void CmdPipe::pushCmd ( Connection *conn ) {
 Connection* CmdPipe::popCmd () {
     Connection* conn = NULL;
     lock.lock();
+
     if ( cmdQueue->size() > 0 && ( ( conn = cmdQueue->front() ) != NULL ) ) {
         cmdQueue->pop();
-        fprintf(stderr, "INFO: Poping Connection from CmdQueue=%d, Size= %ld\n", cmdQueueId, cmdQueue->size() );
+        fprintf ( stderr, "INFO: Poping Connection from CmdQueue=%d, Size= %ld\n", cmdQueueId, cmdQueue->size() );
     }
+
     lock.unlock();
     return conn;
 }
@@ -92,7 +95,7 @@ void ThreadMgr::startThreads() {
 
     for ( i = 0; i < MAX_THREADS; i++ ) {
 #ifdef  USE_CPP11THREAD
-        tdata[i]   = new std::thread( ThreadMgr::httpthread, &index[i] );
+        tdata[i]   = new std::thread ( ThreadMgr::httpthread, &index[i] );
         fprintf ( stderr, "INFO: Created CPP 11 Thread with Index=%d \n", i );
 #else
 #ifndef USE_PTHREAD
@@ -128,11 +131,13 @@ void ThreadMgr::stopThreads() {
         conn->cmd = THREAD_CMD_EXIT;
         cmdPipe[i]->pushCmd ( conn );
 #ifdef  USE_CPP11THREAD
-        if( tdata[i] ){
+
+        if ( tdata[i] ) {
             tdata[i]->join();
             fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
             tdata[i] = 0;
-	}
+        }
+
 #else
 #ifndef USE_PTHREAD
         PR_JoinThread ( tdata[i] );
@@ -171,7 +176,7 @@ void* ThreadMgr::httpthread ( void *data )
         conn = NULL;
 
         if ( ( conn = mgr->cmdPipe[*index]->popCmd() ) == NULL || conn == ( Connection * ) 0xFFFFFFFF ) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for ( std::chrono::milliseconds ( 10 ) );
             continue;
         } else {
             //Process the request here

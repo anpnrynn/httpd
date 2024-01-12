@@ -1,3 +1,13 @@
+12/01/2024
+==========
+Added support for heirarchical users
+Added support for static htmls 
+Added support for static html that's sent if user authentication is valid
+Added support for static html on a per user basis
+Added support for login plugin
+Added support for a simple interface for a embedded device
+
+
 21/03/2021
 ==========
 Removal of upnp and md5

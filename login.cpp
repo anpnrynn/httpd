@@ -40,16 +40,21 @@ int login_exit() {
 int login_handler ( void *data, int argc, char **argv, char **col ) {
     Connection *conn = ( Connection * ) data;
 
+    fprintf ( stderr, "DBUG: login plugin: login.xyz : %s -> %s : %s \n", argv[0], argv[1], argv[2] );
+
+    char public_auth[4] = "1";
+
     if ( conn ) {
         // add will reset the value if already present
         if ( argv[0] )
         { conn->sess->addVariable ( conn->db, "auth", argv[0], 0, 0 ); }
         else
-        { conn->sess->addVariable ( conn->db, "auth", "1", 0, 0 ); }
+        { conn->sess->addVariable ( conn->db, "auth", public_auth, 0, 0 ); }
 
         if ( argv[1] ) {
             char *lpage = ( char * ) malloc ( 256 );
-            strcpy ( lpage, argv[1] );
+            lpage[0] = 0;
+            strcat ( lpage, argv[1] );
             conn->udata = lpage;
         } else {
             conn->udata = 0;
@@ -57,20 +62,27 @@ int login_handler ( void *data, int argc, char **argv, char **col ) {
 
         if ( argv[2] ) {
             conn->sess->addVariable ( conn->db, "uid", argv[2], 0, 0 );
-            printf ( "Logging User: %s \n", argv[2] );
+            fprintf ( stderr, "Logging User: %s \n", argv[2] );
         } else
-        { conn->sess->addVariable ( conn->db, "uid", "-1", 0, 0 ); }
+        { conn->sess->addVariable ( conn->db, "uid", public_auth, 0, 0 ); }
     }
 
     return 0;
 }
 
 int login_processReq ( Connection *conn ) {
-    if ( !conn )
-    { return 1; }
+    if ( !conn ) {
+        fprintf ( stderr, "ERRR: Connection structure is null \n" );
+        return 1;
+    }
+
+    if ( !conn->db ) {
+        fprintf ( stderr, "ERRR: sqlite3 db connection is null \n" );
+        return 1;
+    }
 
     int     rc = 0;
-    int     gid = 0, tid = 0, qid = -1;
+    //int     gid = 0, tid = 0, qid = -1;
     char    *error = 0;
     char    rcmd[256] = "";
     char    cmd [128]  = "select power,lpage,id from ulogin where name=\"%s\" and passwd=\"%s\";";
@@ -80,9 +92,9 @@ int login_processReq ( Connection *conn ) {
 
     //conn->resp.setContentLen(0);
     if ( param->size() >= 3 ) {
-        gid = atoi ( ( ( *param ) [0] ).c_str() );
-        tid = atoi ( ( ( *param ) [1] ).c_str() );
-        qid = atoi ( ( ( *param ) [2] ).c_str() );
+        //gid = atoi ( ( ( *param ) [0] ).c_str() );
+        //tid = atoi ( ( ( *param ) [1] ).c_str() );
+        //qid = atoi ( ( ( *param ) [2] ).c_str() );
     } else {
         conn->resp.setContentLen ( 0 );
         sendConnRespHdr ( conn, HTTP_RESP_BADREQ );
@@ -93,14 +105,14 @@ int login_processReq ( Connection *conn ) {
         return 0;
     }
 
+    int isforbidden = 0;
     conn->resp.setContentType ( "text/xml" );
 
     if ( rc != 0 || param->size() < 5 ) {
         sendConnRespHdr ( conn, HTTP_RESP_BADREQ );
     } else {
-        int  m = 0;
-        int  n = 0;
         sprintf ( rcmd, cmd, ( char * ) ( ( *param ) [3] ).c_str(),  ( char * ) ( ( *param ) [4] ).c_str() );
+        fprintf ( stderr, "DBUG: login plugin: login.xyz : executing sql command : %s \n", rcmd );
 
         conn->udata = 0;
 
@@ -129,16 +141,20 @@ int login_processReq ( Connection *conn ) {
 
         if ( conn->udata ) {
             conn->resp.setLocation ( ( char * ) conn->udata );
-            printf ( "INFO: Setting Location: %s\n", ( char * ) conn->udata );
+            fprintf ( stderr, "INFO: Setting Location: %s\n", ( char * ) conn->udata );
             free ( conn->udata );
         } else {
             conn->resp.setLocation ( ( char * ) "403.html" );
-            printf ( "INFO: Setting Location: 403.html\n" );
-            free ( conn->udata );
+            isforbidden = 1;
+            fprintf ( stderr, "INFO: Setting Location: 403.html\n" );
         }
     }
 
-    sendConnRespHdr ( conn, HTTP_RESP_REDIRECT );
+    if ( isforbidden )
+    { sendConnRespHdr ( conn, HTTP_RESP_FORB ); }
+    else
+    { sendConnRespHdr ( conn, HTTP_RESP_REDIRECT ); }
+
     sendRemainderData ( conn );
     conn->len = 0;
 
