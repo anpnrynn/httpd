@@ -1,0 +1,34 @@
+<html>
+	<head>
+		<title>
+			Test router configuration page v1.0.0
+		</title>
+		<script>
+		</script>
+		<style>
+.imagepage {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+		</style>
+	</head>
+	<body>
+		<center><h2>Test router configuration page v1.0.0</h2></center>
+		<br/>
+		<center><h3>WiFi setup</h3></center>
+		<div>
+			<div style="">
+				<img class="imagepage" src="embedimages/page3-WiFisetup.png" usemap="#pagemap"/>
+				<map name="pagemap">
+				  <area shape="rect" coords="31,218,186,244" alt="Device info" href="page1-deviceinfo.sthtml">
+				  <area shape="rect" coords="31,252,186,278" alt="Device info" href="page2-advancedsetup.sthtml">
+				  <area shape="rect" coords="31,286,186,312" alt="Device info" href="page3-WiFisetup.sthtml">
+				  <area shape="rect" coords="31,320,186,346" alt="Device info" href="page4-voice.sthtml">
+				  <area shape="rect" coords="31,354,186,380" alt="Device info" href="page5-diagnostics.sthtml">
+				  <area shape="rect" coords="31,388,186,414" alt="Device info" href="page6-management.sthtml">
+				</map>
+			</div>
+		</div>
+	</body>
+</html>
