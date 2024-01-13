@@ -141,7 +141,7 @@ void ThreadMgr::stopThreads() {
 #ifndef USE_PTHREAD
         PR_JoinThread ( tdata[i] );
         fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
-        tdata[i] = NULL;
+        tdata[i] = 0;
 #else
         pthread_join ( tdata[i], NULL );
         fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
@@ -150,6 +150,8 @@ void ThreadMgr::stopThreads() {
 #endif
     }
 }
+
+extern int clientmanage(int);
 
 #ifdef  USE_CPP11THREAD
 void ThreadMgr::httpthread ( int *data )
@@ -164,15 +166,15 @@ void* ThreadMgr::httpthread ( void *data )
     int* index = ( int* ) data;
     //ThreadMgr   *mgr  = ThreadMgr::createInstance();
     ThreadMgr   *mgr  = ThreadMgr::tMgr;
-    Connection  *conn = NULL;
+    Connection  *conn = 0;
     HttpHandler *hHdlr = HttpHandler::createInstance();
     int cmd   = THREAD_CMD_SLEEP;
     int aLvl  = 1;
     //printf("In thread %d \n",*index);
-    sqlite3 *db  = NULL;
+    sqlite3 *db  = 0;
 
     do {
-        conn = NULL;
+        conn = 0;
 
         if ( ( conn = mgr->cmdPipe[*index]->popCmd() ) == NULL || conn == ( Connection * ) 0xFFFFFFFF ) {
             std::this_thread::sleep_for ( std::chrono::milliseconds ( 10 ) );
@@ -201,22 +203,26 @@ void* ThreadMgr::httpthread ( void *data )
                         PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
                         fprintf ( stderr, "INFO: Shuting down socket \n" );
                         PR_Close ( conn->socket );
-                        conn->socket = NULL;
+			*(conn->socket) = -1;
+                        conn->socket = 0;
                         delete  conn;
+			clientmanage(0);
                         continue;
                     } else {
                         tempResp->setContentLen ( -1 );
                         tempResp->setStatus ( HTTP_RESP_OK );
                         conn->db    = db;
-                        conn->udata = NULL;
+                        conn->udata = 0;
                         int rc = temp->processReq ( conn );
                         fprintf ( stderr, "INFO: Plugin execution completed = %d \n", rc );
                         PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
                         fprintf ( stderr, "INFO: Shuting down socket \n" );
                         PR_Close ( conn->socket );
+			*(conn->socket) = -1;
                         fprintf ( stderr, "INFO: Closing socket \n" );
-                        conn->socket = NULL;
+                        conn->socket = 0;
                         delete ( conn );
+			clientmanage(0);
                         fprintf ( stderr, "INFO: Deleted connection \n" );
                     }
                 } else {
@@ -224,8 +230,10 @@ void* ThreadMgr::httpthread ( void *data )
                     tempResp->setContentLen ( 0 );
                     sendConnRespHdr ( conn, HTTP_RESP_NOTFOUND );
                     PR_Close ( conn->socket );
-                    conn->socket = NULL;
+		    *(conn->socket) = -1;
+                    conn->socket = 0;
                     delete ( conn );
+		    clientmanage(0);
                 }
             }
 
@@ -235,6 +243,7 @@ void* ThreadMgr::httpthread ( void *data )
 
     if ( cmd == THREAD_CMD_EXIT && conn ) {
         delete conn;
+	clientmanage(0);
     }
 
 #ifdef USE_PTHREAD

@@ -63,19 +63,8 @@ HttpReq::HttpReq() {
 }
 
 HttpReq::~HttpReq() {
-//    char fName[64];
     if ( post ) {
-#if 0
-#ifdef LINUX_BUILD
-        sprintf ( fName, "%s/post_%d.tmp", "/tmp", postNum );
-#else
-        sprintf ( fName, "%s\\post_%d.tmp", "tmp", postNum );
-#endif
-#endif
-        PR_Close ( post );
-        //PR_Delete( fName);
-        //printf("Deleting Temp File : %s\n", fName);
-        post = NULL;
+	    removePostTempFile();
     }
 }
 

@@ -14,7 +14,7 @@ using namespace std;
 
 using namespace std;
 
-#define MAX_POSSIBLE_THREADS 30
+#define MAX_POSSIBLE_THREADS 1000
 //#define MAX_THREADS          3
 
 enum  ThreadCmd {

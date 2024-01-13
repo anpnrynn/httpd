@@ -11,6 +11,9 @@
 #include <defines.h>
 #include <malloc.h>
 
+#include <sys/time.h>
+#include <sys/resource.h>
+
 #undef USE_MINIUPNP
 #ifdef USE_MINIUPNP
 #include <upnp.h>
@@ -37,13 +40,22 @@ int clientSocket = 0;
 PRFileDesc *srv = &srvSocket, *client = &clientSocket;
 unsigned short int SRVPORT = 0;
 bool isBound = false;
+extern int MAX_THREADS;
 
 //Clean up operations
 void performCleanupOperations() {
-    ThreadMgr *tMgr = ThreadMgr::createInstance();
 
-    if ( isBound && tMgr )
-    { tMgr->stopThreads(); }
+    ThreadMgr *tMgr = 0;
+    
+    if( MAX_THREADS > 0 ) 
+    {
+	    tMgr = ThreadMgr::createInstance();
+
+            if ( isBound && tMgr )
+            { tMgr->stopThreads(); }
+    } else {
+	    fprintf( stderr, "INFO: MAX_THREADS == 0, no threads present to stop \n");
+    }
 }
 
 
@@ -70,8 +82,10 @@ void clearPlugins() {
 void unloadPlugins() {
 }
 
+#if 0
 static int aclCount = 0;
 static unsigned int aclIp[MAXCLIENTS];
+
 int aclLoad ( void *udata, int argc, char **argv, char **col ) {
     if ( argv[0] ) {
         aclIp[aclCount] = ( unsigned int ) atoi ( argv[0] );
@@ -82,6 +96,7 @@ int aclLoad ( void *udata, int argc, char **argv, char **col ) {
 
     return 0;
 }
+#endif
 
 static int libCount = 0;
 extern int login_init();
@@ -157,6 +172,7 @@ int loadInfo() {
         return 2;
     }
 
+#if 0
     rc = sqlite3_exec ( db, "select ipaddr from acl;", aclLoad, NULL, &error );
 
     if ( rc != SQLITE_OK ) {
@@ -165,6 +181,7 @@ int loadInfo() {
         db = NULL;
         return 3;
     }
+#endif
 
     sqlite3_close ( db );
     db = NULL;
@@ -266,8 +283,22 @@ int installTheNeededStuff() {
     return 0;
 }
 
+#define MAX_BACKLOG 1024
 
-extern int MAX_THREADS;
+int clientsOnboard = 0;
+int clientmanage(int op){
+	std::mutex m;
+	if( op == 0 && clientsOnboard > 0 ) //remove
+		clientsOnboard--; 
+	if( op == 1 && clientsOnboard < MAX_BACKLOG ) //add
+		clientsOnboard++;
+	else
+		fprintf( stderr, "WARN: Too many BACKLOGS, Not accepting any new connections \n");
+	if( op == 2 ) //get count
+		return clientsOnboard;
+	return -1;
+}
+
 
 int main ( int argc, char *argv[] ) {
     bool  isRestart = false;
@@ -295,11 +326,14 @@ int main ( int argc, char *argv[] ) {
         MAX_THREADS = atoi ( argv[2] );
 
         if ( MAX_THREADS > MAX_POSSIBLE_THREADS ) {
-            fprintf ( stderr, "ERRR: Cannot create more than 30 threads \n" );
+            fprintf ( stderr, "ERRR: Cannot create more than %d threads \n", MAX_POSSIBLE_THREADS );
             exit ( 1 );
-        } else {
-            if ( MAX_THREADS <= 0 ) {
-                fprintf ( stderr, "ERRR: Number of threads cannot be zero or less than zero \n" );
+        } 
+	else if ( MAX_THREADS == 0 ){
+	    fprintf ( stderr, "WARN: MAX_THREADS == 0, disabling threadmgr and dynamic pages \n");
+	} else {
+            if ( MAX_THREADS < 0 ) {
+                fprintf ( stderr, "ERRR: Number of threads less than zero \n" );
                 exit ( 1 );
             }
         }
@@ -453,17 +487,43 @@ start:
 
     setupStatusCodes();
     setupContentTypes();
-    ThreadMgr *tMgr = ThreadMgr::createInstance();
+    ThreadMgr *tMgr = 0;
 
-    if ( tMgr )
-    { tMgr->startThreads(); }
+    if( MAX_THREADS > 0 ) {
+        tMgr = ThreadMgr::createInstance();
+
+        if ( tMgr )
+        { tMgr->startThreads(); }
+    }
 
 
     //TODO:
     //start upnp and natpmp thread here.
 
-    Connection *conn[MAXCLIENTS];
-    PRPollDesc pollfds[MAXCLIENTS];
+    const int MAXCLIENTS = MAX_THREADS<=10?1024:MAX_THREADS*CONST_MAXCLIENTS/10; 
+    fprintf( stderr, "MAXCLIENTS supported as of now is %d \n", MAXCLIENTS );
+
+    struct rlimit r;
+    if( getrlimit( RLIMIT_NOFILE, &r ) == 0){
+	    fprintf( stderr, "INFO: Current rlimit open fds: %ld %ld \n", r.rlim_cur, r.rlim_max );
+	    r.rlim_cur = MAXCLIENTS * 4 + 4;
+	    r.rlim_max = (MAXCLIENTS * 4 + 4) > 1048576 ? MAXCLIENTS * 4 + 4:r.rlim_max;
+    } else {
+	    r.rlim_cur = MAXCLIENTS * 4 + 4;
+	    r.rlim_max = 1048576;
+    } 
+    if( setrlimit( RLIMIT_NOFILE, &r ) == 0){
+    	if( getrlimit( RLIMIT_NOFILE, &r ) == 0){
+	    fprintf( stderr, "INFO: Reset to current rlimit open fds : %ld %ld \n", r.rlim_cur, r.rlim_max );
+  	} 
+    } else {
+	    fprintf( stderr, "ERRR: Reset to rlimit failed \n");
+    }
+    //Connection *conn[MAXCLIENTS];
+    //PRPollDesc pollfds[MAXCLIENTS];
+    Connection **conn = (Connection **) malloc ( MAXCLIENTS * sizeof(Connection*));
+    PRPollDesc *pollfds = ( PRPollDesc*) malloc ( MAXCLIENTS * sizeof(PRPollDesc) );
+
     bool exitMain = false;
     bool shrink   = true;
     int  nClients = 1;
@@ -487,6 +547,7 @@ start:
     while ( !exitMain ) {
         fflush ( stderr );
 
+shrinkStart:
         if ( shrink ) {
             pollfds[0].fd = *srv;
             pollfds[0].events = PR_POLL_READ | PR_POLL_EXCEPT;
@@ -518,7 +579,7 @@ start:
                         pollfds[shift].events  = 0;
                         pollfds[shift].revents = 0;
                         conn[i] = conn[shift];
-                        conn[shift] = NULL;
+                        conn[shift] = 0;
                         nClients++;
                     }
                 } else {
@@ -528,7 +589,14 @@ start:
                 }
             }
 
-            fprintf ( stderr, "Number of clients = %d \n", nClients ); //cout << "Number of clients = " << nClients << endl;
+            fprintf ( stderr, "Shrunk: Number of clients = %d \n", nClients ); //cout << "Number of clients = " << nClients << endl;
+	    i=0;
+            fprintf ( stderr, "\nActive fds=%d After shrinking \n", nClients );
+            while  ( i < nClients ) {
+                fprintf ( stderr, "%d, ", pollfds[i].fd );
+                i++;
+            }
+
             shrink = false;
             displayfds = true;
         }
@@ -541,15 +609,34 @@ start:
 
             while  ( l < nClients ) {
                 fprintf ( stderr, "%d, ", pollfds[l].fd );
+		if( pollfds[l].fd == -1 ){
+			if( conn[l] ){
+				delete conn[l];
+				conn[l] = 0;
+				clientmanage(0);
+			}
+			pollfds[l].fd = 0;
+			shrink = true;
+		}
                 l++;
             }
 
+	    l=0;
+            fprintf ( stderr, "\nActive fds=%d After clearing \n", nClients );
+            while  ( l < nClients ) {
+                fprintf ( stderr, "%d, ", pollfds[l].fd );
+                l++;
+            }
             fprintf ( stderr, "\n" );
             fprintf ( stderr, "____________________________________\n" );
+
+	    if( shrink )
+		    goto shrinkStart;
             displayfds = false;
         }
 
         if ( ( retVal = PR_Poll ( pollfds, nClients, 10 ) ) > 0 ) {
+            if ( clientmanage(2) < MAX_BACKLOG ) {
             if ( pollfds[0].revents & PR_POLL_READ ) {
                 socklen_t addrlen = 0;
 
@@ -557,6 +644,7 @@ start:
                 if ( ( *client = accept ( *srv, ( sockaddr * ) &clientAddr, &addrlen ) ) ) {
                     //TODO:
                     //allowConnect = false;
+		    clientmanage(1);
                     allowConnect = true;
                     tempIp = PR_ntohl ( clientAddr.sin_addr.s_addr );
 #if 0
@@ -617,6 +705,7 @@ start:
                     //exit(1);
                 }
             }
+	    }
 
             for ( i = 1; i < nClients; i++ ) {
 
@@ -627,7 +716,7 @@ start:
                     PR_Closefd ( pollfds[i].fd );
 
                     if ( conn[i] )
-                    { delete conn[i]; }
+                    { delete conn[i]; clientmanage(0); }
 
                     conn[i] = 0;
                     pollfds[i].fd = 0;
@@ -694,7 +783,7 @@ start:
                         }
 
                         MapStrStr *cookies = HttpSession::readCookies ( ( char * ) temp->getCookie() );
-                        conn[i]->sess = NULL;
+                        conn[i]->sess = 0;
 
                         if ( cookies ) {
                             MapStrStr::iterator itr = cookies->find ( "SID" );
@@ -801,15 +890,27 @@ start:
                             } else {
                                 fprintf ( stderr, "\nERRR: File not found : %d and %d \n", conn[i]->file ? * ( conn[i]->file ) : -1, fInfoStatus );
 
+				if ( MAX_THREADS == 0 ){
+				    delete conn[i];
+                                    conn[i]       = 0;
+                                    pollfds[i].fd = 0;
+                                    pollfds[i].events = 0;
+                                    pollfds[i].revents = 0;
+                                    shrink = true;
+				    clientmanage(0);
+				    continue;
+				} else {
+
                                 if ( ! isForbidden ) {
                                     conn[i]->cmd  = THREAD_CMD_PTASK;
                                     tMgr->assignTask ( conn[i] );
-                                    conn[i]       = NULL;
+                                    conn[i]       = 0;
                                     pollfds[i].fd = 0;
                                     pollfds[i].events = 0;
                                     pollfds[i].revents = 0;
                                     shrink = true;
                                 }
+				}
                             }
                         }
 			
@@ -818,7 +919,7 @@ start:
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                         if ( conn[i] )
-                        { delete conn[i]; }
+                        { delete conn[i]; clientmanage(0); }
 
                         conn[i] = 0;
                         pollfds[i].fd = 0;
@@ -843,7 +944,8 @@ start:
                         //TODO: use fread
                         if ( temp <= 0 ) {
                             PR_Close ( conn[i]->file );
-                            conn[i]->file = NULL;
+			    conn[i]->filefd = -1;
+                            conn[i]->file = 0;
                         } else {
                             len += temp;
                             conn[i]->len = len;
@@ -881,7 +983,7 @@ start:
                             PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                             if ( conn[i] )
-                            { delete conn[i]; }
+                            { delete conn[i]; conn[i] = 0; clientmanage(0); }
 
                             pollfds[i].fd = 0;
                             pollfds[i].events = 0;
@@ -896,7 +998,7 @@ start:
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                         if ( conn[i] )
-                        { delete conn[i]; }
+                        { delete conn[i]; conn[i]= 0; clientmanage(0); }
 
                         pollfds[i].fd = 0;
                         fprintf ( stderr, "DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
@@ -909,7 +1011,7 @@ start:
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                         if ( conn[i] )
-                        { delete conn[i]; }
+                        { delete conn[i]; clientmanage(0); }
 
                         conn[i] = 0;
                         pollfds[i].fd = 0;

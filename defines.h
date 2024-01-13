@@ -16,7 +16,7 @@
 #define MAXPATH     256
 //#define MAXBUF      16384
 //#define SRVPORT     3333
-#define MAXCLIENTS  1024
+#define CONST_MAXCLIENTS  1024 // <= 10 threads
 #define MAXPLUGINS  64
 
 

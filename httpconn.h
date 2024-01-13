@@ -254,7 +254,7 @@ class Connection {
         PRFileInfo64  fInfo;
         int32_t        socketfd;
         PRFileDesc    *socket;
-        sqlite3       *db;
+        sqlite3       *db; //link to per thread sqlite3 db
         //FileIndexData *fid;
         void *fid;
         HttpReq       req;
@@ -273,18 +273,18 @@ class Connection {
             file = &filefd;
             socketfd = -1;
             socket = &socketfd;
-            fid = NULL;
-            udata = NULL;
-            sess  = NULL;
-            db    = NULL;
+            fid = 0;
+            udata = 0;
+            sess  = 0;
+            db    = 0;
         }
 
         ~Connection() {
             if ( socket )
-            { close ( *socket ); }
+            { PR_Close ( socket ); }
 
             if ( file )
-            { close ( *file ); }
+            { PR_Close ( file ); }
 
             len    = 0;
             sent   = 0;
@@ -294,12 +294,17 @@ class Connection {
             cmd    = 0;
             filefd = -1;
             socketfd = -1;
-            socket = NULL;
-            file   = NULL;
-            fid    = NULL;
-            udata  = NULL;
-            sess   = NULL;
-            db     = NULL;
+            socket = 0;
+            file   = 0;
+            fid    = 0;
+            udata  = 0;
+	    //donot free sess, as there could other connection from the same system trying to access a different resource.
+	    //instead just reset the pointer, the sess is present in an internal stl::map, its not considered memory leak.
+	    //if( sess ){
+		//    delete sess;
+	    //}
+            sess   = 0;
+            db     = 0;
         }
 
         void setAuthLvl() {

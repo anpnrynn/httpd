@@ -1,3 +1,14 @@
+14/01/2024 - 1
+==============
+Changes to test scripts so that it runs 100*50 wget requests for 7mb static image and p3 plugin post execution
+Changes to server to run in static file server mode, where threadmanager, plugins and dynamic pages are disabled, operates like thttpd mode.
+Added testloopplugup.sh for multipart form post test
+Added testloop3types.sh for multipart form post test
+Made changes to shrink logic, hopefully for the better.
+Added logic for connection acceptance throttling, required as static files are handled by mainthread and dynamic pages are handled by thread pool cause much havoc.
+Added changes to increase open fds rlimit.
+
+
 13/01/2024 - 3
 ==============
 Cleanup of makefile

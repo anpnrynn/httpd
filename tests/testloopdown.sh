@@ -6,7 +6,7 @@ do
 	j=0
 	while [[ $j -le 100 ]]
 	do
-		wget -O plugpost.$i.$j http://127.0.0.1:15000/p3.xyz &
+		wget -O staticdown.$i.$j  http://127.0.0.1:15000/nandihills.jpg &
 		j=$((j+1))
 	done
 	sleep 2
@@ -20,6 +20,6 @@ if [[ $count -lt 2 ]]
 then
 	exit 0
 fi
-echo "waiting for test to stop $count"
+echo "waiting for the test to stop $count"
 sleep 1
 done
