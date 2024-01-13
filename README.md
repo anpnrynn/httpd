@@ -17,7 +17,7 @@ anoop.kumar.narayanan@gmail.com
 
 LICENSE
 -------
-GPLv2/GPLv3/MIT/BSD 3-clause
+GPLv2/GPLv3
 
 
 For:
