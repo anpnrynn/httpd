@@ -14,14 +14,14 @@ It was written in 2007 by me. Currently cleaning up the code. Removing some feat
 
 
 # Memory Consumption (initial)
-0    threads = Only static file access 
+0    threads = Only static file access = 30 MB    
 10   threads = 140MB   
 100  threads = 750MB   
 300  threads = 2.3GB    
 Memory grows as the session information increases    
 
 
-# Authors:
+Authors:
 --------
 Anoop Kumar Narayanan   
 Bangalore   
@@ -29,7 +29,7 @@ India
 anoop.kumar.narayanan@gmail.com   
 
 
-# LICENSE
+LICENSE
 -------
 GPLv2/GPLv3
 
