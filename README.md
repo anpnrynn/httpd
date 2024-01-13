@@ -65,19 +65,19 @@ login.html and public.html are the only two pages that return as themselves.
 
 PAGE MAPPING:
 --------------
-when logged in as root
-root.html -> root_root.html
-image.jpg -> image.jpg
-index.sthtml -> index.sthtml
-login.xyz    -> plugin liblogin.so dynamic page
-p3.xyz       -> plugin libp3.so dynamic page
+when logged in as root   
+root.html -> root_root.html   
+image.jpg -> image.jpg   
+index.sthtml -> index.sthtml   
+login.xyz    -> plugin liblogin.so dynamic page   
+p3.xyz       -> plugin libp3.so dynamic page   
 
-When logged in as super
-root.html -> super_root.html
-image.jpg -> image.jpg
-index.sthtml -> index.sthtml
-login.xyz    -> plugin liblogin.so dynamic page
-p3.xyz       -> plugin libp3.so dynamic page
+When logged in as super   
+root.html -> super_root.html   
+image.jpg -> image.jpg   
+index.sthtml -> index.sthtml   
+login.xyz    -> plugin liblogin.so dynamic page   
+p3.xyz       -> plugin libp3.so dynamic page   
 
 
 Test and Execution:
