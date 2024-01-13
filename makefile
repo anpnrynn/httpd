@@ -1,28 +1,18 @@
-#INC_DIR=-I./ -I./nspr-4.6.4/include/ -I/usr/local/include -I../Encode
 INC_DIR=-I./ -I/usr/include -I/usr/local/include
 
-#LIB_DIR=-L./nspr-4.6.4/lib/ -L/usr/local/lib -L./
 LIB_DIR=-L/usr/lib -L/usr/local/lib -L./
 LIBS=-lsqlite3 -lpthread -ldl -lpthread
 ELIBS=-lhttp 
-#-lplc4 -lplds4
-#CFLAGS=-Wall -DLINUX_BUILD -DUSE_PTHREAD -fPIC 
 CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD -fPIC 
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
-DEBUG=-g3
-#DEBUG=-O2
+DEBUG=-O2
 OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o
-#SOBJS=threadmgr.o server.o login.o
 SOBJS=threadmgr.o server.o
-#httpconn.o tools.o httpcodes.o mimetypes.o session.o threadmgr.o httphandlers.o plugin.o base64.o pass.o
 MAKELIBS=
 
-#all:libhttp.so libpass.so libp1.so libp2.so httpdsrv 
 all:libhttp.so httpdsrv 
 
-
-#httpdsrv:libhttp.so libp1.so libp2.so libp3.so $(SOBJS) 
 httpdsrv:libhttp.so libp3.so liblogin.so $(SOBJS) 
 	g++ -rdynamic -o httpdsrv $(SOBJS) $(INC_DIR) $(LIB_DIR) $(LIBS) $(ELIBS) $(CFLAGS) $(DEBUG)
 

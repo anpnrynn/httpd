@@ -1,5 +1,13 @@
-13/01/2024
-==========
+13/01/2024 - 2
+==============
+Cleanup of makefile
+Testing pthreads and cpp11threads
+Testing with -O2 flag
+All seems stable
+
+
+13/01/2024 - 1
+==============
 Added support for removal of post temporary file, Should be removed from plugins. Multipart read has to be end-user implementation.
 Added support for large file upload through POST multipart.
 Changed all the file offset from int to size_t for 64bit support

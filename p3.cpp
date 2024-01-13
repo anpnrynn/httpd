@@ -51,7 +51,7 @@ int p3_processReq ( Connection *conn ) {
 		    conn->req.cLen, conn->req.rLen );
 
     //int     rc = 0;
-    //conn->req.removePostTempFile();
+    conn->req.removePostTempFile();
 
     stringstream *output = new stringstream();
 
