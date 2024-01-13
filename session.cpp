@@ -1,11 +1,8 @@
 #include <stdio.h>
 #include <prwrapper.h>
 #include <session.h>
-//#include <openssl/ripemd.h>
-#include <pass.h>
 #include <sqlite3.h>
 #include <defines.h>
-//#include <sfeac.h>
 #include <tools.h>
 
 #ifndef LINUX_BUILD

@@ -1,15 +1,13 @@
 #include <iostream>
-//#include <mozhdr.h>
 #include <prwrapper.h>
 #include <sqlite3.h>
 #include <httpconn.h>
-//#include <ifs.h>
+#include <version.h>
 #include <httpcodes.h>
 #include <mimetypes.h>
 #include <session.h>
 #include <threadmgr.h>
 #include <plugin.h>
-#include <pass.h>
 #include <defines.h>
 #include <malloc.h>
 
@@ -38,7 +36,6 @@ int srvSocket = 0;
 int clientSocket = 0;
 PRFileDesc *srv = &srvSocket, *client = &clientSocket;
 unsigned short int SRVPORT = 0;
-unsigned short int SSLSRVPORT = 0;
 bool isBound = false;
 
 //Clean up operations
@@ -103,7 +100,7 @@ int pluginLoader ( void *udata, int argc, char **argv, char **col ) {
 
             if ( !lib[libCount] ) {
                 fprintf ( stderr, "WARN: Unable to load library:%s \n", lName );
-                sprintf ( lName, "./lib%s.so", argv[0] );
+                sprintf ( lName, INSTALL_HOME "/httpd/lib/lib%s.so", argv[0] );
                 lib[libCount] = PR_LoadLibrary ( lName );
 
                 if ( !lib[libCount] ) {
@@ -213,11 +210,10 @@ int installTheNeededStuff() {
         return 2;
     }
 
-    //FileIndexData *fData= NULL;
-    //RFileDesc *file = PR_Open( "ins3.sh", &fData );
     int filefd = 0;
     PRFileDesc *file = &filefd;
-    *file = PR_Open ( "install.sql", PR_RDONLY, 0 );
+    fprintf( stderr, "INFO: reading sql tables from : %s \n", INSTALL_HOME "/httpd/share/install.sql" );
+    *file = PR_Open ( INSTALL_HOME "/httpd/share/install.sql", PR_RDONLY, 0 );
 
 
     //if( !file || !fData )
@@ -284,19 +280,17 @@ int main ( int argc, char *argv[] ) {
     if ( !stderr )
     { exit ( 56 ); }
 
-    if ( argc < 3 ) {
+    if ( argc < 2 ) {
         fprintf ( stderr, "%s Exited \n", argv[0] );
         fprintf ( stderr, "Format: %s port count sslport\n", argv[0] );
         fprintf ( stderr, "port    - Server port number to use \n" );
         fprintf ( stderr, "count   - Number of threads to launch \n" );
-        fprintf ( stderr, "sslport - SSL Server port number to use \n" );
         exit ( 1 );
     } else {
         SRVPORT = atoi ( argv[1] );
-        SSLSRVPORT = atoi ( argv[3] );
     }
 
-    if ( argc == 4 ) {
+    if ( argc == 3 ) {
         fprintf ( stderr, "INFO: Received threads count: %s \n", argv[2] );
         MAX_THREADS = atoi ( argv[2] );
 
@@ -488,7 +482,7 @@ start:
     bool allowConnect = false;
     bool displayfds = true;
     unsigned int tempIp = 0;
-    cout << "App Server up !" << endl;
+    cout << "HTTPD "<<VERSION<<" Server Up !" << endl;
 
     while ( !exitMain ) {
         fflush ( stderr );
@@ -765,7 +759,7 @@ start:
                                         ( strcasecmp ( fileType, ".jpeg" )  == 0 )
                                       ) {
                                 //char *authFile = temp->getReqFileAuth ( conn[i]->authLvl );
-                                char localStaticFile[1024] = "Pages/";
+                                char localStaticFile[1024] = PAGE_STORE;
                                 strcat ( localStaticFile, temp->getReqFile() );
                                 * ( conn[i]->file ) = PR_Open ( localStaticFile, PR_RDONLY, 0 );
                                 fprintf ( stderr, "WARN: Requesting file : %s \n", localStaticFile );

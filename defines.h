@@ -1,17 +1,16 @@
 #ifndef ___DEFINES__H___
 #define ___DEFINES__H___
 
+#include <config.h>
 
 #ifdef  LINUX_BUILD
-#define FILE_STORE  "/var/local/filestore"
 #define INFO_STORE  "/var/local/infostore.sqlite3"
-#define KEYFILE     "/var/local/db.key"
-#define LOGFILE     "/var/log/appserver.log"
+#define PAGE_STORE  INSTALL_PAGE_STORE "/var/www/Pages/" 
+#define LOGFILE     "/var/log/githubcom_anpnrynn_httpd.log"
 #else
-#define FILE_STORE  "filestore"
 #define INFO_STORE  "infostore"
-#define KEYFILE     "db.key"
-#define LOGFILE     "appserver.log"
+#define PAGE_STORE  INSTALL_PAGE_STORE "Pages/" 
+#define LOGFILE     "githubcom_anpnrynn_httpd.log"
 #endif
 
 #define MAXPATH     256

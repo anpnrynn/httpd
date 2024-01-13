@@ -12,6 +12,7 @@
 #include <sqlite3.h>
 
 #include <prwrapper.h>
+#include <defines.h>
 
 using namespace std;
 

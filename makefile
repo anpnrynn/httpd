@@ -10,6 +10,9 @@ DEBUG=-O2
 OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o
 SOBJS=threadmgr.o server.o
 MAKELIBS=
+#Change these
+INSTALL_HOME=/tmp
+INSTALL_PAGE_STORE=/tmp
 
 all:libhttp.so httpdsrv 
 
@@ -28,7 +31,15 @@ tools.o:tools.cpp tools.h
 httpconn.o:httpconn.cpp httpconn.h tools.o version.h
 	g++ httpconn.cpp -c -o httpconn.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
 
-cookie.o:cookie.cpp cookie.h
+config.h:
+	echo "#ifndef CONFIG_H"  > config.h
+	echo "#define CONFIG_H" >> config.h
+	echo "" >> config.h
+	echo "#define INSTALL_HOME \"$(INSTALL_HOME)\"" >> config.h
+	echo "#define INSTALL_PAGE_STORE \"$(INSTALL_PAGE_STORE)\"" >> config.h
+	echo "#endif" >> config.h
+
+cookie.o:cookie.cpp cookie.h defines.h config.h
 	g++ cookie.cpp -c -o cookie.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
 
 httphandlers.o: httphandlers.cpp httphandlers.h 
@@ -49,15 +60,6 @@ plugin.o: plugin.cpp plugin.h
 threadmgr.o: threadmgr.cpp threadmgr.h
 	g++ threadmgr.cpp -c -o threadmgr.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
 
-libpass.so:pass.o base64.o 
-	g++ pass.o base64.o -shared -o libpass.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
-
-pass.o: pass.c pass.h base64.o
-	g++ pass.c -c -o pass.o  -DIS_HTTPD $(INC_DIR) $(CFLAGS) $(DEBUG) $(LFLAGS) $(CPPFLAGS)
-
-base64.o: base64.c base64.h
-	g++ base64.c -c -o base64.o $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
-
 liblogin.so: login.cpp
 	g++ login.cpp -shared -o liblogin.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
 
@@ -71,4 +73,26 @@ libp3.so: p3.cpp
 	g++ p3.cpp -shared -o libp3.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
 
 clean:
-	rm -f *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so libpass.so core.*
+	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.*
+
+distclean:
+	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.* /var/local/infostore.sqlite3
+
+install:
+	mkdir -p $(INSTALL_HOME)/httpd/bin/
+	mkdir -p $(INSTALL_HOME)/httpd/include/
+	mkdir -p $(INSTALL_HOME)/httpd/lib/
+	mkdir -p $(INSTALL_HOME)/httpd/share/
+	mkdir -p $(INSTALL_PAGE_STORE)/var/www/Pages/
+	cp -f install.sql $(INSTALL_HOME)/httpd/share/
+	cp -f httpdsrv httpdsrv.sh $(INSTALL_HOME)/httpd/bin/
+	chmod 755 $(INSTALL_HOME)/httpd/bin/httpdsrv $(INSTALL_HOME)/httpd/bin/httpdsrv.sh
+	cp -f libhttp.so libp3.so liblogin.so $(INSTALL_HOME)/httpd/lib/
+	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so
+	cp -Rfp Pages/* $(INSTALL_PAGE_STORE)/var/www/Pages/ 
+	cp -f *.h $(INSTALL_HOME)/httpd/include/
+	chmod 744 $(INSTALL_HOME)/httpd/include/*.h
+
+
+installclean:
+	rm -rf $(INSTALL_HOME)/httpd/ $(INSTALL_PAGE_STORE)/var/www/Pages /var/local/infostore.sqlite3

@@ -381,9 +381,9 @@ char *HttpReq::getReqFileAuth ( int auth ) {
     if ( authUrl[0] == 0 ) {
 
 #ifdef LINUX_BUILD
-        strcat ( authUrl, "Pages/" );
+        strcat ( authUrl, PAGE_STORE );
 #else
-        strcat ( authUrl, "Pages\\" );
+        strcat ( authUrl, PAGE_STORE );
 #endif
 
         if ( strcasecmp ( decodedUrl, "login.html" ) == 0 ||

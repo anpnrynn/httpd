@@ -2,7 +2,6 @@
 #include <httphandlers.h>
 #include <prwrapper.h>
 #include <tools.h>
-#include <pass.h>
 #include <defines.h>
 #include <session.h>
 
