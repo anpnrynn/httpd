@@ -22,11 +22,6 @@ LICENSE
 GPLv2/GPLv3
 
 
-For:
-PROPRIETARY LICENSE
-Contact through mail for purchase
-
-
 Features:
 ---------
 1. Supports HTTP 1.0, works with most modern browsers
@@ -47,22 +42,21 @@ COMPILE:
 make clean   
 make
 
-
 RUN:
 ----
 ./httpdsrv.sh    
 
 
-NOTE:
------
-Run from source folder.   
-Pages/ folder is where the HTTP webpages are located.   
-sthtml are static html documents that can be served as common html documents between users.    
-html documents have a suffix "username_", these documents gets served only to appropriate users.   
-images like jpg, bmp and png are common files.   
-Pages/router/ folder contains sample embedded router html documents without backend interface.   
-login.html and public.html are the only two pages that return as themselves.
-
+NOTE (VERY IMPORTANT, PLEASE READ):
+-----------------------------------
+1. Run from source folder.   
+2. Pages/ folder is where the HTTP webpages are located.   
+3. sthtml are static html documents that can be served as common html documents between users.    
+4. html documents have a suffix "username_", these documents gets served only to appropriate users.   
+5. images like jpg, bmp and png are common files.   
+6. Pages/router/ folder contains sample embedded router html documents without backend interface.   
+7. login.html and public.html are the only two pages that return as themselves.
+8. plugins that comes with the product are only sample code and do not provide the security features need by corporate and enterprise products.
 
 
 PAGE MAPPING:
