@@ -6,7 +6,7 @@ ELIBS=-lhttp
 CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD -fPIC 
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
-DEBUG=-g3
+DEBUG=-O2
 OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o
 SOBJS=threadmgr.o server.o
 MAKELIBS=
