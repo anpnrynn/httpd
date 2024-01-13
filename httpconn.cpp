@@ -55,6 +55,7 @@ HttpReq::HttpReq() {
     data =  NULL;
     conn = 1;
     cLen = 0;
+    rLen = 0;
     hLen = 0;
     query = NULL;
     dataPtr  = NULL;
@@ -97,8 +98,8 @@ void HttpReq::processHttpProto ( char *prot ) {
     { version = 1; }
 }
 
-void HttpReq::skipHdrTag ( int &start, int d ) {
-    int k = start;
+void HttpReq::skipHdrTag ( size_t &start, size_t d ) {
+    size_t k = start;
 
     while ( k < len - 1 && ( buf[k] != '\r' || buf[k + 1] != '\n' ) && buf[k] != '\n' ) {
         k++;
@@ -319,7 +320,7 @@ void HttpReq::processHttpHeader() {
     }
 
     if ( contentLen[0] != 0 ) {
-        cLen = atoi ( contentLen );
+        cLen = atoll ( contentLen );
     }
 
     if ( dateStr[0] != 0 ) {
@@ -426,7 +427,25 @@ char *HttpReq::getReqFileAuth ( int auth ) {
 
 int postCount = 0;
 
-int HttpReq::processHttpPostData ( int hPkt, int dLen ) {
+int HttpReq::processHttpPostData ( Connection *conn) {
+    if ( conn && post ) {
+        while ( rLen < cLen ) {
+            size_t bytesR  = PR_Recvfd ( * (conn->socket), buf, MAXBUF, 0, 1 );
+            size_t bytesW  = PR_Write ( post, buf, bytesR);
+	    rLen += bytesR;
+
+            if ( bytesW < bytesR )
+            {
+	    	fprintf( stderr, "ERRR: Bytes dropped , read = %ld, written = %ld \n", bytesR, bytesW );
+	    }
+        }
+        return rLen;
+    }
+
+    return -1;
+}
+
+int HttpReq::processHttpPostData ( size_t hPkt, size_t dLen ) {
     if ( ( hPkt > 0 ) && !post ) {
         //char fName[64];
         postNum = postCount;
@@ -450,8 +469,8 @@ int HttpReq::processHttpPostData ( int hPkt, int dLen ) {
     }
 
     if ( post ) {
-        int tempLen = 0;
-        int bytesW = 0;
+        size_t tempLen = 0;
+        size_t bytesW  = 0;
 
         //int bufLen = hPkt ? (len-hLen): dLen;
         while ( tempLen < dLen ) {
@@ -464,11 +483,13 @@ int HttpReq::processHttpPostData ( int hPkt, int dLen ) {
         }
 
         //printf("INFO: Wrote %d bytes\n",bytesW);
+	rLen += tempLen;
         return tempLen;
     }
 
     return -1;
 }
+
 
 void HttpReq::convertGetDataToMap ( MapStrStr *param ) {
     char qname[256];
@@ -938,9 +959,9 @@ unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     tempResp->setStatus ( status );
     conn->len  = tempResp->getHeader ( ( char * ) conn->buf );
 
-    if ( status == HTTP_RESP_OK ) {
-        conn->len += conn->sess->dumpSessionCookies ( ( char * ) & ( conn->buf[conn->len] ) );
-    }
+    //if ( status == HTTP_RESP_OK ) {
+    conn->len += conn->sess->dumpSessionCookies ( ( char * ) & ( conn->buf[conn->len] ) );
+    //}
 
     char *tempbuf = ( char * ) conn->buf;
     fprintf ( stderr, "\nDBUG: Response Header:\n%s\n", tempbuf );

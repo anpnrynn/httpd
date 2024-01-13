@@ -1,13 +1,15 @@
 #ifndef PR_WRAPPER_H
 #define PR_WRAPPER_H
 
-#ifndef _LARGEFILE64_SOURCE
-#define _LARGEFILE64_SOURCE 1
+#ifndef _LARGEFILE_SOURCE
+#define _LARGEFILE_SOURCE
 #endif
 
-#ifndef _FILE_OFFSET_BITS
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE
+#endif 
+
 #define _FILE_OFFSET_BITS 64
-#endif
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -69,6 +71,7 @@
 #define PR_Closefd(fd)                   close((fd))
 #define PR_Seek64(fd,offset,whence)      lseek((*fd),(offset),(whence))
 #define PR_GetFileInfo64(filename,s)     fstat((filename),s)
+#define PR_Unlink(filename)              unlink((filename))
 
 //DLLs
 

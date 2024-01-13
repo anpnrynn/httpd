@@ -41,7 +41,17 @@ int p3_processReq ( Connection *conn ) {
     if ( !conn )
     { return 1; }
 
+
+    //Read remaining post data if there are any
+    fprintf( stderr, "DBUG: Reading remaining post data %ld <-> %ld \n",
+		    conn->req.cLen, conn->req.rLen );
+    if( conn->req.cLen > conn->req.rLen )
+	    conn->req.processHttpPostData( conn );
+    fprintf( stderr, "DBUG: Read remaining post data %ld <-> %ld \n",
+		    conn->req.cLen, conn->req.rLen );
+
     //int     rc = 0;
+    //conn->req.removePostTempFile();
 
     stringstream *output = new stringstream();
 

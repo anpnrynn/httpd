@@ -14,21 +14,49 @@ Bangalore
 India   
 anoop.kumar.narayanan@gmail.com   
 
+
 LICENSE
 -------
-GPLv2/GPLv3/BSD/MIT
+PROPRIETARY LICENSE
+Contact through mail for purchase
+
 
 Features:
 ---------
 1. Supports HTTP 1.0, works with most modern browsers
 2. Supports Inbuilt Session Management for login pages
-3. Supports Multilevel administration pages ( root , admin, normal user )
-4. Supports Inbuilt sqlite3 database for use with plugins
+3. Supports Multilevel administration pages ( super > root > admin )
+4. Supports Inbuilt sqlite3 database for use with plugins, with ability to disable plugins
 5. Supports Plugins based dynamic pages, write dynamic pages in c code
 6. Supports Multithreads for plugin execution, thread pool for dynamic page handling (configurable)
 7. Supports Chunked data transfer for dynamic pages.
 8. Supports GET and POST queries
 
+
+COMPILE:
+--------
+make clean   
+make
+
+
+RUN:
+----
+./httpdsrv.sh    
+
+
+NOTE:
+-----
+Run from source folder.   
+Pages/ folder is where the HTTP webpages are located.   
+sthtml are static html documents that can be served as common html documents between users.    
+html documents have a suffix "username_", these documents gets served only to appropriate users.   
+images like jpg, bmp and png are common files.   
+Pages/router/ folder contains sample embedded router html documents without backend interface.   
+
+
+Test and Execution:
+-------------------
+read TEST.txt
 
 Dependency:
 -----------

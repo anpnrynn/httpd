@@ -20,6 +20,7 @@ enum HTTP_METHOD {
     HTTP_GET = 0,
     HTTP_POST,
     HTTP_HEAD,
+    HTTP_PUT,
     HTTP_UNKNOWN
 };
 
@@ -78,6 +79,8 @@ enum AUTHLVL {
     AUTH_SUPERUSER  = 4 /*higher power*/
 };
 
+class Connection;
+
 class HttpReq {
     private:
         char encodedUrl[1024]; // if every character is expressed as % values 256 * 3 = 768
@@ -108,8 +111,9 @@ class HttpReq {
         int    version; // http 1.0 = 0 http1.1 = 1
         int    conn;
 
-        int  i;
-        int  j;
+        size_t  i;
+        size_t  j;
+
         int  postNum;
         char postFileName[1024];
         bool hdrPartial;
@@ -123,7 +127,7 @@ class HttpReq {
 
         int   processHttpFirstLine();
         void  processHttpProto ( char* );
-        void  skipHdrTag ( int &, int d = 0 );
+        void  skipHdrTag ( size_t &, size_t d = 0 );
         void  processUrlQuery();
         void  processHttpMethod ( char * );
         void  processHttpHeader();
@@ -138,9 +142,11 @@ class HttpReq {
         HttpReq();
         ~HttpReq();
 
-        int         len;
+        size_t       len;
         size_t      cLen;
+	size_t      rLen;
         size_t      hLen;
+
         int          postfd;
         PRFileDesc  *post;
         unsigned char buf[MAXBUF];
@@ -151,10 +157,27 @@ class HttpReq {
 
         char* getReqFileAuth ( int auth );
         int   getMethod () { return method; }
+	char* getPostTempFileName ( ) { 
+		return postFileName; 
+	}
+	void  removePostTempFile() {
+		fprintf( stderr, "WARN: Removing post temp file: %s \n", postFileName );
+		if( post && postfd >= 0 ){
+			PR_Close(post);
+			post = 0;
+			postfd = -1;
+		} else {
+			post = 0;
+			postfd = -1;
+		}
+		PR_Unlink( postFileName );
+		postFileName[0] = 0;
+	}
         bool  isMultipart () { return ( bool ) multipart; }
         char* getBoundary () { return boundary; }
         void  readHttpHeader();
-        int   processHttpPostData ( int, int );
+        int   processHttpPostData ( size_t , size_t );
+        int   processHttpPostData ( Connection *conn); //to be used from plugins only
         void  convertGetDataToMap ( MapStrStr *paramMap ); //converts get parameters to a Map
         void  convertGetDataToVector ( Vector *param );
         int   convertPostDataToMap ( MapStrStr *paramMap, const char *stopAt ); //converts post parameters to a Map
@@ -288,20 +311,6 @@ class Connection {
                 authLvl = AUTH_PUBLIC;
             }
 
-            /*
-                fprintf ( stderr, "DBUG: ip = 0x%x and mask = 0x%x \n", ip, ( ip & 0xffff0000 ) );
-
-                if ( ip == 0x7f000001 ) {
-                    authLvl = AUTH_ADMIN;
-                    fprintf ( stderr, "INFO: Setting user to Admin LVl \n" );
-                } else if ( ( ip & 0xffff0000 ) == 0xc0a80000 ) {
-                    authLvl = AUTH_ROOTUSER;
-                    fprintf ( stderr, "INFO: Setting user to Root User LVl \n" );
-                } else {
-                    authLvl = AUTH_SUPERUSER;
-                    fprintf ( stderr, "INFO: Setting user to Power User Lvl \n" );
-                }
-            */
         }
 
 };

@@ -38,6 +38,7 @@ int srvSocket = 0;
 int clientSocket = 0;
 PRFileDesc *srv = &srvSocket, *client = &clientSocket;
 unsigned short int SRVPORT = 0;
+unsigned short int SSLSRVPORT = 0;
 bool isBound = false;
 
 //Clean up operations
@@ -283,17 +284,19 @@ int main ( int argc, char *argv[] ) {
     if ( !stderr )
     { exit ( 56 ); }
 
-    if ( argc < 2 ) {
+    if ( argc < 3 ) {
         fprintf ( stderr, "%s Exited \n", argv[0] );
-        fprintf ( stderr, "Format: %s port count \n", argv[0] );
-        fprintf ( stderr, "port  - Server port number to use \n" );
-        fprintf ( stderr, "count - Number of threads to launch \n" );
+        fprintf ( stderr, "Format: %s port count sslport\n", argv[0] );
+        fprintf ( stderr, "port    - Server port number to use \n" );
+        fprintf ( stderr, "count   - Number of threads to launch \n" );
+        fprintf ( stderr, "sslport - SSL Server port number to use \n" );
         exit ( 1 );
     } else {
         SRVPORT = atoi ( argv[1] );
+        SSLSRVPORT = atoi ( argv[3] );
     }
 
-    if ( argc == 3 ) {
+    if ( argc == 4 ) {
         fprintf ( stderr, "INFO: Received threads count: %s \n", argv[2] );
         MAX_THREADS = atoi ( argv[2] );
 
@@ -710,10 +713,14 @@ start:
                                     fprintf ( stderr, "INFO: Session Active, SID: %s -> Auth Level : %s \n",
                                               conn[i]->sess->sid.c_str(), conn[i]->sess->getVariable ( "auth" ) );
                                 }
-                            }
+                            } else {
+				    fprintf(stderr, "ERRR: Unable to find SID in cookies \n");
+			    }
 
                             delete cookies;
-                        }
+                        } else {
+				    fprintf(stderr, "ERRR: Cookies not present \n");
+			}
 
                         if ( !conn[i]->sess ) {
                             fprintf ( stderr, "WARN: No valid Session Present, creating new \n" );
@@ -811,6 +818,8 @@ start:
                                 }
                             }
                         }
+			
+			fflush(stderr);
                     } else {
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 

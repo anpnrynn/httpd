@@ -1,0 +1,79 @@
+curl -vvv -d qid=1 -d pid=1 -d tid=1 -d username=root -d password=rootpassword http://127.0.0.1:15000/login.xyz
+*   Trying 127.0.0.1:15000...
+* Connected to 127.0.0.1 (127.0.0.1) port 15000 (#0)
+> POST /login.xyz HTTP/1.1
+> Host: 127.0.0.1:15000
+> User-Agent: curl/7.81.0
+> Accept: */*
+> Content-Length: 53
+> Content-Type: application/x-www-form-urlencoded
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 302 Found
+< Date: Sat, 13 Jan 2024 11:45:55 GMT
+< Server: github.com/anpnrynn/httpd-0.24.01
+< Connection: Close
+< Content-Length: 0
+< Content-Type: text/plain
+< Accept-Ranges: none
+< Location: root.html
+< Set-Cookie: SID=50a8e441a27fe60aebabc522c8249a5f2739e5008c710b4971054c0eb286f920; expires=Sun, 14 Jan 2024 11:45:56 GMT
+< 
+* Closing connection 0
+
+
+curl -vvv -b SID=50a8e441a27fe60aebabc522c8249a5f2739e5008c710b4971054c0eb286f920  http://127.0.0.1:15000/root.html
+*   Trying 127.0.0.1:15000...
+* Connected to 127.0.0.1 (127.0.0.1) port 15000 (#0)
+> GET /root.html HTTP/1.1
+> Host: 127.0.0.1:15000
+> User-Agent: curl/7.81.0
+> Accept: */*
+> Cookie: SID=SID=50a8e441a27fe60aebabc522c8249a5f2739e5008c710b4971054c0eb286f920
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 200 OK
+< Date: Sat, 13 Jan 2024 11:50:24 GMT
+< Server: github.com/anpnrynn/httpd-0.24.01
+< Connection: Close
+< Content-Length: 107
+< Content-Type: text/html; charset]=%s
+< Accept-Ranges: none
+< Set-Cookie: SID=50a8e441a27fe60aebabc522c8249a5f2739e5008c710b4971054c0eb286f920; expires=Sun, 14 Jan 2024 11:45:56 GMT
+< 
+
+<html>
+<head>
+<title>
+Welcome 
+</title>
+</head>
+<body>
+<h1>Welcome to root user page</h1>
+</body>
+</html>
+* Closing connection 0
+
+
+
+
+curl -vvv  http://127.0.0.1:15000/root.html
+*   Trying 127.0.0.1:15000...
+* Connected to 127.0.0.1 (127.0.0.1) port 15000 (#0)
+> GET /root.html HTTP/1.1
+> Host: 127.0.0.1:15000
+> User-Agent: curl/7.81.0
+> Accept: */*
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 404 Not Found
+< Date: Sat, 13 Jan 2024 11:50:05 GMT
+< Server: github.com/anpnrynn/httpd-0.24.01
+< Connection: Close
+< Content-Length: 0
+< Content-Type: text/plain; charset=UTF-8
+< Accept-Ranges: none
+< Set-Cookie: SID=a158596e462cca2bc5ff20668b54780090b3f65bc1238721bfa63c2f799fe736; expires=Sun, 14 Jan 2024 11:50:05 GMT
+< 
+* Closing connection 0
+

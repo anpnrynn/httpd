@@ -89,6 +89,7 @@ int login_processReq ( Connection *conn ) {
 
     Vector *param = new Vector();
     conn->req.convertPostDataToVector ( param, NULL );
+    conn->req.removePostTempFile();
 
     conn->resp.setContentLen(0);
     if ( param->size() >= 3 ) {
