@@ -5,6 +5,7 @@ Changes to the paths
 Changes to makefile , addition of distclean, install, installclean
 By default installs to /tmp/httpd/
 ServerName+version displayed in logs and http response is github url converted to a string that replaces '/' with '_'
+Changes to testloop.sh url so that the test script works properly
 
 
 13/01/2024 - 2
