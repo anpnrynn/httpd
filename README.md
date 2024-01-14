@@ -3,7 +3,8 @@ HTTP Server Written in C for (embedded) Linux systems
 
 
 # Release naming convention
-httpd - (MAJOR_NUMBER).(YY).(MM)-(RELEASE_NUMBER_IN_MONTH)    
+httpd - (MAJOR_NUMBER).(YY).(MM)-(RELEASE_NUMBER_IN_MONTH)   
+Use the latest release zip files, they are stable. The main branch is not stable code.
 
 
 # Description
