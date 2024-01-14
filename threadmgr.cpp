@@ -152,6 +152,7 @@ void ThreadMgr::stopThreads() {
 }
 
 extern int clientmanage(int);
+extern int reduce_ipbin(uint32_t);
 
 #ifdef  USE_CPP11THREAD
 void ThreadMgr::httpthread ( int *data )
@@ -205,7 +206,8 @@ void* ThreadMgr::httpthread ( void *data )
                         PR_Close ( conn->socket );
 			*(conn->socket) = -1;
                         conn->socket = 0;
-                        delete  conn;
+        	    	reduce_ipbin( conn->ip );
+                        delete conn;
 			clientmanage(0);
                         continue;
                     } else {
@@ -221,7 +223,8 @@ void* ThreadMgr::httpthread ( void *data )
 			*(conn->socket) = -1;
                         fprintf ( stderr, "INFO: Closing socket \n" );
                         conn->socket = 0;
-                        delete ( conn );
+        	    	reduce_ipbin( conn->ip );
+                        delete conn;
 			clientmanage(0);
                         fprintf ( stderr, "INFO: Deleted connection \n" );
                     }
@@ -232,7 +235,8 @@ void* ThreadMgr::httpthread ( void *data )
                     PR_Close ( conn->socket );
 		    *(conn->socket) = -1;
                     conn->socket = 0;
-                    delete ( conn );
+        	    reduce_ipbin( conn->ip );
+                    delete conn;
 		    clientmanage(0);
                 }
             }
@@ -242,6 +246,7 @@ void* ThreadMgr::httpthread ( void *data )
     } while ( cmd != THREAD_CMD_EXIT );
 
     if ( cmd == THREAD_CMD_EXIT && conn ) {
+        reduce_ipbin( conn->ip );
         delete conn;
 	clientmanage(0);
     }

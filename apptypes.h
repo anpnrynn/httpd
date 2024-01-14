@@ -7,6 +7,7 @@
 #include <map>
 #else
 #include <unordered_map>
+#include <atomic>
 #endif
 #include <string>
 
@@ -18,7 +19,20 @@ using namespace std;
 //#define  SMALLBUF  4096
 #define  SMALLBUF  65536
 
+class ACL {
+	public:
+		bool invert;
+		bool ipv4;
+		bool subnetmask;
+		bool prefixmask;
+		string ip;
+		long long int epochtime;
+		atomic_int counter;
+		bool block;
+};
+
 #ifdef LINUX_BUILD
+typedef unordered_map<string, ACL*>   MapACL;
 typedef unordered_map<int, string>    MapIntStr;
 typedef unordered_map<int, string>    HttpCodes;
 typedef unordered_map<string, string> MapStrStr;

@@ -82,21 +82,26 @@ void clearPlugins() {
 void unloadPlugins() {
 }
 
-#if 0
-static int aclCount = 0;
-static unsigned int aclIp[MAXCLIENTS];
+MapACL aclMap;
+MapACL dosMap;
 
 int aclLoad ( void *udata, int argc, char **argv, char **col ) {
-    if ( argv[0] ) {
-        aclIp[aclCount] = ( unsigned int ) atoi ( argv[0] );
-
-        if ( aclIp[aclCount] )
-        { aclCount++; }
-    }
+    if ( argv[0] && argv[1] && argv[2] && argv[3] && argv[4] && argv[5] && argv[6] ) {
+	    ACL *acl = new ACL;
+	    acl->invert = atoi(argv[1]);
+	    acl->ipv4   = atoi(argv[2]);
+	    acl->subnetmask = atoi(argv[3]);
+	    acl->prefixmask = atoi(argv[4]);
+	    acl->ip   = argv[5];
+	    acl->epochtime = atoll( argv[6] );
+	    if( !acl->invert ){
+		    aclMap[acl->ip] = acl;
+	    }
+	    acl->counter = 0;
+	}
 
     return 0;
 }
-#endif
 
 static int libCount = 0;
 extern int login_init();
@@ -172,8 +177,7 @@ int loadInfo() {
         return 2;
     }
 
-#if 0
-    rc = sqlite3_exec ( db, "select ipaddr from acl;", aclLoad, NULL, &error );
+    rc = sqlite3_exec ( db, "select * from acl;", aclLoad, NULL, &error );
 
     if ( rc != SQLITE_OK ) {
         fprintf ( stderr, "ERRR: Unable to load necessary plugins \n" );
@@ -181,7 +185,6 @@ int loadInfo() {
         db = NULL;
         return 3;
     }
-#endif
 
     sqlite3_close ( db );
     db = NULL;
@@ -285,24 +288,55 @@ int installTheNeededStuff() {
 
 #define MAX_BACKLOG 1024
 
-int clientsOnboard = 0;
+atomic_int clientsOnboard;
 int clientmanage(int op){
-	std::mutex m;
-	if( op == 0 && clientsOnboard > 0 ) //remove
-		clientsOnboard--; 
-	if( op == 1 && clientsOnboard < MAX_BACKLOG ) //add
-		clientsOnboard++;
-	else
-		fprintf( stderr, "WARN: Too many BACKLOGS, Not accepting any new connections \n");
-	if( op == 2 ) //get count
-		return clientsOnboard;
+	switch( op ){
+		case 0:
+			{
+				if (clientsOnboard > 0 ) //remove
+					clientsOnboard--;
+			}
+			break;
+		case 1:
+			{
+				if (clientsOnboard < MAX_BACKLOG ) //remove
+					clientsOnboard++;
+				else
+					fprintf( stderr, "WARN: Too many BACKLOGS, Not accepting any new connections \n");
+			}
+			break;
+		case 2:
+			return clientsOnboard;
+	};
 	return -1;
+}
+
+void reduce_r ( string ip ){
+	//fprintf(stderr, "DBUG: reducing counter for ip %s \n", ip.c_str() );
+	MapACL::iterator iter = dosMap.find(ip);
+	if( iter != dosMap.end() )
+	{
+		std::cerr<<"DBUG: Reducing counter for "<<ip<<" ---> "<<iter->second->counter <<std::endl;
+		 iter->second->counter -= 1;
+		 if( iter->second->counter < 0 )
+		{
+			iter->second->counter = 0;
+		}
+	}
+}
+
+void reduce_ipbin( uint32_t ip32 ){
+        char clientAddress[64];
+	sprintf( clientAddress, "%d.%d.%d.%d", (ip32&0xFF000000)>>24, (ip32&0x00FF0000)>>16, (ip32&0x0000FF00)>>8, (ip32&0x000000FF) );
+	string ipstr = clientAddress;
+	reduce_r( ipstr );
 }
 
 
 int main ( int argc, char *argv[] ) {
     bool  isRestart = false;
     short firstTime = 0;
+    clientsOnboard  = 0;
 
     //fclose ( stderr );
     //stderr = NULL;
@@ -611,6 +645,7 @@ shrinkStart:
                 fprintf ( stderr, "%d, ", pollfds[l].fd );
 		if( pollfds[l].fd == -1 ){
 			if( conn[l] ){
+				reduce_ipbin( conn[l]->ip );
 				delete conn[l];
 				conn[l] = 0;
 				clientmanage(0);
@@ -638,7 +673,7 @@ shrinkStart:
         if ( ( retVal = PR_Poll ( pollfds, nClients, 10 ) ) > 0 ) {
             if ( clientmanage(2) < MAX_BACKLOG ) {
             if ( pollfds[0].revents & PR_POLL_READ ) {
-                socklen_t addrlen = 0;
+                socklen_t addrlen = sizeof(PRNetAddr);
 
                 //printf("INFO: Received socket accepting \n");
                 if ( ( *client = accept ( *srv, ( sockaddr * ) &clientAddr, &addrlen ) ) ) {
@@ -647,6 +682,8 @@ shrinkStart:
 		    clientmanage(1);
                     allowConnect = true;
                     tempIp = PR_ntohl ( clientAddr.sin_addr.s_addr );
+
+
 #if 0
 
                     for ( n = 0; n < aclCount; n++ ) {
@@ -657,8 +694,34 @@ shrinkStart:
                     }
 
 #endif
-                    char clientAddress[256];
-                    strcpy ( clientAddress, inet_ntoa ( clientAddr.sin_addr ) );
+		    int DOS_THRESHOLD = 100;
+                    char clientAddress[64];
+		    sprintf( clientAddress, "%d.%d.%d.%d", (tempIp&0xFF000000)>>24, (tempIp&0x00FF0000)>>16, (tempIp&0x0000FF00)>>8, (tempIp&0x000000FF) );
+                    //strcpy ( clientAddress, inet_ntoa ( clientAddr.sin_addr ) );
+
+		    string ipstr = clientAddress;
+
+		    MapACL::iterator iter = dosMap.find( ipstr );
+		    if( iter == dosMap.end() ){
+			    ACL *dosAcl   = new ACL;
+			    dosAcl->invert = false;
+			    dosAcl->ipv4   = true;
+			    dosAcl->subnetmask = false;
+			    dosAcl->prefixmask = false;
+			    dosAcl->ip = clientAddress;
+			    dosAcl->counter = 1;
+			    dosMap[ipstr] = dosAcl;
+		    } else {
+			    if( iter->second->counter > DOS_THRESHOLD ){
+				   //fprintf(stderr, "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
+				    std::cerr<<"INFO: DOS treshold reached "<<iter->second->ip<<", "<<iter->second->counter<<std::endl;
+				   allowConnect = false;
+			    } else {
+				   allowConnect = true;
+				   iter->second->counter += 1;
+			    }
+		    }
+
                     //if ( PR_SUCCESS == PR_NetAddrToString ( &clientAddr , clientAddress, 256 ) ){
                     fprintf ( stderr, "INFO: Connection Received from 0x%x, %s \n", tempIp, clientAddress );
 
@@ -681,15 +744,15 @@ shrinkStart:
                             pollfds[nClients].revents = 0;
                             conn[nClients] = new Connection;
                             * ( conn[nClients]->socket ) = *client;
-                            conn[nClients]->ip     = PR_ntohl ( clientAddr.sin_addr.s_addr );
+                            conn[nClients]->ip     = tempIp;
                             conn[nClients]->setAuthLvl();
                             nClients++;
                         } else {
-                            fprintf ( stderr, "INFO: Connection closed due to max clients exceeded 0x%x \n", tempIp );
+                            fprintf ( stderr, "WARN: Connection closed due to max clients exceeded 0x%x \n", tempIp );
                             PR_Close ( client );
                         }
                     } else {
-                        fprintf ( stderr, "WARN: Connection closed because of ACL list entry not present 0x%x \n", tempIp );
+                        fprintf ( stderr, "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
                         PR_Shutdown ( client, PR_SHUTDOWN_BOTH );
                         PR_Close ( client );
                     }
@@ -716,9 +779,7 @@ shrinkStart:
                     PR_Closefd ( pollfds[i].fd );
 
                     if ( conn[i] )
-                    { delete conn[i]; clientmanage(0); }
-
-                    conn[i] = 0;
+                    { reduce_ipbin( conn[i]->ip ); delete conn[i]; conn[i] = 0; clientmanage(0); }
                     pollfds[i].fd = 0;
                     pollfds[i].events = 0;
                     pollfds[i].revents = 0;
@@ -891,13 +952,12 @@ shrinkStart:
                                 fprintf ( stderr, "\nERRR: File not found : %d and %d \n", conn[i]->file ? * ( conn[i]->file ) : -1, fInfoStatus );
 
 				if ( MAX_THREADS == 0 ){
-				    delete conn[i];
-                                    conn[i]       = 0;
+                    		    if( conn[i] ) 
+				    { reduce_ipbin( conn[i]->ip ); delete conn[i]; conn[i] = 0; clientmanage(0); }
                                     pollfds[i].fd = 0;
                                     pollfds[i].events = 0;
                                     pollfds[i].revents = 0;
                                     shrink = true;
-				    clientmanage(0);
 				    continue;
 				} else {
 
@@ -918,10 +978,8 @@ shrinkStart:
                     } else {
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
-                        if ( conn[i] )
-                        { delete conn[i]; clientmanage(0); }
-
-                        conn[i] = 0;
+                        if( conn[i] ) 
+			{ reduce_ipbin( conn[i]->ip ); delete conn[i]; conn[i] = 0; clientmanage(0); }
                         pollfds[i].fd = 0;
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
@@ -983,7 +1041,7 @@ shrinkStart:
                             PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                             if ( conn[i] )
-                            { delete conn[i]; conn[i] = 0; clientmanage(0); }
+                            { reduce_ipbin( conn[i]->ip ); delete conn[i]; conn[i] = 0; clientmanage(0); }
 
                             pollfds[i].fd = 0;
                             pollfds[i].events = 0;
@@ -998,7 +1056,7 @@ shrinkStart:
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                         if ( conn[i] )
-                        { delete conn[i]; conn[i]= 0; clientmanage(0); }
+                        { reduce_ipbin( conn[i]->ip ); delete conn[i]; conn[i]= 0; clientmanage(0); }
 
                         pollfds[i].fd = 0;
                         fprintf ( stderr, "DBUG: Cleaning up fd=%d \n", pollfds[i].fd );
@@ -1011,9 +1069,7 @@ shrinkStart:
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
 
                         if ( conn[i] )
-                        { delete conn[i]; clientmanage(0); }
-
-                        conn[i] = 0;
+                        { reduce_ipbin( conn[i]->ip ); delete conn[i]; conn[i]= 0; clientmanage(0); }
                         pollfds[i].fd = 0;
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;

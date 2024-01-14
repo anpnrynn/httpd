@@ -242,11 +242,15 @@ class HttpResp {
 
 class Connection {
     public:
-        unsigned char buf[SMALLBUF];
-        unsigned int  sent;
-        unsigned int  len;
-        unsigned int  offset;
-        unsigned int  ip;
+        unsigned char  buf[SMALLBUF];
+        unsigned int   sent;
+        unsigned int   len;
+        unsigned int   offset;
+	//0 - nossl, 1 ssv1, 2 sslv2, 3 sslv3, 100 tls 1.0, 101 tls 1.1, 102 tls 1.2, ... etc 
+	unsigned int   ssl;
+        unsigned int   ip;
+	unsigned short ipv6[8];
+
         unsigned int  authLvl;
         unsigned int  cmd;
         int32_t        filefd;
@@ -263,10 +267,19 @@ class Connection {
         void          *udata;
 
         Connection() {
-            len = 0;
-            sent = 0;
-            offset = 0;
-            ip     = 0;
+            len     = 0;
+            sent    = 0;
+            offset  = 0;
+	    ssl     = 0;
+            ip      = 0;
+	    ipv6[0] = 0;
+	    ipv6[1] = 0;
+	    ipv6[2] = 0;
+	    ipv6[3] = 0;
+	    ipv6[4] = 0;
+	    ipv6[5] = 0;
+	    ipv6[6] = 0;
+	    ipv6[7] = 0;
             authLvl = AUTH_PUBLIC;
             cmd    = 0;
             filefd   = -1;
@@ -286,10 +299,19 @@ class Connection {
             if ( file )
             { PR_Close ( file ); }
 
-            len    = 0;
-            sent   = 0;
-            offset = 0;
-            ip     = 0;
+            len     = 0;
+            sent    = 0;
+            offset  = 0;
+	    ssl     = 0;
+            ip      = 0;
+	    ipv6[0] = 0;
+	    ipv6[1] = 0;
+	    ipv6[2] = 0;
+	    ipv6[3] = 0;
+	    ipv6[4] = 0;
+	    ipv6[5] = 0;
+	    ipv6[6] = 0;
+	    ipv6[7] = 0;
             authLvl = AUTH_PUBLIC;
             cmd    = 0;
             filefd = -1;
@@ -316,9 +338,7 @@ class Connection {
             } else {
                 authLvl = AUTH_PUBLIC;
             }
-
         }
-
 };
 
 unsigned int sendConnRespHdr    ( Connection *conn, int status = HTTP_RESP_OK );
