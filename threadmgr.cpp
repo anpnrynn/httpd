@@ -201,6 +201,15 @@ void* ThreadMgr::httpthread ( void *data )
                     if ( !db ) {
                         tempResp->setContentLen ( 0 );
                         sendConnRespHdr ( conn, HTTP_RESP_INTERNALERR );
+#ifdef USE_SSL
+			if( conn->ssl ) {
+			SSL_shutdown(conn->ssl);
+			SSL_free(conn->ssl);
+			conn->ssl = 0;
+			conn->is_ssl = false;
+			conn->ssl_accept = false;
+			}
+#endif
                         PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
                         fprintf ( stderr, "INFO: Shuting down socket \n" );
                         PR_Close ( conn->socket );
@@ -217,11 +226,18 @@ void* ThreadMgr::httpthread ( void *data )
                         conn->udata = 0;
                         int rc = temp->processReq ( conn );
                         fprintf ( stderr, "INFO: Plugin execution completed = %d \n", rc );
+#ifdef USE_SSL
+			if( conn->ssl ) {
+			SSL_shutdown(conn->ssl);
+			SSL_free(conn->ssl);
+			conn->ssl = 0;
+			conn->is_ssl = false;
+			conn->ssl_accept = false;
+			}
+#endif
                         PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
-                        fprintf ( stderr, "INFO: Shuting down socket \n" );
                         PR_Close ( conn->socket );
 			*(conn->socket) = -1;
-                        fprintf ( stderr, "INFO: Closing socket \n" );
                         conn->socket = 0;
         	    	reduce_ipbin( conn->ip );
                         delete conn;
@@ -232,6 +248,15 @@ void* ThreadMgr::httpthread ( void *data )
                     fprintf ( stderr, "ERRR: Unable to find handler: %s \n", conn->req.getReqFile() );
                     tempResp->setContentLen ( 0 );
                     sendConnRespHdr ( conn, HTTP_RESP_NOTFOUND );
+#ifdef USE_SSL
+		    if( conn->ssl ) {
+			SSL_shutdown(conn->ssl);
+			SSL_free(conn->ssl);
+			conn->ssl = 0;
+			conn->is_ssl = false;
+			conn->ssl_accept = false;
+		    }
+#endif
                     PR_Close ( conn->socket );
 		    *(conn->socket) = -1;
                     conn->socket = 0;

@@ -1,5 +1,5 @@
 #!/bin/bash
 
 export LD_LIBRARY_PATH=`pwd`/../lib/
-# httpdsrv port  thresds  dosthreshold
-./httpdsrv 15000 10 100
+# httpdsrv port  thresds  dosthresholdA sslport
+./httpdsrv 15000 10 100 16000

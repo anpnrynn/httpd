@@ -1,18 +1,28 @@
 INC_DIR=-I./ -I/usr/include -I/usr/local/include
 
+SSL=-DUSE_SSL
+SSLINC=
+SSLLIB=-lssl -lcrypto
+
 LIB_DIR=-L/usr/lib -L/usr/local/lib -L./
-LIBS=-lsqlite3 -lpthread -ldl -lpthread
+LIBS=-lsqlite3 -lpthread -ldl $(SSLLIB)
 ELIBS=-lhttp 
-CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD -fPIC 
+
+CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD $(SSL) -fPIC 
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-O2
+
 OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o
 SOBJS=threadmgr.o server.o
 MAKELIBS=
+
 #Change these
 INSTALL_HOME=/tmp
 INSTALL_PAGE_STORE=/tmp
+SERVER_HOME=$(INSTALL_HOME)/httpd
+CERT_STORE=$(INSTALL_HOME)/httpd/share
+PAGE_STORE=$(INSTALL_PAGE_STORE)/var/www/Pages
 
 all:libhttp.so httpdsrv 
 

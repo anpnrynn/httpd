@@ -83,7 +83,7 @@ int   getqcmd  ( sqlite3 *db, int qid, int power, struct qcmdinfo *qcmd ) {
 }
 
 int   flushdata        ( Connection *conn, unsigned char **start, unsigned char **clen ) {
-    if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+    if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
     { return 0; }
     else
     { return createChunk ( conn->buf, conn->len, start, clen ); }
@@ -111,7 +111,7 @@ int appendrespstring    ( Connection *conn, char *buf ) {
         }
 
         if ( space == 0 ) {
-            if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+            if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
             { return 1; }
             else
             { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -120,7 +120,7 @@ int appendrespstring    ( Connection *conn, char *buf ) {
         appendChunkString ( &start, conn->len, space, ( unsigned char * ) buf, &incomp );
 
         if ( space == 0 ) {
-            if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+            if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
             { return 1; }
             else
             { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -131,7 +131,7 @@ int appendrespstring    ( Connection *conn, char *buf ) {
             appendChunkString ( &start, conn->len, space, data, &incomp );
 
             if ( space == 0 ) {
-                if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+                if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
                 { return 1; }
                 else
                 { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -257,7 +257,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
         }
 
         if ( space == 0 ) {
-            if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+            if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
             { return 1; }
             else
             { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -267,7 +267,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
 
         if( space == 0 )
         {
-            if( (conn->len = sendConnectionData(conn->socket, conn->buf, SMALLBUF) ) > SMALLBUF )
+            if( (conn->len = sendConnectionData(conn, conn->buf, SMALLBUF) ) > SMALLBUF )
                 return 1;
             else
                 space = createChunk ( conn->buf, conn->len, &start , &clen );
@@ -277,7 +277,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
         appendChunkString ( &start, conn->len, space, data, &incomp );
 
         if ( space == 0 ) {
-            if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+            if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
             { return 1; }
             else
             { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -294,7 +294,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
                 appendChunkString ( &start, conn->len, space, data, &incomp );
 
                 if ( space == 0 ) {
-                    if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+                    if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
                     { return 1; }
                     else
                     { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -307,7 +307,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
             }
 
             if ( space == 0 ) {
-                if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+                if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
                 { return 1; }
                 else
                 { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -316,7 +316,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
             appendChunkChar ( &start, conn->len, space, '|' );
 
             if ( space == 0 ) {
-                if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+                if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
                 { return 1; }
                 else
                 { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -327,7 +327,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
         appendChunkString ( &start, conn->len, space, data, &incomp );
 
         if ( space == 0 ) {
-            if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+            if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
             { return 1; }
             else
             { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -341,7 +341,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
         /* appendChunkChar ( &start, conn->len, space, '}' );
         if( space == 0 )
         {
-            if( (conn->len = sendConnectionData(conn->socket, conn->buf, SMALLBUF) ) > SMALLBUF )
+            if( (conn->len = sendConnectionData(conn, conn->buf, SMALLBUF) ) > SMALLBUF )
                 return 1;
             else
                 space = createChunk ( conn->buf, conn->len, &start , &clen );
@@ -524,7 +524,7 @@ int sqlhandlertype3 ( void *udata, int argc, char **argv, char **colName ) {
         }
 
         if ( space == 0 ) {
-            if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+            if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
             { return 1; }
             else
             { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -535,7 +535,7 @@ int sqlhandlertype3 ( void *udata, int argc, char **argv, char **colName ) {
             appendChunkString ( &start, conn->len, space, data, &incomp );
 
             if ( space == 0 ) {
-                if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+                if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
                 { return 1; }
                 else
                 { space = createChunk ( conn->buf, conn->len, &start, &clen ); }
@@ -548,7 +548,7 @@ int sqlhandlertype3 ( void *udata, int argc, char **argv, char **colName ) {
         }
 
         if ( space == 0 ) {
-            if ( ( conn->len = sendConnectionData ( conn->socket, conn->buf, SMALLBUF ) ) > SMALLBUF )
+            if ( ( conn->len = sendConnectionData ( conn, conn->buf, SMALLBUF ) ) > SMALLBUF )
             { return 1; }
             else
             { space = createChunk ( conn->buf, conn->len, &start, &clen ); }

@@ -14,6 +14,13 @@
 #include <prwrapper.h>
 #include <defines.h>
 
+#ifdef USE_SSL
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
+
 using namespace std;
 
 //India's offset from GMT = +5:30 hrs 19800 is in secs
@@ -156,6 +163,7 @@ class HttpReq {
         char* getReqFile();
         char* getReqFileType();
 
+        char* getReqFileAuth ( );
         char* getReqFileAuth ( int auth );
         int   getMethod () { return method; }
 	char* getPostTempFileName ( ) { 
@@ -246,8 +254,12 @@ class Connection {
         unsigned int   sent;
         unsigned int   len;
         unsigned int   offset;
+#ifdef USE_SSL
 	//0 - nossl, 1 ssv1, 2 sslv2, 3 sslv3, 100 tls 1.0, 101 tls 1.1, 102 tls 1.2, ... etc 
-	unsigned int   ssl;
+	SSL            *ssl;
+	bool           ssl_accept;
+	bool           is_ssl;
+#endif
         unsigned int   ip;
 	unsigned short ipv6[8];
 
@@ -270,7 +282,11 @@ class Connection {
             len     = 0;
             sent    = 0;
             offset  = 0;
+#ifdef USE_SSL
+	    is_ssl  = false;
+	    ssl_accept = false;
 	    ssl     = 0;
+#endif
             ip      = 0;
 	    ipv6[0] = 0;
 	    ipv6[1] = 0;
@@ -302,7 +318,11 @@ class Connection {
             len     = 0;
             sent    = 0;
             offset  = 0;
+#ifdef USE_SSL
+	    is_ssl  = false;
+	    ssl_accept = false;
 	    ssl     = 0;
+#endif
             ip      = 0;
 	    ipv6[0] = 0;
 	    ipv6[1] = 0;
@@ -342,7 +362,7 @@ class Connection {
 };
 
 unsigned int sendConnRespHdr    ( Connection *conn, int status = HTTP_RESP_OK );
-unsigned int sendConnectionData ( PRFileDesc *socket, unsigned char *buffer, unsigned int length );
+unsigned int sendConnectionDataToSock ( PRFileDesc *socket, unsigned char *buffer, unsigned int length );
 unsigned int sendConnectionData ( Connection *conn, unsigned char *buffer, unsigned int length );
 void         sendRemainderData  ( Connection *conn );
 

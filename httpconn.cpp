@@ -366,6 +366,14 @@ char *HttpReq::getReqFileType() {
     return fileType;
 }
 
+char *HttpReq::getReqFileAuth ( ){
+    if ( authUrl[0] == 0 ) {
+        strcat ( authUrl, PAGE_STORE );
+	strcat ( authUrl, decodedUrl );
+    }
+    return authUrl;
+}
+
 char *HttpReq::getReqFileAuth ( int auth ) {
     if ( authUrl[0] == 0 ) {
 
@@ -876,7 +884,7 @@ void sendRemainderData ( Connection *conn ) {
         } else {
             if ( SMALLBUF - conn->len  < 8 ) {
                 truncateChunk ( &conn->buf[2], conn->len );
-                conn->len = sendConnectionData ( conn->socket, conn->buf, conn->len );
+                conn->len = sendConnectionData ( conn, conn->buf, conn->len );
                 lastChunk ( conn->buf, conn->len );
             } else {
                 truncateChunk ( &conn->buf[2], conn->len );
@@ -888,7 +896,17 @@ void sendRemainderData ( Connection *conn ) {
     }
 
     if ( conn->len > 0 ) {
-        unsigned int tempLen = sendConnectionData ( conn->socket, conn->buf, conn->len );
+	unsigned int tempLen = 0;
+#ifdef USE_SSL
+	
+	    if( conn->ssl ){
+               tempLen = sendConnectionData ( conn, conn->buf, conn->len );
+	    } else {
+#endif
+               tempLen = sendConnectionData ( conn, conn->buf, conn->len );
+#ifdef USE_SSL
+	    }
+#endif
 
         if ( tempLen > SMALLBUF ) {
             fprintf ( stderr, "ERRR: Unable to send complete data\n" );
@@ -901,10 +919,99 @@ void sendRemainderData ( Connection *conn ) {
 unsigned int sendConnectionData (    Connection *conn,
                                      unsigned char *buf,
                                      unsigned int len ) {
-    return sendConnectionData ( conn->socket, buf, len );
+#ifdef USE_SSL
+    if( conn->ssl ){
+    unsigned int bytesW = 0;
+    int temp = 0;
+    PRErrorCode error = 0;
+    fprintf ( stderr, "INFO: Sending %d bytes \n", len );
+
+    do {
+        temp = SSL_write ( conn->ssl, buf + bytesW, len - bytesW  );
+
+        if ( temp > 0 ) {
+            bytesW += temp;
+            fprintf ( stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+        } else {
+            fprintf ( stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+	    int rc = 0;
+	    if( ( rc = SSL_get_error(conn->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ){
+
+	    } else {
+		
+                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
+                bytesW = 0;
+                break;
+	    }
+#if 0
+            error = PR_GetError();
+
+            if ( error == EWOULDBLOCK || error == EAGAIN ) {
+                fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
+                std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+            } else {
+                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
+                bytesW = 0;
+                break;
+            }
+#endif
+        }
+    } while ( bytesW < len );
+
+    if ( bytesW != len ) {
+        fprintf ( stderr, "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
+        len = len + 1;
+    } else {
+        len = 0;
+    }
+
+        return len;
+
+    } else {
+#endif
+    PRFileDesc *sock = conn->socket;
+    unsigned int bytesW = 0;
+    int temp = 0;
+    PRErrorCode error = 0;
+    fprintf ( stderr, "INFO: Sending %d bytes \n", len );
+
+    do {
+        temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
+
+        if ( temp > 0 ) {
+            bytesW += temp;
+            fprintf ( stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+        } else {
+            fprintf ( stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+            error = PR_GetError();
+
+            if ( error == EWOULDBLOCK || error == EAGAIN ) {
+                fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
+                std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+            } else {
+                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
+                bytesW = 0;
+                break;
+            }
+        }
+    } while ( bytesW < len );
+
+    if ( bytesW != len ) {
+        fprintf ( stderr, "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
+        len = len + 1;
+    } else {
+        len = 0;
+    }
+
+    return len;
+   
+    //    return sendConnectionDataToSock ( conn->socket, buf, len );
+#ifdef USE_SSL
+    }
+#endif
 }
 
-unsigned int sendConnectionData (    PRFileDesc *sock,
+unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
                                      unsigned char *buf,
                                      unsigned int len ) {
     unsigned int bytesW = 0;
@@ -955,7 +1062,7 @@ unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     char *tempbuf = ( char * ) conn->buf;
     fprintf ( stderr, "\nDBUG: Response Header:\n%s\n", tempbuf );
     fprintf ( stderr, "DBUG: ____________________________________\n" );
-    conn->len = sendConnectionData ( conn->socket, conn->buf, conn->len );
+    conn->len = sendConnectionData ( conn, conn->buf, conn->len );
     conn->len = 0;
     sendConnectionData ( conn, ( unsigned char * ) "\r\n", 2 );
     return 0;
