@@ -55,9 +55,9 @@ Features:
 COMPILE:
 --------
 make distclean   
-make
-make install
-cd /tmp/httpd/bin/
+make    
+make install    
+cd /tmp/httpd/bin/    
 
 RUN:
 ----
