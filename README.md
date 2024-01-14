@@ -54,8 +54,10 @@ Features:
 
 COMPILE:
 --------
-make clean   
+make distclean   
 make
+make install
+cd /tmp/httpd/bin/
 
 RUN:
 ----
@@ -104,7 +106,8 @@ Please change them on using this product.
 
 Test and Execution:
 -------------------
-read TEST.txt
+Have a look at tests folder   
+Read TEST.txt   
 
 Dependency:
 -----------
