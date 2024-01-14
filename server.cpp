@@ -38,8 +38,13 @@ PRLibrary *lib[MAXPLUGINS];
 int srvSocket = 0;
 int clientSocket = 0;
 PRFileDesc *srv = &srvSocket, *client = &clientSocket;
+int srvSocket6 = 0;
+int clientSocket6 = 0;
+PRFileDesc *srv6 = &srvSocket6, *client6 = &clientSocket6;
 unsigned short int SRVPORT = 0;
-bool isBound = false;
+unsigned short int SRVPORT6 = 0;
+bool isBound  = false;
+bool isBound6 = false;
 extern int MAX_THREADS;
 
 //Clean up operations
@@ -345,19 +350,24 @@ int main ( int argc, char *argv[] ) {
     if ( !stderr )
     { exit ( 56 ); }
 
-    if ( argc < 2 ) {
+    if ( argc < 3 ) {
         fprintf ( stderr, "%s Exited \n", argv[0] );
         fprintf ( stderr, "Format: %s port count sslport\n", argv[0] );
         fprintf ( stderr, "port    - Server port number to use \n" );
         fprintf ( stderr, "count   - Number of threads to launch \n" );
+        fprintf ( stderr, "dosthrehsold   - DOS threshold \n" );
         exit ( 1 );
     } else {
         SRVPORT = atoi ( argv[1] );
+        SRVPORT6 = atoi ( argv[1] );
     }
 
-    if ( argc == 3 ) {
+    int dosThreshold =0;
+
+    if ( argc == 4 ) {
         fprintf ( stderr, "INFO: Received threads count: %s \n", argv[2] );
         MAX_THREADS = atoi ( argv[2] );
+        dosThreshold = atoi ( argv[3] );
 
         if ( MAX_THREADS > MAX_POSSIBLE_THREADS ) {
             fprintf ( stderr, "ERRR: Cannot create more than %d threads \n", MAX_POSSIBLE_THREADS );
@@ -386,22 +396,53 @@ start:
     PRNetAddr  srvAddr;
     PRNetAddr  clientAddr;
 
+    PRNetAddr6 srvAddr6;
+    PRNetAddr6 clientAddr6;
+
     fprintf ( stderr, "INFO: Creating socket \n" );
 
     *srv = PR_NewTCPSocket();
     srvAddr.sin_family  = PR_AF_INET;
     srvAddr.sin_addr.s_addr     = 0x00000000;
     srvAddr.sin_port   = PR_htons ( SRVPORT );
-    fprintf ( stderr, "INFO: Socket created successfully \n" );
+    fprintf ( stderr, "INFO: IPv4 Socket created successfully : Port = %d \n", SRVPORT );
     fflush ( stdout );
 
-    //if( PR_Bind(srv, &srvAddr) ==  PR_FAILURE )
-    int count = 0;
+#if 0
+    int flag = 1;
+    int ret = setsockopt(*srv, SOL_SOCKET, SO_REUSEADDR|SO_REUSEPORT, &flag, sizeof(flag));
+    if(ret == -1) {
+        	fprintf ( stderr, "ERRR: Unable to setsockopt - IPv4 \n" );
+	return EXIT_FAILURE;
+    }
+#endif
 
+    *srv6 = PR_NewTCPSocket6();
+    srvAddr6.sin6_family = PR_AF_INET6;
+    srvAddr6.sin6_addr = in6addr_any;
+    srvAddr6.sin6_port = htons(SRVPORT6);
+    fprintf ( stderr, "INFO: IPv6 Socket created successfully : Port = %d \n", SRVPORT6 );
+    fflush ( stdout );
+
+
+    int sockflag = 1;
+    int sockret = setsockopt(*srv, SOL_SOCKET, SO_REUSEADDR|SO_REUSEPORT, &sockflag, sizeof(sockflag));
+	if(sockret == -1) {
+        	fprintf ( stderr, "ERRR: Unable to setsockopt - IPv4 \n" );
+		return 1;
+	}
+
+    sockflag = 1;
+    sockret = setsockopt(*srv6, SOL_SOCKET, SO_REUSEADDR|SO_REUSEPORT, &sockflag, sizeof(sockflag));
+	if(sockret == -1) {
+        	fprintf ( stderr, "ERRR: Unable to setsockopt - IPv6 \n" );
+		return 1;
+	}
+
+    int count = 0;
     while ( bind ( *srv, ( const sockaddr * ) &srvAddr, sizeof ( sockaddr_in ) ) !=  0 ) {
-        fprintf ( stderr, "ERRR: Unable to Bind \n" );
+        fprintf ( stderr, "ERRR: Unable to Bind - IPv4 \n" );
         PR_Cleanup();
-        //PR_Sleep ( 1000 );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
         if ( count > 1000 ) {
@@ -409,33 +450,57 @@ start:
         } else {
             count++;
         }
+    }
 
-        //return 1;
+    count = 0;
+    while ( bind ( *srv6, ( const sockaddr * ) &srvAddr6, sizeof ( sockaddr_in6 ) ) !=  0 ) {
+        fprintf ( stderr, "ERRR: Unable to Bind - IPv6 \n" );
+        PR_Cleanup();
+        std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
+
+        if ( count > 1000 ) {
+            return 1;
+        } else {
+            count++;
+        }
     }
 
     isBound = true;
+    isBound6 = true;
 
-    fprintf ( stderr, "INFO: Bound successfully \n" );
+    fprintf ( stderr, "INFO: Bound successfully both IPv4 and IPv6 \n" );
 
     if ( PR_Listen ( srv, 20 ) == PR_FAILURE ) {
-        fprintf ( stderr, "ERRR: Unable to setup backlog \n" );
+        fprintf ( stderr, "ERRR: Unable to setup backlog - IPV4\n" );
         PR_Cleanup();
         return 2;
     }
 
-    fprintf ( stderr, "INFO: Listening successfully \n" );
+    if ( PR_Listen ( srv6, 20 ) == PR_FAILURE ) {
+        fprintf ( stderr, "ERRR: Unable to setup backlog - IPv6\n" );
+        PR_Cleanup();
+        return 2;
+    }
+
+    fprintf ( stderr, "INFO: Listening successfully IPv4 & IPv6 \n" );
     //PRSocketOptionData  opt;
     //opt.option = PR_SockOpt_Nonblocking;
     //opt.value.non_blocking = true;
 
     //if( PR_SetSocketOption(srv, &opt) == PR_FAILURE )
     if ( fcntl ( *srv, F_SETFL, O_NONBLOCK ) != 0 ) {
-        fprintf ( stderr, "ERRR: Unable to set socket option \n" );
+        fprintf ( stderr, "ERRR: Unable to set fd in NONBLOCK  - IPv4 \n" );
         PR_Cleanup();
         return 3;
     }
 
-    fprintf ( stderr, "INFO: Non blocking successfully \n" );
+    if ( fcntl ( *srv, F_SETFL, O_NONBLOCK ) != 0 ) {
+        fprintf ( stderr, "ERRR: Unable to set fd in NONBLOCK  - IPv6 \n" );
+        PR_Cleanup();
+        return 3;
+    }
+
+    fprintf ( stderr, "INFO: Non blocking successfully - IPv4 & IPv6 \n" );
     fflush ( stdout );
 #if 0
 
@@ -586,11 +651,16 @@ shrinkStart:
             pollfds[0].fd = *srv;
             pollfds[0].events = PR_POLL_READ | PR_POLL_EXCEPT;
             pollfds[0].revents = 0;
-            nClients = 1;
+
+            pollfds[1].fd = *srv6;
+            pollfds[1].events = PR_POLL_READ | PR_POLL_EXCEPT;
+            pollfds[1].revents = 0;
+            nClients = 2;
+
             offset = 1;
             shift  = 0;
 
-            for ( i = 1; i < MAXCLIENTS; i++ ) {
+            for ( i = 2; i < MAXCLIENTS; i++ ) {
                 if ( pollfds[i].fd == 0 ) {
                     shift = i + offset;
 
@@ -682,19 +752,7 @@ shrinkStart:
 		    clientmanage(1);
                     allowConnect = true;
                     tempIp = PR_ntohl ( clientAddr.sin_addr.s_addr );
-
-
-#if 0
-
-                    for ( n = 0; n < aclCount; n++ ) {
-                        if ( tempIp == aclIp[n] ) {
-                            allowConnect = true;
-                            break;
-                        }
-                    }
-
-#endif
-		    int DOS_THRESHOLD = 100;
+		    int DOS_THRESHOLD = dosThreshold;
                     char clientAddress[64];
 		    sprintf( clientAddress, "%d.%d.%d.%d", (tempIp&0xFF000000)>>24, (tempIp&0x00FF0000)>>16, (tempIp&0x0000FF00)>>8, (tempIp&0x000000FF) );
                     //strcpy ( clientAddress, inet_ntoa ( clientAddr.sin_addr ) );
@@ -722,12 +780,8 @@ shrinkStart:
 			    }
 		    }
 
-                    //if ( PR_SUCCESS == PR_NetAddrToString ( &clientAddr , clientAddress, 256 ) ){
-                    fprintf ( stderr, "INFO: Connection Received from 0x%x, %s \n", tempIp, clientAddress );
+                    fprintf ( stderr, "INFO: IPv4 Connection Received from : %s:%d \n", clientAddress, ntohs(clientAddr.sin_port) );
 
-                    //} else {
-                    //  fprintf(stderr,"INFO: Connection Received from 0x%x \n",tempIp);
-                    //}
                     if ( allowConnect ) {
                         if ( nClients < MAXCLIENTS ) {
                             //if( PR_SetSocketOption(client, &opt) == PR_FAILURE )
@@ -748,7 +802,7 @@ shrinkStart:
                             conn[nClients]->setAuthLvl();
                             nClients++;
                         } else {
-                            fprintf ( stderr, "WARN: Connection closed due to max clients exceeded 0x%x \n", tempIp );
+                            fprintf ( stderr, "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                             PR_Close ( client );
                         }
                     } else {
@@ -768,10 +822,90 @@ shrinkStart:
                     //exit(1);
                 }
             }
+
+	    if ( pollfds[1].revents & PR_POLL_READ ) {
+                socklen_t addrlen = sizeof(PRNetAddr6);
+
+                if ( ( *client6 = accept ( *srv6, ( sockaddr * ) &clientAddr6, &addrlen ) ) ) {
+                    //TODO:
+                    //allowConnect = false;
+		    clientmanage(1);
+                    allowConnect = true;
+
+		    int DOS_THRESHOLD = dosThreshold;
+                    char clientAddress[64];
+		    inet_ntop(AF_INET6, &(clientAddr6.sin6_addr), clientAddress, 64);
+
+		    string ipstr = clientAddress;
+
+		    MapACL::iterator iter = dosMap.find( ipstr );
+		    if( iter == dosMap.end() ){
+			    ACL *dosAcl   = new ACL;
+			    dosAcl->invert = false;
+			    dosAcl->ipv4   = true;
+			    dosAcl->subnetmask = false;
+			    dosAcl->prefixmask = false;
+			    dosAcl->ip = clientAddress;
+			    dosAcl->counter = 1;
+			    dosMap[ipstr] = dosAcl;
+		    } else {
+			    if( iter->second->counter > DOS_THRESHOLD ){
+				   //fprintf(stderr, "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
+				    std::cerr<<"INFO: DOS treshold reached "<<iter->second->ip<<", "<<iter->second->counter<<std::endl;
+				   allowConnect = false;
+			    } else {
+				   allowConnect = true;
+				   iter->second->counter += 1;
+			    }
+		    }
+		    fprintf(stderr, "IPv6 connection received from: %s:%d ...\n", clientAddress, ntohs(clientAddr6.sin6_port));
+
+                    if ( allowConnect ) {
+                        if ( nClients < MAXCLIENTS ) {
+                            //if( PR_SetSocketOption(client, &opt) == PR_FAILURE )
+                            int flags = fcntl ( *client6, F_GETFL );
+                            flags |= O_NONBLOCK;
+
+                            if ( fcntl ( *client6, F_SETFL, flags ) != 0 ) {
+                                fprintf ( stderr, "ERRR: Unable to set socket option \n" );
+                            }
+
+                            fprintf ( stderr, "INFO: Received Connection on fd=%d\n", *client6 );
+                            pollfds[nClients].fd = *client6;
+                            pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
+                            pollfds[nClients].revents = 0;
+                            conn[nClients] = new Connection;
+                            * ( conn[nClients]->socket ) = *client6;
+			    conn[nClients]->ssl    = 0;
+                            conn[nClients]->ip     = 0;
+			    memcpy ( conn[nClients]->ipv6, &clientAddr6.sin6_addr, sizeof( clientAddr6.sin6_addr ) );
+                            conn[nClients]->setAuthLvl();
+                            nClients++;
+                        } else {
+                            fprintf ( stderr, "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                            PR_Close ( client );
+                        }
+                    } else {
+                        fprintf ( stderr, "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
+                        PR_Shutdown ( client6, PR_SHUTDOWN_BOTH );
+                        PR_Close ( client6 );
+                    }
+                }
+
+            } else {
+                if ( pollfds[0].revents & PR_POLL_NVAL || pollfds[0].revents & PR_POLL_ERR ) {
+                    fprintf ( stderr, "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
+                    PR_Closefd ( pollfds[1].fd );
+                    pollfds[1].fd = 0;
+                    goto start;
+                    //exit(1);
+                }
+            }
+
+
 	    }
 
-            for ( i = 1; i < nClients; i++ ) {
-
+            for ( i = 2; i < nClients; i++ ) {
 
                 if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
                     fprintf ( stderr, "INFO: Invalid fd , closing \n" );

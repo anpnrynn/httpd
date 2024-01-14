@@ -1,6 +1,7 @@
 14/01/2024 - 2
 ==============
 DOS prevention by using remote ip connection threshold.
+Added support for IPv6 server listen socket, now http over IPv6 works.
 
 14/01/2024 - 1
 ==============

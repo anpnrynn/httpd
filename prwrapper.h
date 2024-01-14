@@ -32,6 +32,7 @@
 #define PRErrorCode  int32_t
 #define PRLibrary    void
 #define PRNetAddr    struct sockaddr_in
+#define PRNetAddr6   struct sockaddr_in6
 #define PRStatus     int32_t
 #define PRPollDesc   struct pollfd
 
@@ -82,7 +83,8 @@
 
 
 
-#define PR_NewTCPSocket()              socket(AF_INET, SOCK_STREAM, 0)
+#define PR_NewTCPSocket()              socket(AF_INET,  SOCK_STREAM, 0)
+#define PR_NewTCPSocket6()             socket(AF_INET6, SOCK_STREAM, 0)
 #define PR_AF_INET                     AF_INET
 #define PR_AF_INET6                    AF_INET6
 #define PR_htons(port)                 htons(port)
