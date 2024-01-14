@@ -99,10 +99,10 @@ p3.xyz       -> plugin libp3.so dynamic page
 
 Default Username and Password:
 ------------------------------
-admin / adminpassword
-root  / rootpassword
-super / superpassword
-Please change them on using this product.
+admin / adminpassword   
+root  / rootpassword   
+super / superpassword   
+Please change them on using this product.   
 
 
 Test and Execution:
