@@ -48,6 +48,8 @@ Features:
 10. Supports Large file upload through POST multipart (>= 5.0GB)
 11. Supports CppThreads (-DUSE_CPP11THREAD) and Pthreads ( -DUSE_PTHREAD)
 12. Supports thttpd like operation by setting threads to 0 during startup. Becomes a static http file server.
+13. Supports trivial DOS prevention.    
+14. Supports both IPv4 and IPv6 sockets, http over IPv4 and IPv6 is now possible.    
 
 
 COMPILE:
