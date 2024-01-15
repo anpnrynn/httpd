@@ -21,7 +21,8 @@ HttpReq::HttpReq() {
     len = 0;
     encodedUrl[0] = 0;
     decodedUrl[0] = 0;
-    authUrl[0] = 0;
+    //authUrl[0] = 0;
+    authUrl = "";
     fileType[0] = 0;
     cookie[0] = 0;
     referer[0] = 0;
@@ -47,6 +48,7 @@ HttpReq::HttpReq() {
     postFileName[0] = 0;
     hdrPartial = false;
     hdrReadComplete = false;
+    hdrInvalid = false;
     isVal =  false;
     isEnd =  false;
     isTagEnd = false;
@@ -83,8 +85,13 @@ void HttpReq::processHttpMethod ( char* mthd ) {
 void HttpReq::processHttpProto ( char *prot ) {
     if ( strcasecmp ( "HTTP/1.0", prot ) == 0 )
     { version = 0; }
-    else
+    else if ( strcasecmp ( "HTTP/1.1", prot ) == 0 )
     { version = 1; }
+    else if ( strcasecmp ( "HTTP/2", prot ) == 0 )
+    { version = 2; }
+    else if ( strcasecmp ( "HTTP/3", prot ) == 0 )
+    { version = 3; }
+    else { version = 1; }
 }
 
 void HttpReq::skipHdrTag ( size_t &start, size_t d ) {
@@ -102,19 +109,78 @@ void HttpReq::skipHdrTag ( size_t &start, size_t d ) {
     { start = k - d; }
 }
 
+bool isHttpMethod( char *mthd ){
+	if ( strcmp( mthd, "GET" ) != 0 &&
+		strcmp( mthd, "POST") != 0 &&
+		strcmp( mthd, "HEAD") != 0 &&
+		strcmp( mthd, "PUT")  != 0 &&
+		strcmp( mthd, "PATCH")  != 0 &&
+		strcmp( mthd, "DELETE")  != 0 ){
+		return false;
+	} else {
+		return true;
+	}
+}
+
 int HttpReq::processHttpFirstLine() {
     char mthd[16];
     char prot[16];
-    int count = sscanf ( ( const char* ) buf, " %s /%s %s\r\n", mthd, encodedUrl, prot );
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    char *hdrReq[3] = { mthd, encodedUrl, prot };
 
-    if ( count == 3 ) {
-        processHttpMethod ( mthd );
-        processHttpProto ( prot );
-        httpdecode       ( decodedUrl, encodedUrl );
+    while ( buf[i] < MAXBUF ){
+	    if( buf[i] == ' '){
+	        hdrReq[j][k] = 0;
+		j++;
+		k=0;
+		if( j == 1 ){
+			if(!isHttpMethod(mthd) ) {
+				hdrInvalid = true;
+				return 10;
+			}
+		} else if( j > 3 ){
+			hdrInvalid = true;
+			return 11;
+		}
+		if( buf[i+1] == '/' ){
+			i++;
+		}
+	    }else if( buf[i] =='\r' || buf[i] =='\n' ) {
+		hdrReq[j][k] = 0;
+		j++;
+		k=0;
+		break;
+   	    }else {
+		if( ( j == 0 || j == 2 ) && k >= 15 ){
+			hdrInvalid = true;
+			return 12;
+		} else if ( j == 1 && k >= 4095 ){
+			hdrInvalid = true;
+			return 13;
+		}
+	    	hdrReq[j][k++] = buf[i];
+	    }
+	    i++;
+    }
+    if( j == 3 ){
+	if( encodedUrl[0]  == 0 ) {
+		strcpy( encodedUrl , "index.html" );
+	}
+    	fprintf ( stderr, "DBUG: Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
+	hdrInvalid = false;
+    }  else {
+    	fprintf ( stderr, "DBUG: Header invalid <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+	hdrInvalid = true;
+	return 10;
     }
 
-    fprintf ( stderr, "DBUG: Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
-    return count;
+    processHttpMethod ( mthd );
+    processHttpProto ( prot );
+    httpdecode       ( decodedUrl, encodedUrl );
+
+    return j;
 }
 
 int HttpReq::getHttpConnType ( char *data ) {
@@ -174,8 +240,9 @@ void HttpReq::readHttpHeader() {
         hdrPartial = true;
 
         if ( processHttpFirstLine() != 3 ) {
-            fprintf ( stderr, "ERRR: Invalid Http Header, dropping packet \n" );
-            hLen = ( size_t ) -1;
+            fprintf ( stderr, "ERRR: Invalid Http Header, dropping connection \n" );
+	    hdrInvalid = true;
+            hLen = ( size_t ) 0;
             return;
         }
 
@@ -366,51 +433,72 @@ char *HttpReq::getReqFileType() {
     return fileType;
 }
 
+char *HttpReq::getReqFileAuth ( ){
+    if ( authUrl == "" ) {
+	//sprintf( authUrl, "%s%s", PAGE_STORE, decodedUrl );
+	//strcat( authUrl, PAGE_STORE );
+	//strcat( authUrl, decodedUrl );
+	authUrl += PAGE_STORE;
+	authUrl += decodedUrl;
+    }
+    return const_cast<char*>(authUrl.c_str());
+}
+
 char *HttpReq::getReqFileAuth ( int auth ) {
-    if ( authUrl[0] == 0 ) {
+    if ( authUrl == "" ) {
 
 #ifdef LINUX_BUILD
-        strcat ( authUrl, PAGE_STORE );
+	//strcpy ( authUrl, PAGE_STORE );
+	authUrl += PAGE_STORE;
 #else
-        strcat ( authUrl, PAGE_STORE );
+	//strcpy ( authUrl, PAGE_STORE );
+	authUrl += PAGE_STORE;
 #endif
 
         if ( strcasecmp ( decodedUrl, "login.html" ) == 0 ||
-                strcasecmp ( decodedUrl, "public.html" ) == 0 ) {
-            strcat ( authUrl, decodedUrl );
-            return authUrl;
+                strcasecmp ( decodedUrl, "public.html" ) == 0 ||
+                strcasecmp ( decodedUrl, "index.html" ) == 0 ) {
+            //strcat ( authUrl, decodedUrl );
+	    authUrl += decodedUrl;
+            return const_cast<char*>(authUrl.c_str());
         }
 
         switch ( auth ) {
             case AUTH_SUPERUSER:
-                strcat ( authUrl, "super_" );
+                //strcat ( authUrl, "super_" );
+		authUrl += "super_";
                 break;
 
             case AUTH_ROOTUSER:
-                strcat ( authUrl, "root_" );
+                //strcat ( authUrl, "root_" );
+		authUrl += "root_";
                 break;
 
             case AUTH_ADMIN:
-                strcat ( authUrl, "admin_" );
+                //strcat ( authUrl, "admin_" );
+		authUrl += "admin_";
                 break;
 
             case AUTH_PUBLIC:
             default:
-                strcat ( authUrl, "all_" );
+                //strcat ( authUrl, "all_" );
+		authUrl += "all_";
                 break;
         };
 
         if ( ( strcmp ( decodedUrl, "HTTP/1.1" ) == 0 ) || ( strcmp ( decodedUrl, "HTTP/1.0" ) == 0 ) ) {
-            strcat ( authUrl, "index.html" );
+            //strcat ( authUrl, "index.html" );
+	    authUrl += "index.html";
         } else {
-            strcat ( authUrl, decodedUrl );
+            //strcat ( authUrl, decodedUrl );
+	    authUrl += decodedUrl;
         }
 
-        fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl );
-        return authUrl;
+        fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
+        return const_cast<char*>(authUrl.c_str());
     } else {
-        fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl );
-        return authUrl;
+        fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
+        return const_cast<char*>(authUrl.c_str());
     }
 }
 
@@ -876,7 +964,7 @@ void sendRemainderData ( Connection *conn ) {
         } else {
             if ( SMALLBUF - conn->len  < 8 ) {
                 truncateChunk ( &conn->buf[2], conn->len );
-                conn->len = sendConnectionData ( conn->socket, conn->buf, conn->len );
+                conn->len = sendConnectionData ( conn, conn->buf, conn->len );
                 lastChunk ( conn->buf, conn->len );
             } else {
                 truncateChunk ( &conn->buf[2], conn->len );
@@ -888,7 +976,17 @@ void sendRemainderData ( Connection *conn ) {
     }
 
     if ( conn->len > 0 ) {
-        unsigned int tempLen = sendConnectionData ( conn->socket, conn->buf, conn->len );
+	unsigned int tempLen = 0;
+#ifdef USE_SSL
+	
+	    if( conn->ssl ){
+               tempLen = sendConnectionData ( conn, conn->buf, conn->len );
+	    } else {
+#endif
+               tempLen = sendConnectionData ( conn, conn->buf, conn->len );
+#ifdef USE_SSL
+	    }
+#endif
 
         if ( tempLen > SMALLBUF ) {
             fprintf ( stderr, "ERRR: Unable to send complete data\n" );
@@ -901,10 +999,99 @@ void sendRemainderData ( Connection *conn ) {
 unsigned int sendConnectionData (    Connection *conn,
                                      unsigned char *buf,
                                      unsigned int len ) {
-    return sendConnectionData ( conn->socket, buf, len );
+#ifdef USE_SSL
+    if( conn->ssl ){
+    unsigned int bytesW = 0;
+    int temp = 0;
+    PRErrorCode error = 0;
+    fprintf ( stderr, "INFO: Sending %d bytes \n", len );
+
+    do {
+        temp = SSL_write ( conn->ssl, buf + bytesW, len - bytesW  );
+
+        if ( temp > 0 ) {
+            bytesW += temp;
+            fprintf ( stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+        } else {
+            fprintf ( stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+	    int rc = 0;
+	    if( ( rc = SSL_get_error(conn->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ){
+
+	    } else {
+		
+                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
+                bytesW = 0;
+                break;
+	    }
+#if 0
+            error = PR_GetError();
+
+            if ( error == EWOULDBLOCK || error == EAGAIN ) {
+                fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
+                std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+            } else {
+                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
+                bytesW = 0;
+                break;
+            }
+#endif
+        }
+    } while ( bytesW < len );
+
+    if ( bytesW != len ) {
+        fprintf ( stderr, "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
+        len = len + 1;
+    } else {
+        len = 0;
+    }
+
+        return len;
+
+    } else {
+#endif
+    PRFileDesc *sock = conn->socket;
+    unsigned int bytesW = 0;
+    int temp = 0;
+    PRErrorCode error = 0;
+    fprintf ( stderr, "INFO: Sending %d bytes \n", len );
+
+    do {
+        temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
+
+        if ( temp > 0 ) {
+            bytesW += temp;
+            fprintf ( stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+        } else {
+            fprintf ( stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+            error = PR_GetError();
+
+            if ( error == EWOULDBLOCK || error == EAGAIN ) {
+                fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
+                std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+            } else {
+                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
+                bytesW = 0;
+                break;
+            }
+        }
+    } while ( bytesW < len );
+
+    if ( bytesW != len ) {
+        fprintf ( stderr, "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
+        len = len + 1;
+    } else {
+        len = 0;
+    }
+
+    return len;
+   
+    //    return sendConnectionDataToSock ( conn->socket, buf, len );
+#ifdef USE_SSL
+    }
+#endif
 }
 
-unsigned int sendConnectionData (    PRFileDesc *sock,
+unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
                                      unsigned char *buf,
                                      unsigned int len ) {
     unsigned int bytesW = 0;
@@ -948,15 +1135,17 @@ unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     tempResp->setStatus ( status );
     conn->len  = tempResp->getHeader ( ( char * ) conn->buf );
 
-    //if ( status == HTTP_RESP_OK ) {
     conn->len += conn->sess->dumpSessionCookies ( ( char * ) & ( conn->buf[conn->len] ) );
-    //}
+    conn->buf[conn->len] = '\r';
+    conn->len++;
+    conn->buf[conn->len] = '\n';
+    conn->len++;
+    conn->buf[conn->len] = 0;
 
     char *tempbuf = ( char * ) conn->buf;
     fprintf ( stderr, "\nDBUG: Response Header:\n%s\n", tempbuf );
     fprintf ( stderr, "DBUG: ____________________________________\n" );
-    conn->len = sendConnectionData ( conn->socket, conn->buf, conn->len );
+    conn->len = sendConnectionData ( conn, conn->buf, conn->len );
     conn->len = 0;
-    sendConnectionData ( conn, ( unsigned char * ) "\r\n", 2 );
     return 0;
 }
