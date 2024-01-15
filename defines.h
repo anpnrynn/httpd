@@ -7,13 +7,13 @@
 #define SERVER_HOME INSTALL_HOME "/httpd/"
 #define CERT_STORE  INSTALL_HOME "/httpd/share/"
 #define INFO_STORE  "/var/local/infostore.sqlite3"
-#define PAGE_STORE  INSTALL_PAGE_STORE "/var/www/Pages/" 
+#define PAGE_STORE  INSTALL_PAGE_STORE "/var/www/Pages/"
 #define LOGFILE     "/var/log/githubcom_anpnrynn_httpd.log"
 #else
 #define SERVER_HOME INSTALL_HOME "/httpd/"
 #define CERT_STORE  INSTALL_HOME "/httpd/share/"
 #define INFO_STORE  "infostore.sqlite3"
-#define PAGE_STORE  INSTALL_PAGE_STORE "Pages/" 
+#define PAGE_STORE  INSTALL_PAGE_STORE "Pages/"
 #define LOGFILE     "githubcom_anpnrynn_httpd.log"
 #endif
 

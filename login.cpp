@@ -54,7 +54,7 @@ int login_handler ( void *data, int argc, char **argv, char **col ) {
         if ( argv[1] ) {
             char *lpage = ( char * ) malloc ( 256 );
             lpage[0] = 0;
-            strcpy ( lpage , argv[1] );
+            strcpy ( lpage, argv[1] );
             conn->udata = lpage;
         } else {
             conn->udata = 0;
@@ -91,7 +91,8 @@ int login_processReq ( Connection *conn ) {
     conn->req.convertPostDataToVector ( param, NULL );
     conn->req.removePostTempFile();
 
-    conn->resp.setContentLen(0);
+    conn->resp.setContentLen ( 0 );
+
     if ( param->size() >= 3 ) {
         //gid = atoi ( ( ( *param ) [0] ).c_str() );
         //tid = atoi ( ( ( *param ) [1] ).c_str() );
@@ -99,6 +100,7 @@ int login_processReq ( Connection *conn ) {
     } else {
         //conn->resp.setContentLen ( 0 );
         sendConnRespHdr ( conn, HTTP_RESP_BADREQ );
+
         if ( param )
         { delete param; }
 
@@ -112,10 +114,10 @@ int login_processReq ( Connection *conn ) {
         sendConnRespHdr ( conn, HTTP_RESP_BADREQ );
     } else {
         sprintf ( rcmd, cmd, ( char * ) ( ( *param ) [3] ).c_str(),  ( char * ) ( ( *param ) [4] ).c_str() );
-        fprintf ( stderr, "DBUG: login plugin: login.xyz : executing sql command : %s \n", rcmd );
+        //fprintf ( stderr, "DBUG: login plugin: login.xyz : executing sql command : %s \n", rcmd );
 
         conn->udata = 0;
-	//conn->resp.redirect[0] = 0;
+        //conn->resp.redirect[0] = 0;
 
         do {
             rc = sqlite3_exec ( conn->db, rcmd, login_handler, conn, &error );
@@ -141,12 +143,12 @@ int login_processReq ( Connection *conn ) {
         //conn->sess->updateSaveSession ( conn->db );
 
         if ( conn->udata ) {
-            conn->resp.setLocation ( (char*) conn->udata );
+            conn->resp.setLocation ( ( char* ) conn->udata );
             fprintf ( stderr, "INFO: Setting Location: %s\n", ( char * ) conn->udata );
             free ( conn->udata );
-	    conn->udata = 0;
+            conn->udata = 0;
         } else {
-            conn->resp.setLocation ( (char*)"403.sthtml" );
+            conn->resp.setLocation ( ( char* ) "403.sthtml" );
             isforbidden = 1;
             fprintf ( stderr, "INFO: Setting Location: 403.sthtml\n" );
         }
