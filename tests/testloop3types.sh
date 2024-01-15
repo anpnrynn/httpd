@@ -4,15 +4,18 @@ i=0
 while [[ $i -le 100 ]] 
 do
 	j=0
-	while [[ $j -le 33 ]]
+	while [[ $j -le 20 ]]
 	do
 		curl -v --retry-delay 10 --retry-all-errors --retry 16 -F key1=value1 -F upload=@/tmp/var/www/Pages/nandihills.jpg -o 3types.$i.$j.1 http://127.0.0.1:15000/p3.xyz &
 		wget -O 3types.$i.$j.2  http://127.0.0.1:15000/nandihills.jpg &
 		wget -O 3types.$i.$j.3  http://127.0.0.1:15000/p3.xyz &
+		curl -v --retry-delay 10 --retry-all-errors --retry 16 -F key1=value1 -F upload=@/tmp/var/www/Pages/nandihills.jpg -o 3types.$i.$j.4 http://[::1]:15000/p3.xyz &
+		wget -O 3types.$i.$j.5  http://[::1]:15000/nandihills.jpg &
+		wget -O 3types.$i.$j.6  http://[::1]:15000/p3.xyz &
 		j=$((j+1))
 	done
 	count=`ps -ef |egrep "(curl|wget)" | wc -l`
-	while [[ $count -gt 200 ]]
+	while [[ $count -gt 120 ]]
 	do
 		count=`ps -ef |egrep "(curl|wget)" | wc -l`
 		sleep 1

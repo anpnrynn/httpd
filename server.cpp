@@ -358,11 +358,13 @@ void conn_close( Connection *curconn ){
 	if ( curconn )
 	{ 
 #ifdef USE_SSL
+		if( curconn->ssl ){
 		SSL_shutdown(curconn->ssl);
 		SSL_free(curconn->ssl);
 		curconn->ssl = 0;
 		curconn->is_ssl = false;
 		curconn->ssl_accept = false;
+		}
 #endif
 		reduce_ipbin( curconn->ip ); 
 		delete curconn; 
@@ -1315,10 +1317,10 @@ shrinkStart:
                     continue;
                 }
 
-readsection:
+//readsection:
                 if ( pollfds[i].fd > MIN_PORT_COUNT && pollfds[i].revents & PR_POLL_READ ) {
 #ifdef USE_SSL
-                if( !conn[i]->ssl_accept )
+                if( conn[i]->ssl && !conn[i]->ssl_accept )
                 {
 			int rc = 0;
                 	if ( ( rc = SSL_accept(conn[i]->ssl) ) == 0) {
@@ -1382,6 +1384,18 @@ readsection:
 
                         if ( temp->hLen <= 0 ) {
                             temp->readHttpHeader();
+			    if(temp->isHdrInvalid() ){
+				    temp->buf[temp->len] = 0;
+				    fprintf( stderr, "ERRR: Header invalid, Received Header :\n %s \n", temp->buf );
+				    conn_close( conn[i] );
+				    conn[i] = 0;
+                        	    PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
+                        	    pollfds[i].fd = 0;
+                        	    pollfds[i].events = 0;
+                        	    pollfds[i].revents = 0;
+                                    shrink = true;
+				    continue;
+			    }
 
                             if ( temp->hLen <= 0 ) {
                                 fprintf ( stderr, "WARN: Incomplete header received\n" );
@@ -1447,7 +1461,7 @@ readsection:
 
                         if ( conn[i]->sess ) {
                             //TODO:
-                            PRStatus fInfoStatus;
+                            PRStatus fInfoStatus = PR_SUCCESS;
                             bool isForbidden = false;
 
                             char *fileType = temp->getReqFileType();
@@ -1584,7 +1598,7 @@ readsection:
 writesection:
                 if ( pollfds[i].fd > MIN_PORT_COUNT && pollfds[i].revents & PR_POLL_WRITE && conn[i] && conn[i]->file && *( conn[i]->file ) > MIN_PORT_COUNT ) {
 #ifdef USE_SSL
-		if( !conn[i]->ssl_accept )
+		if( conn[i]->ssl && !conn[i]->ssl_accept )
                 {
 			int rc = 0;
                 	if ( ( rc = SSL_accept(conn[i]->ssl) ) == 0) {

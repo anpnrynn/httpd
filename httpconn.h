@@ -91,9 +91,10 @@ class Connection;
 
 class HttpReq {
     private:
-        char encodedUrl[1024]; // if every character is expressed as % values 256 * 3 = 768
-        char decodedUrl[256];
-        char authUrl[256];
+        char encodedUrl[4096]; // if every character is expressed as % values 256 * 3 = 768
+        char decodedUrl[1024];
+        //char authUrl[2048]; //there maybe a prefix, so the size is increased
+	string authUrl;
         char fileType[64];
         char cookie[256];
         char referer[256];
@@ -126,6 +127,7 @@ class HttpReq {
         char postFileName[1024];
         bool hdrPartial;
         bool hdrReadComplete;
+	bool hdrInvalid;
         bool isVal;
         bool isEnd;
         bool isTagEnd;
@@ -185,6 +187,7 @@ class HttpReq {
         bool  isMultipart () { return ( bool ) multipart; }
         char* getBoundary () { return boundary; }
         void  readHttpHeader();
+	bool  isHdrInvalid() { return hdrInvalid; }
         int   processHttpPostData ( size_t , size_t );
         int   processHttpPostData ( Connection *conn); //to be used from plugins only
         void  convertGetDataToMap ( MapStrStr *paramMap ); //converts get parameters to a Map

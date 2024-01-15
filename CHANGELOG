@@ -1,6 +1,7 @@
 15/01/2024 - 1
 ==============
-SSL supported added to "origin/sslsupport" branch [unstable]
+SSL supported added to "origin/sslsupport" branch
+Bug fixes for SSL & ipv6 changes.
 
 
 14/01/2024 - 2
