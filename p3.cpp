@@ -44,13 +44,13 @@ int p3_processReq ( Connection *conn ) {
 
 
     //Read remaining post data if there are any
-    fprintf ( stderr, "DBUG: Reading remaining post data %ld <-> %ld \n",
+    debuglog (  "DBUG: Reading remaining post data %ld <-> %ld \n",
               conn->req.cLen, conn->req.rLen );
 
     if ( conn->req.cLen > conn->req.rLen )
     { conn->req.processHttpPostData ( conn ); }
 
-    fprintf ( stderr, "DBUG: Read remaining post data %ld <-> %ld \n",
+    debuglog (  "DBUG: Read remaining post data %ld <-> %ld \n",
               conn->req.cLen, conn->req.rLen );
 
     //int     rc = 0;
@@ -102,9 +102,9 @@ int p3_processReq ( Connection *conn ) {
     sendConnRespHdr ( conn, HTTP_RESP_OK );
 
     if ( 0 != sendConnectionData ( conn, ( unsigned char * ) output->str().c_str(), size ) ) {
-        fprintf ( stderr, "ERRR: Unable to send dynamic data of size = %d \n", size );
+        debuglog (  "ERRR: Unable to send dynamic data of size = %d \n", size );
     } else {
-        fprintf ( stderr, "INFO: Sent dynamic data of size = %d \n", size );
+        debuglog (  "INFO: Sent dynamic data of size = %d \n", size );
     }
 
     if ( output )

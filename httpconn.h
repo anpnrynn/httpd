@@ -22,6 +22,8 @@
 #include <openssl/err.h>
 #endif
 
+#include <log.h>
+
 using namespace std;
 
 //India's offset from GMT = +5:30 hrs 19800 is in secs
@@ -173,7 +175,7 @@ class HttpReq {
             return postFileName;
         }
         void  removePostTempFile() {
-            fprintf ( stderr, "WARN: Removing post temp file: %s \n", postFileName );
+            debuglog (  "DBUG: Removing post temp file: %s \n", postFileName );
 
             if ( post && postfd >= 0 ) {
                 PR_Close ( post );

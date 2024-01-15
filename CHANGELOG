@@ -1,6 +1,10 @@
 15/01/2024 - 2
 ==============
 Adding copyright information 
+Adding logging functionality with granularity specification and updating fprintf to debuglog
+Making changes to some of the log messages 
+Making code file changes to use debuglog instead of fprintf
+Making changes to the script file to specify loglevel, default is set to 1 (being lowest)
 
 
 15/01/2024 - 1
