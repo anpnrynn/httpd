@@ -1,3 +1,4 @@
+//Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 #ifndef HTTPD_PLUGINS_H
 #define HTTPD_PLUGINS_H
 

@@ -1,3 +1,4 @@
+//Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 #ifndef COOKIE_MGR_H
 #define COOKIE_MGR_H
 

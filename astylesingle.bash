@@ -1,4 +1,5 @@
 #!/bin/bash
+#Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 
 file=$1
 echo "Indenting $file..."

@@ -1,3 +1,4 @@
+//Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 #ifndef HTTP_STATUS_CODES_H
 #define HTTP_STATUS_CODES_H
 

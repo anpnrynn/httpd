@@ -1,3 +1,4 @@
+//Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 #include <iostream>
 #include <prwrapper.h>
 #include <sqlite3.h>

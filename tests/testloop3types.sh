@@ -1,4 +1,5 @@
 #!/bin/bash
+#Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 
 i=0
 while [[ $i -le 100 ]] 
