@@ -175,10 +175,10 @@ int HttpReq::processHttpFirstLine() {
             strcpy ( encodedUrl, "index.html" );
         }
 
-        fprintf ( stderr, "DBUG: Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
+        debuglog (  "E: Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
         hdrInvalid = false;
     }  else {
-        fprintf ( stderr, "DBUG: Header invalid <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n" );
+        debuglog (  "ERRR: Header invalid <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n" );
         hdrInvalid = true;
         return 10;
     }
@@ -247,7 +247,7 @@ void HttpReq::readHttpHeader() {
         hdrPartial = true;
 
         if ( processHttpFirstLine() != 3 ) {
-            fprintf ( stderr, "ERRR: Invalid Http Header, dropping connection \n" );
+            debuglog (  "ERRR: Invalid Http Header, dropping connection \n" );
             hdrInvalid = true;
             hLen = ( size_t ) 0;
             return;
@@ -345,8 +345,8 @@ void HttpReq::readHttpHeader() {
     if ( hdrReadComplete ) {
         buf[i - 1] = 0;
         hLen   = i;
-        fprintf ( stderr, "\n\nDBUG: ____________________________________\n" );
-        fprintf ( stderr, "DBUG: Request Header:\n%s\n\n", ( char * ) buf );
+        debuglog (  "XTRA: ____________________________________\n" );
+        debuglog (  "XTRA: Request Header:\n%s\n\n", ( char * ) buf );
         processHttpHeader();
         processContentType();
 
@@ -362,10 +362,10 @@ void HttpReq::processContentType() {
 
         if ( boundaryPos ) {
             strcpy ( boundary, boundaryPos + 9 );
-            fprintf ( stderr, "DBUG: Multipart Content Type, Boundary String Retrieved = '%s' '%s' \n", boundaryPos + 9, boundary );
+            debuglog (  "DBUG: Multipart Content Type, Boundary String Retrieved = '%s' '%s' \n", boundaryPos + 9, boundary );
             multipart = 1;
         } else {
-            fprintf ( stderr, "DBUG: Boundary String not detected, not multipart \n" );
+            debuglog (  "DBUG: Boundary String not detected, not multipart \n" );
             multipart = 0;
         }
     }
@@ -420,18 +420,18 @@ void HttpReq::processHttpHeader() {
             }
 
             fileType[i] = 0;
-            fprintf ( stderr, "DBUG: Requested file type = '%s' \n", fileType );
+            debuglog (  "DBUG: Requested file type = '%s' \n", fileType );
         }
     } else {
         strcpy ( decodedUrl, "index.html" );
         strcpy ( fileType, ".html" );
     }
 
-    fprintf ( stderr, "DBUG: Request file = '%s' Query = '%s' \n", decodedUrl, query ? query : "" );
+    debuglog (  "DBUG: Request file = '%s' Query = '%s' \n", decodedUrl, query ? query : "" );
 }
 
 char* HttpReq::getReqFile() {
-    //fprintf ( stderr, "DBUG: Query = '%s' \n", query?query:"");
+    //debuglog (  "DBUG: Query = '%s' \n", query?query:"");
     return decodedUrl;
 }
 
@@ -502,10 +502,10 @@ char *HttpReq::getReqFileAuth ( int auth ) {
             authUrl += decodedUrl;
         }
 
-        fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
+        debuglog (  "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
         return const_cast<char*> ( authUrl.c_str() );
     } else {
-        fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
+        debuglog (  "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
         return const_cast<char*> ( authUrl.c_str() );
     }
 }
@@ -520,7 +520,7 @@ int HttpReq::processHttpPostData ( Connection *conn ) {
             rLen += bytesR;
 
             if ( bytesW < bytesR ) {
-                fprintf ( stderr, "ERRR: Bytes dropped , read = %ld, written = %ld \n", bytesR, bytesW );
+                debuglog (  "ERRR: Bytes dropped , read = %ld, written = %ld \n", bytesR, bytesW );
             }
         }
 
@@ -547,10 +547,10 @@ int HttpReq::processHttpPostData ( size_t hPkt, size_t dLen ) {
         *post = PR_Open ( postFileName, PR_CREATE_FILE | PR_TRUNCATE | PR_RDWR, PR_IRWXO | PR_IRWXG | PR_IRWXU );
 
         if ( !post ) {
-            fprintf ( stderr, "ERRR: Unable to open post data file '%s'\n", postFileName );
+            debuglog (  "ERRR: Unable to open post data file '%s'\n", postFileName );
             return -1;
         } else
-        { fprintf ( stderr, "INFO: Opened file : %s \n", postFileName ); }
+        { debuglog (  "INFO: Opened file : %s \n", postFileName ); }
     }
 
     if ( post ) {
@@ -783,7 +783,7 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
     int p = 0;
 
     while ( p < param->size () ) {
-        fprintf ( stderr, "Parameter %d: %s\n", p, ( ( *param ) [p] ).c_str() );
+        debuglog (  "Parameter %d: %s\n", p, ( ( *param ) [p] ).c_str() );
         p++;
     }
 
@@ -989,7 +989,7 @@ void sendRemainderData ( Connection *conn ) {
         unsigned int tempLen = 0;
         tempLen = sendConnectionData ( conn, conn->buf, conn->len );
         if ( tempLen != conn->len ) {
-            fprintf ( stderr, "ERRR: Unable to send complete data\n" );
+            debuglog (  "ERRR: Unable to send complete data\n" );
         }
     }
 	}
@@ -1010,24 +1010,24 @@ unsigned int sendConnectionData (    Connection *conn,
         unsigned int bytesW = 0;
         int temp  = 0;
 		int retry = 0;
-        fprintf ( stderr, "INFO: SSL_write: Sending %d bytes \n", len );
+        debuglog (  "INFO: SSL_write: Sending %d bytes \n", len );
 
         do {
             temp = SSL_write ( conn->ssl, buf + bytesW, len - bytesW  );
 
             if ( temp > 0 ) {
                 bytesW += temp;
-                fprintf ( stderr, "DBUG: SSL_write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
+                debuglog (  "DBUG: SSL_write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
             } else {
                 int rc = 0;
 				retry++;
                 if ( ( rc = SSL_get_error ( conn->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ) {
-                    fprintf ( stderr, "WARN: SSL_write : Problem sending data %d, retrying...\n", rc );
+                    debuglog (  "WARN: SSL_write : Problem sending data %d, retrying...\n", rc );
 					if( retry >= 24 )
 						break;
                 	std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
                 } else {
-                    fprintf ( stderr, "ERRR: SSL_write : Problem sending data %d\n", rc );
+                    debuglog (  "ERRR: SSL_write : Problem sending data %d\n", rc );
                     bytesW = 0;
                     break;
                 }
@@ -1035,7 +1035,7 @@ unsigned int sendConnectionData (    Connection *conn,
         } while ( bytesW < len );
 
         if ( bytesW != len ) {
-            fprintf ( stderr, "ERRR: SSL_write: Unable to send all data, bytes sent=%d, total bytes=%d\n", bytesW, len );
+            debuglog (  "ERRR: SSL_write: Unable to send all data, bytes sent=%d, total bytes=%d\n", bytesW, len );
             len = len + 1;
         } else {
             len = 0;
@@ -1049,22 +1049,22 @@ unsigned int sendConnectionData (    Connection *conn,
         unsigned int bytesW = 0;
         int temp = 0;
         PRErrorCode error = 0;
-        fprintf ( stderr, "INFO: Write: Sending %d bytes \n", len );
+        debuglog (  "INFO: Write: Sending %d bytes \n", len );
 
         do {
             temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
 
             if ( temp > 0 ) {
                 bytesW += temp;
-                fprintf ( stderr, "DBUG: Write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
+                debuglog (  "DBUG: Write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
             } else {
                 error = PR_GetError();
 
                 if ( error == EWOULDBLOCK || error == EAGAIN ) {
-                    fprintf ( stderr, "WARN: Write: Blocking, temp=%d \n", temp );
+                    debuglog (  "WARN: Write: Blocking, temp=%d \n", temp );
                     std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
                 } else {
-                    fprintf ( stderr, "ERRR: Write: Problem sending data %d,%d\n", error, errno );
+                    debuglog (  "ERRR: Write: Problem sending data %d,%d\n", error, errno );
                     bytesW = 0;
                     break;
                 }
@@ -1072,7 +1072,7 @@ unsigned int sendConnectionData (    Connection *conn,
         } while ( bytesW < len );
 
         if ( bytesW != len ) {
-            fprintf ( stderr, "ERRR: Write: Unable to send all data, bytes sent %d, data size %d, error %d)\n", bytesW, len, error );
+            debuglog (  "ERRR: Write: Unable to send all data, bytes sent %d, data size %d, error %d)\n", bytesW, len, error );
             len = len + 1;
         } else {
             len = 0;
@@ -1091,23 +1091,23 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
     unsigned int bytesW = 0;
     int temp = 0;
     PRErrorCode error = 0;
-    fprintf ( stderr, "INFO: Sending %d bytes \n", len );
+    debuglog (  "INFO: Sending %d bytes \n", len );
 
     do {
         temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
 
         if ( temp > 0 ) {
             bytesW += temp;
-            fprintf ( stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+            debuglog (  "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
         } else {
-            fprintf ( stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
+            debuglog (  "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
             error = PR_GetError();
 
             if ( error == EWOULDBLOCK || error == EAGAIN ) {
-                fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
+                debuglog (  "WARN: Blocking, temp=%d \n", temp );
                 std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
             } else {
-                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
+                debuglog (  "ERRR: Problem sending data %d,%d\n", error, errno );
                 bytesW = 0;
                 break;
             }
@@ -1115,7 +1115,7 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
     } while ( bytesW < len );
 
     if ( bytesW != len ) {
-        fprintf ( stderr, "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
+        debuglog (  "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
         len = len + 1;
     } else {
         len = 0;
@@ -1126,6 +1126,7 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
 
 unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     HttpResp *tempResp = & ( conn->resp );
+	debuglog( "E: Request for: %s -> Status code : %d \n", conn->req.getReqFile(), status );
 	string statusMsg = getStatusInfo( status );
     tempResp->setStatus ( status );
     tempResp->setAddOn(1);
@@ -1143,8 +1144,8 @@ unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     conn->buf[conn->len] = 0;
 
     char *tempbuf = ( char * ) conn->buf;
-    fprintf ( stderr, "\nDBUG: Response Header:\n%s\n", tempbuf );
-    fprintf ( stderr, "DBUG: ____________________________________\n" );
+    debuglog (  "XTRA: Response Header:\n%s\n", tempbuf );
+    debuglog (  "XTRA: ____________________________________\n" );
     int tempLen = sendConnectionData ( conn, conn->buf, conn->len );
     conn->len = 0;
     return tempLen;

@@ -79,7 +79,7 @@ do{ \
 while( bytesW < (length) ); \
 if( bytesW != (length) ) \
 { \
-    fprintf(stderr,"Error: Unable to send data \n"); \
+    debuglog ( "Error: Unable to send data \n"); \
     (length) = -1; \
 } else { \
     (length) = 0; \

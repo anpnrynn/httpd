@@ -14,7 +14,7 @@ CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-O2
 
-OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o
+OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o log.o
 SOBJS=threadmgr.o server.o
 MAKELIBS=
 
@@ -52,6 +52,9 @@ config.h:
 
 cookie.o:cookie.cpp cookie.h defines.h config.h
 	g++ cookie.cpp -c -o cookie.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
+log.o:log.cpp log.h
+	g++ log.cpp -c -o log.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
 
 httphandlers.o: httphandlers.cpp httphandlers.h 
 	g++ httphandlers.cpp -c -o httphandlers.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)

@@ -207,11 +207,11 @@ int sqlexecute ( sqlite3 *db, const char *sql,
             { std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 10 );*/ }
             else {
                 if ( error ) {
-                    fprintf ( stderr, "%s:SQL error (%s): %s\n", __FUNCTION__, sql, error );
+                    debuglog (  "%s:SQL error (%s): %s\n", __FUNCTION__, sql, error );
                     sqlite3_free ( error );
                     error = 0;
                 } else {
-                    fprintf ( stderr, "%s:SQL error : %s\n", __FUNCTION__, sql );
+                    debuglog (  "%s:SQL error : %s\n", __FUNCTION__, sql );
                 }
             }
         }
@@ -350,7 +350,7 @@ int sqlhandler ( void *udata, int argc, char **argv, char **colName ) {
         cHdr->setValues ( start, clen, space );
         return 0;
     } else {
-        fprintf ( stderr, "ERRR: Connection data not present \n" );
+        debuglog (  "ERRR: Connection data not present \n" );
         return 1;
     }
 }
@@ -495,7 +495,7 @@ int sqlhandlertype2 ( void *udata, int argc, char **argv, char **colName ) {
         cHdr->setValues ( start, clen, space );
         return 0;
     } else {
-        fprintf ( stderr, "ERRR: Connection data not present \n" );
+        debuglog (  "ERRR: Connection data not present \n" );
         return 1;
     }
 }
@@ -558,7 +558,7 @@ int sqlhandlertype3 ( void *udata, int argc, char **argv, char **colName ) {
         cHdr->setValues ( start, clen, space );
         return 0;
     } else {
-        fprintf ( stderr, "ERRR: Connection data not present \n" );
+        debuglog (  "ERRR: Connection data not present \n" );
         return 1;
     }
 }

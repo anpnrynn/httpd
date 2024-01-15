@@ -27,7 +27,7 @@ void CmdPipe::pushCmd ( Connection *conn ) {
 
     lock.lock();
     cmdQueue->push ( conn );
-    fprintf ( stderr, "INFO: Pushing Connection Data to CmdQueue = %d, Size=%ld\n", cmdQueueId, cmdQueue->size() );
+    debuglog (  "DBUG: Pushing Connection Data to CmdQueue = %d, Size=%ld\n", cmdQueueId, cmdQueue->size() );
     usage++;
     lock.unlock();
 }
@@ -38,7 +38,7 @@ Connection* CmdPipe::popCmd () {
 
     if ( cmdQueue->size() > 0 && ( ( conn = cmdQueue->front() ) != NULL ) ) {
         cmdQueue->pop();
-        fprintf ( stderr, "INFO: Poping Connection from CmdQueue=%d, Size= %ld\n", cmdQueueId, cmdQueue->size() );
+        debuglog (  "DBUG: Poping Connection from CmdQueue=%d, Size= %ld\n", cmdQueueId, cmdQueue->size() );
     }
 
     lock.unlock();
@@ -72,7 +72,7 @@ ThreadMgr::ThreadMgr() {
         int rc = sqlite3_open ( INFO_STORE, &db[i] );
 
         if ( rc ) {
-            fprintf ( stderr, "ERRR: Unable to open db, Corrupted ? \n" );
+            debuglog (  "ERRR: Unable to open db, Corrupted ? \n" );
             sqlite3_close ( db[i] );
             db[i] = NULL;
         }
@@ -96,25 +96,25 @@ void ThreadMgr::startThreads() {
     for ( i = 0; i < MAX_THREADS; i++ ) {
 #ifdef  USE_CPP11THREAD
         tdata[i]   = new std::thread ( ThreadMgr::httpthread, &index[i] );
-        fprintf ( stderr, "INFO: Created CPP 11 Thread with Index=%d \n", i );
+        debuglog (  "INFO: Created CPP 11 Thread with Index=%d \n", i );
 #else
 #ifndef USE_PTHREAD
         tdata[i]   = PR_CreateThread ( PR_SYSTEM_THREAD, ThreadMgr::httpthread, &index[i],
                                        PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 8388608 );
 
         if ( !tdata[i] ) {
-            fprintf ( stderr, "ERRR: Unable to create thread \n" );
+            debuglog (  "ERRR: Unable to create thread \n" );
         } else {
-            fprintf ( stderr, "INFO: Created Thread with Index=%d \n", i );
+            debuglog (  "INFO: Created Thread with Index=%d \n", i );
         }
 
 #else
         int rc = pthread_create ( &tdata[i], NULL, ThreadMgr::httpthread, &index[i] );
 
         if ( rc != 0 ) {
-            fprintf ( stderr, "ERRR: Unable to create thread \n" );
+            debuglog (  "ERRR: Unable to create thread \n" );
         } else {
-            fprintf ( stderr, "INFO: Created Thread with Index=%d \n", i );
+            debuglog (  "INFO: Created Thread with Index=%d \n", i );
         }
 
 #endif
@@ -123,7 +123,7 @@ void ThreadMgr::startThreads() {
 }
 
 void ThreadMgr::stopThreads() {
-    fprintf ( stderr, "INFO: Stopping all threads \n" );
+    debuglog (  "INFO: Stopping all threads \n" );
     int i;
 
     for ( i = 0; i < MAX_THREADS; i++ ) {
@@ -134,18 +134,18 @@ void ThreadMgr::stopThreads() {
 
         if ( tdata[i] ) {
             tdata[i]->join();
-            fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
+            debuglog (  "DBUG: Stopped thread %d \n", i );
             tdata[i] = 0;
         }
 
 #else
 #ifndef USE_PTHREAD
         PR_JoinThread ( tdata[i] );
-        fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
+        debuglog (  "DBUG: Stopped thread %d \n", i );
         tdata[i] = 0;
 #else
         pthread_join ( tdata[i], NULL );
-        fprintf ( stderr, "DBUG: Stopped thread %d \n", i );
+        debuglog (  "DBUG: Stopped thread %d \n", i );
         tdata[i] = 0;
 #endif
 #endif
@@ -183,7 +183,7 @@ void* ThreadMgr::httpthread ( void *data )
             continue;
         } else {
             //Process the request here
-            fprintf ( stderr, "DBUG: Thread %d received task %llu\n", *index, ( unsigned long long int ) conn );
+            debuglog (  "DBUG: Thread %d received task %llu\n", *index, ( unsigned long long int ) conn );
             cmd = conn->cmd;
 
             if ( cmd == THREAD_CMD_PTASK ) {
@@ -214,7 +214,7 @@ void* ThreadMgr::httpthread ( void *data )
 
 #endif
                         PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
-                        fprintf ( stderr, "INFO: Shuting down socket \n" );
+                        debuglog (  "INFO: Shuting down socket \n" );
                         PR_Close ( conn->socket );
                         * ( conn->socket ) = -1;
                         conn->socket = 0;
@@ -228,7 +228,7 @@ void* ThreadMgr::httpthread ( void *data )
                         conn->db    = db;
                         conn->udata = 0;
                         int rc = temp->processReq ( conn );
-                        fprintf ( stderr, "INFO: Plugin execution completed = %d \n", rc );
+                        debuglog (  "INFO: Plugin execution completed = %d \n", rc );
 #ifdef USE_SSL
 
                         if ( conn->ssl ) {
@@ -247,10 +247,10 @@ void* ThreadMgr::httpthread ( void *data )
                         reduce_ipbin ( conn );
                         delete conn;
                         clientmanage ( 0 );
-                        fprintf ( stderr, "INFO: Deleted connection \n" );
+                        debuglog (  "INFO: Deleted connection \n" );
                     }
                 } else {
-                    fprintf ( stderr, "ERRR: Unable to find handler: %s \n", conn->req.getReqFile() );
+                    debuglog (  "ERRR: Unable to find handler: %s \n", conn->req.getReqFile() );
                     tempResp->setContentLen ( 0 );
                     sendConnRespHdr ( conn, HTTP_RESP_NOTFOUND );
 #ifdef USE_SSL

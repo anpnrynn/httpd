@@ -77,8 +77,8 @@ int p2_processReq ( Connection *conn ) {
     if ( rc != 0 ) {
         xmlend ( conn, rc, "Bad Command" );
     } else {
-        fprintf ( stderr, "ReqQuery: gid=%d, tid=%d, qid=%d, power=%d \n", gid, tid, qid, power );
-        fprintf ( stderr, "QCmd:  nParam:%d, qcmdPNum:%d, qcmdQtype:%d, qcmdKey:%d, qcmd:%s \n", param->size(), qcmd.pnum, qcmd.qtype, qcmd.key, qcmd.qcmd );
+        debuglog (  "ReqQuery: gid=%d, tid=%d, qid=%d, power=%d \n", gid, tid, qid, power );
+        debuglog (  "QCmd:  nParam:%d, qcmdPNum:%d, qcmdQtype:%d, qcmdKey:%d, qcmd:%s \n", param->size(), qcmd.pnum, qcmd.qtype, qcmd.key, qcmd.qcmd );
 
         if ( qcmd.qtype == 0 ) {
             rc = sqlexecute ( conn->db, qcmd.qcmd, sqlhandlertype2, conn, NULL );
@@ -102,7 +102,7 @@ int p2_processReq ( Connection *conn ) {
                 }
 
                 mergeremaining ( &a[m], &b[n] );
-                fprintf ( stderr, "RCmd: %s \n", rcmd );
+                debuglog (  "RCmd: %s \n", rcmd );
                 rc = sqlexecute ( conn->db, rcmd, NULL, NULL, NULL );
                 i += qcmd.pnum;
             }
@@ -124,7 +124,7 @@ int p2_processReq ( Connection *conn ) {
                 }
 
                 mergeremaining ( &a[m], &b[n] );
-                fprintf ( stderr, "RCmd: %s \n", rcmd );
+                debuglog (  "RCmd: %s \n", rcmd );
                 rc = sqlexecute ( conn->db, rcmd, sqlhandler, conn, &qcmd );
             }
 

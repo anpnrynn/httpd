@@ -33,6 +33,8 @@
 #include <thread>
 #include <chrono>
 
+#include <log.h>
+
 using namespace std;
 PRLibrary *lib[MAXPLUGINS];
 
@@ -75,14 +77,14 @@ void performCleanupOperations() {
         if ( isBound && tMgr )
         { tMgr->stopThreads(); }
     } else {
-        fprintf ( stderr, "INFO: MAX_THREADS == 0, no threads present to stop \n" );
+        debuglog (  "INFO: MAX_THREADS == 0, no threads present to stop \n" );
     }
 }
 
 
 //SIGNAL HANDLER
 void signalStop ( int signal ) {
-    fprintf ( stderr, "INFO: Received signal to terminate from user : %d \n", signal );
+    debuglog (  "WARN: Received signal to terminate from user : %d \n", signal );
 
     if ( srv )
     { PR_Close ( srv ); }
@@ -137,24 +139,24 @@ int pluginLoader ( void *udata, int argc, char **argv, char **col ) {
         lib[libCount] = PR_LoadLibrary ( lName );
 
         if ( !lib[libCount] ) {
-            fprintf ( stderr, "WARN: Unable to load library:%s \n", lName );
+            debuglog (  "WARN: Unable to load library:%s \n", lName );
             sprintf ( lName, "/usr/local/lib/lib%s.so", argv[0] );
             lib[libCount] = PR_LoadLibrary ( lName );
 
             if ( !lib[libCount] ) {
-                fprintf ( stderr, "WARN: Unable to load library:%s \n", lName );
+                debuglog (  "WARN: Unable to load library:%s \n", lName );
                 sprintf ( lName, INSTALL_HOME "/httpd/lib/lib%s.so", argv[0] );
                 lib[libCount] = PR_LoadLibrary ( lName );
 
                 if ( !lib[libCount] ) {
-                    fprintf ( stderr, "ERRR: Library:%s NOT FOUND\n", lName );
+                    debuglog (  "ERRR: Library:%s NOT FOUND\n", lName );
                     lib[libCount] = NULL;
                 }
             }
         }
 
         if ( lib[libCount] ) {
-            fprintf ( stderr, "Loaded Library:%s \n", lName );
+            debuglog (  "WARN: Loaded Library:%s \n", lName );
             libCount++;
         }
 
@@ -163,9 +165,9 @@ int pluginLoader ( void *udata, int argc, char **argv, char **col ) {
         lib[libCount] = PR_LoadLibrary ( lName );
 
         if ( !lib[libCount] ) {
-            fprintf ( stderr, "ERRR: Library: %s NOT FOUND\n", lName );
+            debuglog (  "ERRR: Library: %s NOT FOUND\n", lName );
         } else {
-            fprintf ( stderr, "Loaded Library: %s\n", lName );
+            debuglog (  "WARN: Loaded Library: %s\n", lName );
             libCount++;
         }
 
@@ -185,7 +187,7 @@ int loadInfo() {
     //login_init ();
 
     if ( rc != SQLITE_OK ) {
-        fprintf ( stderr, "ERRR: Unable to open db, Corrupted ? \n" );
+        debuglog (  "ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 1;
@@ -194,7 +196,7 @@ int loadInfo() {
     rc = sqlite3_exec ( db, "select name,active from plugins;", pluginLoader, NULL, &error );
 
     if ( rc != SQLITE_OK ) {
-        fprintf ( stderr, "ERRR: Unable to load necessary plugins \n" );
+        debuglog (  "ERRR: Unable to load necessary plugins \n" );
         sqlite3_close ( db );
         db = NULL;
         return 2;
@@ -203,7 +205,7 @@ int loadInfo() {
     rc = sqlite3_exec ( db, "select * from acl;", aclLoad, NULL, &error );
 
     if ( rc != SQLITE_OK ) {
-        fprintf ( stderr, "ERRR: Unable to load necessary plugins \n" );
+        debuglog (  "ERRR: Unable to load necessary plugins \n" );
         sqlite3_close ( db );
         db = NULL;
         return 3;
@@ -226,13 +228,13 @@ void initPlugins() {
                 plugin->init();
                 //if ( 0 == plugin->init() )
                 //{
-                //  fprintf(stderr,"INFO: Plugin Initialized \n");
+                //  debuglog ( "INFO: Plugin Initialized \n");
                 //}
             } else {
-                fprintf ( stderr, "ERRR: Unable to locate symbol in object code \n" );
+                debuglog (  "ERRR: Unable to locate symbol in object code \n" );
             }
         } else {
-            fprintf ( stderr, "ERRR: Plugin Data Structure Empty \n" );
+            debuglog (  "ERRR: Plugin Data Structure Empty \n" );
         }
     }
 }
@@ -247,7 +249,7 @@ int installTheNeededStuff() {
     rc = sqlite3_open ( INFO_STORE, &db );
 
     if ( rc ) {
-        fprintf ( stderr, "ERRR: Unable to open db, Corrupted ? \n" );
+        debuglog (  "ERRR: Unable to open db, Corrupted ? \n" );
         sqlite3_close ( db );
         db = NULL;
         return 2;
@@ -255,13 +257,13 @@ int installTheNeededStuff() {
 
     int filefd = 0;
     PRFileDesc *file = &filefd;
-    fprintf ( stderr, "INFO: reading sql tables from : %s \n", INSTALL_HOME "/httpd/share/install.sql" );
+    debuglog (  "INFO: reading sql tables from : %s \n", INSTALL_HOME "/httpd/share/install.sql" );
     *file = PR_Open ( INSTALL_HOME "/httpd/share/install.sql", PR_RDONLY, 0 );
 
 
     //if( !file || !fData )
     if ( !file && *file == -1 ) {
-        fprintf ( stderr, "ERRR: Unable to open install.sql file \n" );
+        debuglog (  "ERRR: Unable to open install.sql file \n" );
         return 3;
     }
 
@@ -279,7 +281,7 @@ int installTheNeededStuff() {
             else if ( buf[i] == '\n' ) {
                 cmd[j] = 0;
                 error  = NULL;
-                fprintf ( stderr, "INFO: Running Cmd '%s' \n", cmd );
+                debuglog (  "XTRA: Running Cmd '%s' \n", cmd );
                 rc = sqlite3_exec ( db, cmd, NULL, NULL, &error );
 
                 if ( rc != SQLITE_OK ) {
@@ -287,7 +289,7 @@ int installTheNeededStuff() {
                         sqlite3_free ( error );
                     }
 
-                    fprintf ( stderr, "ERRR: Unable to run command '%s'\n", cmd );
+                    debuglog (  "ERRR: Unable to run command '%s'\n", cmd );
                     sqlite3_close ( db );
                     PR_Close ( file );
                     return 4;
@@ -304,7 +306,7 @@ int installTheNeededStuff() {
     rc = sqlexecute ( db, "COMMIT;", NULL, NULL, NULL );
     sqlite3_close ( db );
     PR_Close ( file );
-    fprintf ( stderr, "INFO: Done installing prerequisites \n" );
+    debuglog (  "INFO: Done installing prerequisites \n" );
 //#endif
     return 0;
 }
@@ -324,7 +326,7 @@ int clientmanage ( int op ) {
                 if ( clientsOnboard < MAX_BACKLOG ) //remove
                 { clientsOnboard++; }
                 else
-                { fprintf ( stderr, "WARN: Too many BACKLOGS, Not accepting any new connections \n" ); }
+                { debuglog (  "WARN: Too many BACKLOGS, Not accepting any new connections \n" ); }
             }
             break;
 
@@ -336,11 +338,11 @@ int clientmanage ( int op ) {
 }
 
 void reduce_r ( string ip ) {
-    //fprintf(stderr, "DBUG: reducing counter for ip %s \n", ip.c_str() );
+    //debuglog (  "DBUG: reducing counter for ip %s \n", ip.c_str() );
     MapACL::iterator iter = dosMap.find ( ip );
 
     if ( iter != dosMap.end() ) {
-        std::cerr << "DBUG: Reducing counter for " << ip << " ---> " << iter->second->counter << std::endl;
+        std::cerr << "DOS PREVENTION: Reducing counter for " << ip << " ---> " << iter->second->counter << std::endl;
         iter->second->counter -= 1;
 
         if ( iter->second->counter < 0 ) {
@@ -387,6 +389,8 @@ int main ( int argc, char *argv[] ) {
     short firstTime = 0;
     clientsOnboard  = 0;
 
+	loglevel = 1;
+
     //fclose ( stderr );
     //stderr = NULL;
     //stderr = fopen ( LOGFILE, "a+" );
@@ -395,42 +399,44 @@ int main ( int argc, char *argv[] ) {
     if ( !stderr )
     { exit ( 56 ); }
 
-    if ( argc < 5 ) {
-        fprintf ( stderr, "%s Exited \n", argv[0] );
-        fprintf ( stderr, "Format: %s port count sslport\n", argv[0] );
-        fprintf ( stderr, "port    - Server port number to use \n" );
-        fprintf ( stderr, "count   - Number of threads to launch \n" );
-        fprintf ( stderr, "dosthrehsold   - DOS threshold \n" );
-        fprintf ( stderr, "sslport - SSL server port number to use \n" );
+    if ( argc < 6 ) {
+        debuglog (  "E: %s Exited \n", argv[0] );
+        debuglog (  "E: Format: %s port count sslport\n", argv[0] );
+        debuglog (  "E: port    - Server port number to use \n" );
+        debuglog (  "E: count   - Number of threads to launch \n" );
+        debuglog (  "E: dosthrehsold   - DOS threshold \n" );
+        debuglog (  "E: sslport - SSL server port number to use \n" );
+        debuglog (  "E: loglevel - 1-6, 6 churning out most logs \n" );
         exit ( 1 );
     } else {
         SRVPORT = atoi ( argv[1] );
         SRVPORT6 = atoi ( argv[1] );
         SSLSRVPORT = atoi ( argv[4] );
         SSLSRVPORT6 = atoi ( argv[4] );
+		loglevel = atoi( argv[5]);
     }
 
     int DOS_THRESHOLD = 50;
 
-    if ( argc == 5 ) {
-        fprintf ( stderr, "INFO: Received threads count: %s \n", argv[2] );
+    if ( argc == 6 ) {
+        debuglog (  "E: Received threads count: %s \n", argv[2] );
         MAX_THREADS = atoi ( argv[2] );
         DOS_THRESHOLD = atoi ( argv[3] );
 
         if ( MAX_THREADS > MAX_POSSIBLE_THREADS ) {
-            fprintf ( stderr, "ERRR: Cannot create more than %d threads \n", MAX_POSSIBLE_THREADS );
+            debuglog (  "ERRR: Cannot create more than %d threads \n", MAX_POSSIBLE_THREADS );
             exit ( 1 );
         } else if ( MAX_THREADS == 0 ) {
-            fprintf ( stderr, "WARN: MAX_THREADS == 0, disabling threadmgr and dynamic pages \n" );
+            debuglog (  "WARN: MAX_THREADS == 0, disabling threadmgr and dynamic pages \n" );
         } else {
             if ( MAX_THREADS < 0 ) {
-                fprintf ( stderr, "ERRR: Number of threads less than zero \n" );
+                debuglog (  "ERRR: Number of threads less than zero \n" );
                 exit ( 1 );
             }
         }
     }
 
-    fprintf ( stderr, "INFO: Using db : %s  \n", INFO_STORE );
+    debuglog (  "INFO: Using db : %s  \n", INFO_STORE );
 
 #ifdef LINUX_BUILD
     signal ( SIGINT, signalStop );
@@ -453,32 +459,32 @@ start:
     PRNetAddr6 sslclientAddr6;
 #endif
 
-    fprintf ( stderr, "INFO: Creating socket(s) \n" );
+    debuglog (  "INFO: Creating socket(s) \n" );
     *srv = PR_NewTCPSocket();
     srvAddr.sin_family  = PR_AF_INET;
     srvAddr.sin_addr.s_addr     = 0x00000000;
     srvAddr.sin_port   = PR_htons ( SRVPORT );
-    fprintf ( stderr, "INFO: IPv4 Socket created successfully : Port = %d \n", SRVPORT );
+    debuglog (  "INFO: IPv4 Socket created successfully : Port = %d \n", SRVPORT );
 
     *srv6 = PR_NewTCPSocket6();
     srvAddr6.sin6_family = PR_AF_INET6;
     srvAddr6.sin6_addr = in6addr_any;
     srvAddr6.sin6_port = htons ( SRVPORT6 );
-    fprintf ( stderr, "INFO: IPv6 Socket created successfully : Port = %d \n", SRVPORT6 );
+    debuglog (  "INFO: IPv6 Socket created successfully : Port = %d \n", SRVPORT6 );
 
 #ifdef USE_SSL
-    fprintf ( stderr, "INFO: Creating ssl socket(s) \n" );
+    debuglog (  "INFO: Creating ssl socket(s) \n" );
     *sslsrv = PR_NewTCPSocket();
     sslsrvAddr.sin_family  = PR_AF_INET;
     sslsrvAddr.sin_addr.s_addr     = 0x00000000;
     sslsrvAddr.sin_port   = PR_htons ( SSLSRVPORT );
-    fprintf ( stderr, "INFO: SSL IPv4 Socket created successfully : Port = %d \n", SSLSRVPORT );
+    debuglog (  "INFO: SSL IPv4 Socket created successfully : Port = %d \n", SSLSRVPORT );
 
     *sslsrv6 = PR_NewTCPSocket6();
     sslsrvAddr6.sin6_family = PR_AF_INET6;
     sslsrvAddr6.sin6_addr = in6addr_any;
     sslsrvAddr6.sin6_port = htons ( SSLSRVPORT6 );
-    fprintf ( stderr, "INFO: SSL IPv6 Socket created successfully : Port = %d \n", SSLSRVPORT6 );
+    debuglog (  "INFO: SSL IPv6 Socket created successfully : Port = %d \n", SSLSRVPORT6 );
 #endif
 
 
@@ -486,7 +492,7 @@ start:
     int sockret = setsockopt ( *srv, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
-        fprintf ( stderr, "ERRR: Unable to setsockopt - IPv4 \n" );
+        debuglog (  "ERRR: Unable to setsockopt - IPv4 \n" );
         return 1;
     }
 
@@ -494,7 +500,7 @@ start:
     sockret = setsockopt ( *srv6, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
-        fprintf ( stderr, "ERRR: Unable to setsockopt - IPv6 \n" );
+        debuglog (  "ERRR: Unable to setsockopt - IPv6 \n" );
         return 1;
     }
 
@@ -503,7 +509,7 @@ start:
     sockret = setsockopt ( *sslsrv, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
-        fprintf ( stderr, "ERRR: Unable to setsockopt - IPv4 \n" );
+        debuglog (  "ERRR: Unable to setsockopt - IPv4 \n" );
         return 1;
     }
 
@@ -511,7 +517,7 @@ start:
     sockret = setsockopt ( *sslsrv6, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
-        fprintf ( stderr, "ERRR: Unable to setsockopt - IPv6 \n" );
+        debuglog (  "ERRR: Unable to setsockopt - IPv6 \n" );
         return 1;
     }
 
@@ -521,7 +527,7 @@ start:
     int count = 0;
 
     while ( bind ( *srv, ( const sockaddr * ) &srvAddr, sizeof ( sockaddr_in ) ) !=  0 ) {
-        fprintf ( stderr, "ERRR: Unable to Bind - IPv4 \n" );
+        debuglog (  "ERRR: Unable to Bind - IPv4 \n" );
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
@@ -535,7 +541,7 @@ start:
     count = 0;
 
     while ( bind ( *srv6, ( const sockaddr * ) &srvAddr6, sizeof ( sockaddr_in6 ) ) !=  0 ) {
-        fprintf ( stderr, "ERRR: Unable to Bind - IPv6 \n" );
+        debuglog (  "ERRR: Unable to Bind - IPv6 \n" );
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
@@ -552,7 +558,7 @@ start:
 #ifdef USE_SSL
 
     while ( bind ( *sslsrv, ( const sockaddr * ) &sslsrvAddr, sizeof ( sockaddr_in ) ) !=  0 ) {
-        fprintf ( stderr, "ERRR: Unable to Bind - SSL IPv4 \n" );
+        debuglog (  "ERRR: Unable to Bind - SSL IPv4 \n" );
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
@@ -566,7 +572,7 @@ start:
     count = 0;
 
     while ( bind ( *sslsrv6, ( const sockaddr * ) &sslsrvAddr6, sizeof ( sockaddr_in6 ) ) !=  0 ) {
-        fprintf ( stderr, "ERRR: Unable to Bind - SSL IPv6 \n" );
+        debuglog (  "ERRR: Unable to Bind - SSL IPv6 \n" );
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
@@ -581,16 +587,16 @@ start:
     isBoundSsl6 = true;
 #endif
 
-    fprintf ( stderr, "INFO: Bound successfully both IPv4 and IPv6 \n" );
+    debuglog (  "INFO: Bound successfully both IPv4 and IPv6 \n" );
 
     if ( PR_Listen ( srv, 20 ) == PR_FAILURE ) {
-        fprintf ( stderr, "ERRR: Unable to setup backlog - IPV4\n" );
+        debuglog (  "ERRR: Unable to setup backlog - IPV4\n" );
         PR_Cleanup();
         return 2;
     }
 
     if ( PR_Listen ( srv6, 20 ) == PR_FAILURE ) {
-        fprintf ( stderr, "ERRR: Unable to setup backlog - IPv6\n" );
+        debuglog (  "ERRR: Unable to setup backlog - IPv6\n" );
         PR_Cleanup();
         return 2;
     }
@@ -598,33 +604,33 @@ start:
 #ifdef USE_SSL
 
     if ( PR_Listen ( sslsrv, 20 ) == PR_FAILURE ) {
-        fprintf ( stderr, "ERRR: Unable to setup backlog - SSL IPV4\n" );
+        debuglog (  "ERRR: Unable to setup backlog - SSL IPV4\n" );
         PR_Cleanup();
         return 2;
     }
 
     if ( PR_Listen ( sslsrv6, 20 ) == PR_FAILURE ) {
-        fprintf ( stderr, "ERRR: Unable to setup backlog - SSL IPv6\n" );
+        debuglog (  "ERRR: Unable to setup backlog - SSL IPv6\n" );
         PR_Cleanup();
         return 2;
     }
 
 #endif
 
-    fprintf ( stderr, "INFO: Listening successfully IPv4 & IPv6 \n" );
+    debuglog (  "INFO: Listening successfully IPv4 & IPv6 \n" );
     //PRSocketOptionData  opt;
     //opt.option = PR_SockOpt_Nonblocking;
     //opt.value.non_blocking = true;
 
     //if( PR_SetSocketOption(srv, &opt) == PR_FAILURE )
     if ( fcntl ( *srv, F_SETFL, O_NONBLOCK ) != 0 ) {
-        fprintf ( stderr, "ERRR: Unable to set fd in NONBLOCK  - IPv4 \n" );
+        debuglog (  "ERRR: Unable to set fd in NONBLOCK  - IPv4 \n" );
         PR_Cleanup();
         return 3;
     }
 
     if ( fcntl ( *srv6, F_SETFL, O_NONBLOCK ) != 0 ) {
-        fprintf ( stderr, "ERRR: Unable to set fd in NONBLOCK  - IPv6 \n" );
+        debuglog (  "ERRR: Unable to set fd in NONBLOCK  - IPv6 \n" );
         PR_Cleanup();
         return 3;
     }
@@ -632,20 +638,20 @@ start:
 #ifdef USE_SSL
 
     if ( fcntl ( *sslsrv, F_SETFL, O_NONBLOCK ) != 0 ) {
-        fprintf ( stderr, "ERRR: Unable to set fd in NONBLOCK  - IPv4 \n" );
+        debuglog (  "ERRR: Unable to set fd in NONBLOCK  - IPv4 \n" );
         PR_Cleanup();
         return 3;
     }
 
     if ( fcntl ( *sslsrv6, F_SETFL, O_NONBLOCK ) != 0 ) {
-        fprintf ( stderr, "ERRR: Unable to set fd in NONBLOCK  - IPv6 \n" );
+        debuglog (  "ERRR: Unable to set fd in NONBLOCK  - IPv6 \n" );
         PR_Cleanup();
         return 3;
     }
 
 #endif
 
-    fprintf ( stderr, "INFO: Non blocking successfully - IPv4 & IPv6 \n" );
+    debuglog (  "INFO: Non blocking successfully - IPv4 & IPv6 \n" );
     fflush ( stdout );
 
 
@@ -659,22 +665,22 @@ start:
     cIp4 = SSL_CTX_new ( mIp4 );
 
     if ( !cIp4 ) {
-        fprintf ( stderr, "ERRR: Unable to create SSL context" );
+        debuglog (  "ERRR: Unable to create SSL context" );
         return ( 1000 );
     }
 
     if ( SSL_CTX_use_certificate_file ( cIp4, CERT_STORE "httpdcert.pem", SSL_FILETYPE_PEM ) <= 0 ) {
-        fprintf ( stderr, "ERRR: Certificate file issue\n" );
+        debuglog (  "ERRR: Certificate file issue\n" );
         return ( 1001 );
     } else {
-        fprintf ( stderr, "INFO: Certiticate file loaded : %s \n", CERT_STORE "httpdcert.pem" );
+        debuglog (  "INFO: Certiticate file loaded : %s \n", CERT_STORE "httpdcert.pem" );
     }
 
     if ( SSL_CTX_use_PrivateKey_file ( cIp4, CERT_STORE "httpdkey.pem", SSL_FILETYPE_PEM ) <= 0 ) {
-        fprintf ( stderr, "ERRR: Private key file issue\n" );
+        debuglog (  "ERRR: Private key file issue\n" );
         return ( 1002 );
     } else {
-        fprintf ( stderr, "INFO: Private key file loaded : %s \n", CERT_STORE "httpdkey.pem" );
+        debuglog (  "INFO: Private key file loaded : %s \n", CERT_STORE "httpdkey.pem" );
     }
 
     const SSL_METHOD *mIp6;
@@ -685,22 +691,22 @@ start:
     cIp6 = SSL_CTX_new ( mIp6 );
 
     if ( !cIp6 ) {
-        fprintf ( stderr, "ERRR: Unable to create SSL context" );
+        debuglog (  "ERRR: Unable to create SSL context" );
         return ( 1000 );
     }
 
     if ( SSL_CTX_use_certificate_file ( cIp6, CERT_STORE "httpdcert6.pem", SSL_FILETYPE_PEM ) <= 0 ) {
-        fprintf ( stderr, "ERRR: Certificate file issue\n" );
+        debuglog (  "ERRR: Certificate file issue\n" );
         return ( 1001 );
     } else {
-        fprintf ( stderr, "INFO: Certificate file loaded : %s \n", CERT_STORE "httpdcert6.pem" );
+        debuglog (  "INFO: Certificate file loaded : %s \n", CERT_STORE "httpdcert6.pem" );
     }
 
     if ( SSL_CTX_use_PrivateKey_file ( cIp6,  CERT_STORE "httpdkey6.pem", SSL_FILETYPE_PEM ) <= 0 ) {
-        fprintf ( stderr, "ERRR: Private key file issue\n" );
+        debuglog (  "ERRR: Private key file issue\n" );
         return ( 1002 );
     } else {
-        fprintf ( stderr, "INFO: Private key file loaded : %s \n", CERT_STORE "httpdkey6.pem" );
+        debuglog (  "INFO: Private key file loaded : %s \n", CERT_STORE "httpdkey6.pem" );
     }
 
 #else
@@ -711,7 +717,7 @@ start:
 #if 0
 
     if ( 0 != acquireEncryptionKeys ( &firstTime ) ) {
-        fprintf ( stderr, "ERRR: Acquiring Encryption Keys Failed \n" );
+        debuglog (  "ERRR: Acquiring Encryption Keys Failed \n" );
         PR_Cleanup();
         return 4;
     }
@@ -732,27 +738,27 @@ start:
         *infoStore = PR_Open ( INFO_STORE, PR_RDONLY, 0 );
 
         if ( infoStore && *infoStore != -1 ) {
-            fprintf ( stderr, "WARN: Database present \n" );
+            debuglog (  "WARN: Database present \n" );
             PR_Close ( infoStore );
 
             if ( firstTime ) {
-                fprintf ( stderr, "WARN: Database key file not present, but database present \n" );
-                fprintf ( stderr, "WARN: Please backup the database to another location and restart this program \n" );
+                debuglog (  "WARN: Database key file not present, but database present \n" );
+                debuglog (  "WARN: Please backup the database to another location and restart this program \n" );
                 PR_Cleanup();
                 return 10;
             }
         } else {
-            fprintf ( stderr, "WARN: Database not present, installing the needed stuff \n" );
+            debuglog (  "WARN: Database not present, installing the needed stuff \n" );
 
             if ( 0 != installTheNeededStuff() ) {
-                fprintf ( stderr, "ERRR: Unable to perform internal installation \n" );
+                debuglog (  "ERRR: Unable to perform internal installation \n" );
                 PR_Cleanup();
                 return 11;
             }
 
         }
 
-        fprintf ( stderr, "WARN: Starting session manager \n" );
+        debuglog (  "WARN: Starting session manager \n" );
         hSMgr = HttpSessionMgr::createInstance();
         /*
          *  Restore persistent sessions
@@ -760,18 +766,18 @@ start:
 #if 1
 
         if ( hSMgr->loadStoredSessions() != 0 ) {
-            fprintf ( stderr, "ERRR: Unable to restore session data \n" );
+            debuglog (  "ERRR: Unable to restore session data \n" );
             return 13;
         } else {
-            fprintf ( stderr, "INFO: Reading stored data completed \n" );
+            debuglog (  "INFO: Reading stored data completed \n" );
         }
 
 #endif
-        fprintf ( stderr, "WARN: Clearing plugins \n" );
+        debuglog (  "WARN: Clearing plugins \n" );
         clearPlugins();
         loadInfo();
         initPlugins();
-        fprintf ( stderr, "WARN: Starting plugins \n" );
+        debuglog (  "WARN: Starting plugins \n" );
 #ifdef LINUX_BUILD
         malloc_trim ( 0 );
 #endif
@@ -793,12 +799,12 @@ start:
     //start upnp and natpmp thread here.
 
     const int MAXCLIENTS = MAX_THREADS <= 10 ? 1024 : MAX_THREADS * CONST_MAXCLIENTS / 10;
-    fprintf ( stderr, "MAXCLIENTS supported as of now is %d \n", MAXCLIENTS );
+    debuglog (  "MAXCLIENTS supported as of now is %d \n", MAXCLIENTS );
 
     struct rlimit r;
 
     if ( getrlimit ( RLIMIT_NOFILE, &r ) == 0 ) {
-        fprintf ( stderr, "INFO: Current rlimit open fds: %ld %ld \n", r.rlim_cur, r.rlim_max );
+        debuglog (  "INFO: Current rlimit open fds: %ld %ld \n", r.rlim_cur, r.rlim_max );
         r.rlim_cur = MAXCLIENTS * 4 + 4;
         r.rlim_max = ( MAXCLIENTS * 4 + 4 ) > 1048576 ? MAXCLIENTS * 4 + 4 : r.rlim_max;
     } else {
@@ -808,10 +814,10 @@ start:
 
     if ( setrlimit ( RLIMIT_NOFILE, &r ) == 0 ) {
         if ( getrlimit ( RLIMIT_NOFILE, &r ) == 0 ) {
-            fprintf ( stderr, "INFO: Reset to current rlimit open fds : %ld %ld \n", r.rlim_cur, r.rlim_max );
+            debuglog (  "INFO: Reset to current rlimit open fds : %ld %ld \n", r.rlim_cur, r.rlim_max );
         }
     } else {
-        fprintf ( stderr, "ERRR: Reset to rlimit failed \n" );
+        debuglog (  "ERRR: Reset to rlimit failed \n" );
     }
 
     //Connection *conn[MAXCLIENTS];
@@ -904,12 +910,12 @@ shrinkStart:
                 }
             }
 
-            fprintf ( stderr, "Shrunk: Number of clients = %d \n", nClients ); //cout << "Number of clients = " << nClients << endl;
+            debuglog (  "Shrunk: Number of clients = %d \n", nClients ); //cout << "Number of clients = " << nClients << endl;
             i = 0;
-            fprintf ( stderr, "\nActive fds=%d After shrinking \n", nClients );
+            debuglog (  "\nActive fds=%d After shrinking \n", nClients );
 
             while  ( i < nClients ) {
-                fprintf ( stderr, "%d, ", pollfds[i].fd );
+                debuglog (  "%d, ", pollfds[i].fd );
                 i++;
             }
 
@@ -919,12 +925,12 @@ shrinkStart:
 
         if ( displayfds ) {
             int l = 0;
-            fprintf ( stderr, "\n" );
-            fprintf ( stderr, "____________________________________\n" );
-            fprintf ( stderr, "Active fds=%d \n", nClients );
+            debuglog (  "\n" );
+            debuglog (  "____________________________________\n" );
+            debuglog (  "Active fds=%d \n", nClients );
 
             while  ( l < nClients ) {
-                fprintf ( stderr, "%d, ", pollfds[l].fd );
+                debuglog (  "%d, ", pollfds[l].fd );
 
                 if ( pollfds[l].fd == -1 ) {
                     conn_close ( conn[l] );
@@ -937,15 +943,15 @@ shrinkStart:
             }
 
             l = 0;
-            fprintf ( stderr, "\nActive fds=%d After clearing \n", nClients );
+            debuglog (  "\nActive fds=%d After clearing \n", nClients );
 
             while  ( l < nClients ) {
-                fprintf ( stderr, "%d, ", pollfds[l].fd );
+                debuglog (  "%d, ", pollfds[l].fd );
                 l++;
             }
 
-            fprintf ( stderr, "\n" );
-            fprintf ( stderr, "____________________________________\n" );
+            debuglog (  "\n" );
+            debuglog (  "____________________________________\n" );
 
             if ( shrink )
             { goto shrinkStart; }
@@ -953,9 +959,11 @@ shrinkStart:
             displayfds = false;
         }
 
+
         if ( ( retVal = PR_Poll ( pollfds, nClients, 10 ) ) > 0 ) {
 
             if ( clientmanage ( 2 ) < MAX_BACKLOG ) {
+				debuglog ("E: Active main thread connection fds = %d \n", nClients);
 
                 /* IPv4 Server Socket */
                 if ( pollfds[0].revents & PR_POLL_READ ) {
@@ -967,7 +975,7 @@ shrinkStart:
                         //allowConnect = false;
                         clientmanage ( 1 );
                         allowConnect = true;
-                        tempIp = PR_ntohl ( clientAddr.sin_addr.s_addr );
+                        tempIp = ntohl ( clientAddr.sin_addr.s_addr );
                         char clientAddress[64];
                         //sprintf ( clientAddress, "%d.%d.%d.%d", ( tempIp & 0xFF000000 ) >> 24, ( tempIp & 0x00FF0000 ) >> 16, ( tempIp & 0x0000FF00 ) >> 8, ( tempIp & 0x000000FF ) );
                         //strcpy ( clientAddress, inet_ntoa ( clientAddr.sin_addr ) );
@@ -987,7 +995,7 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //fprintf(stderr, "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
+                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
                                 std::cerr << "INFO: DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
@@ -996,7 +1004,7 @@ shrinkStart:
                             }
                         }
 
-                        fprintf ( stderr, "INFO: IPv4 Connection Received from : %s:%d \n", clientAddress, ntohs ( clientAddr.sin_port ) );
+                        debuglog (  "E: IPv4 Connection Received from : %s:%d \n", clientAddress, ntohs ( clientAddr.sin_port ) );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1005,10 +1013,10 @@ shrinkStart:
                                 flags |= O_NONBLOCK;
 
                                 if ( fcntl ( *client, F_SETFL, flags ) != 0 ) {
-                                    fprintf ( stderr, "ERRR: Unable to set socket option \n" );
+                                    debuglog (  "ERRR: Unable to set socket option \n" );
                                 }
 
-                                fprintf ( stderr, "INFO: Received Connection on fd=%d\n", *client );
+                                debuglog (  "INFO: Received Connection on fd=%d\n", *client );
                                 pollfds[nClients].fd = *client;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
@@ -1023,11 +1031,11 @@ shrinkStart:
                                 conn[nClients]->setAuthLvl();
                                 nClients++;
                             } else {
-                                fprintf ( stderr, "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                                debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 PR_Close ( client );
                             }
                         } else {
-                            fprintf ( stderr, "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
+                            debuglog (  "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
                             PR_Shutdown ( client, PR_SHUTDOWN_BOTH );
                             PR_Close ( client );
                         }
@@ -1036,7 +1044,7 @@ shrinkStart:
                     //printf("INFO: Received socket accept finished \n");
                 } else {
                     if ( pollfds[0].revents & PR_POLL_NVAL || pollfds[0].revents & PR_POLL_ERR ) {
-                        fprintf ( stderr, "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
+                        debuglog (  "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
                         PR_Closefd ( pollfds[0].fd );
                         pollfds[0].fd = 0;
                         goto start;
@@ -1071,7 +1079,7 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //fprintf(stderr, "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
+                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
                                 std::cerr << "INFO: DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
@@ -1080,7 +1088,7 @@ shrinkStart:
                             }
                         }
 
-                        fprintf ( stderr, "IPv6 connection received from: %s:%d ...\n", clientAddress, ntohs ( clientAddr6.sin6_port ) );
+                        debuglog (  "E: IPv6 connection received from: %s:%d ...\n", clientAddress, ntohs ( clientAddr6.sin6_port ) );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1089,10 +1097,10 @@ shrinkStart:
                                 flags |= O_NONBLOCK;
 
                                 if ( fcntl ( *client6, F_SETFL, flags ) != 0 ) {
-                                    fprintf ( stderr, "ERRR: Unable to set socket option \n" );
+                                    debuglog (  "ERRR: Unable to set socket option \n" );
                                 }
 
-                                fprintf ( stderr, "INFO: Received Connection on fd=%d\n", *client6 );
+                                debuglog (  "INFO: Received Connection on fd=%d\n", *client6 );
                                 pollfds[nClients].fd = *client6;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
@@ -1108,11 +1116,11 @@ shrinkStart:
                                 conn[nClients]->setAuthLvl();
                                 nClients++;
                             } else {
-                                fprintf ( stderr, "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                                debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 PR_Close ( client6 );
                             }
                         } else {
-                            fprintf ( stderr, "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
+                            debuglog (  "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
                             PR_Shutdown ( client6, PR_SHUTDOWN_BOTH );
                             PR_Close ( client6 );
                         }
@@ -1120,7 +1128,7 @@ shrinkStart:
 
                 } else {
                     if ( pollfds[1].revents & PR_POLL_NVAL || pollfds[1].revents & PR_POLL_ERR ) {
-                        fprintf ( stderr, "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
+                        debuglog (  "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
                         PR_Closefd ( pollfds[1].fd );
                         pollfds[1].fd = 0;
                         goto start;
@@ -1141,7 +1149,7 @@ shrinkStart:
                         //allowConnect = false;
                         clientmanage ( 1 );
                         allowConnect = true;
-                        tempIp = PR_ntohl ( sslclientAddr.sin_addr.s_addr );
+                        tempIp = ntohl ( sslclientAddr.sin_addr.s_addr );
                         char clientAddress[64];
 						inet_ntop( AF_INET, &tempIp, clientAddress, 64 );
                         string ipstr = clientAddress;
@@ -1159,7 +1167,7 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //fprintf(stderr, "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
+                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
                                 std::cerr << "INFO: SSL IPv4 DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
@@ -1168,7 +1176,7 @@ shrinkStart:
                             }
                         }
 
-                        fprintf ( stderr, "INFO: SSL IPv4 Connection Received from : %s:%d -> %d \n", clientAddress, ntohs ( clientAddr.sin_port ), nClients );
+                        debuglog (  "E: SSL IPv4 Connection Received from : %s:%d -> %d \n", clientAddress, ntohs ( clientAddr.sin_port ), nClients );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1177,10 +1185,10 @@ shrinkStart:
                                 flags |= O_NONBLOCK;
 
                                 if ( fcntl ( *sslclient, F_SETFL, flags ) != 0 ) {
-                                    fprintf ( stderr, "ERRR: Unable to set socket option \n" );
+                                    debuglog (  "ERRR: Unable to set socket option \n" );
                                 }
 
-                                fprintf ( stderr, "INFO: Received Connection on fd=%d\n", *sslclient );
+                                debuglog (  "INFO: Received Connection on fd=%d\n", *sslclient );
                                 pollfds[nClients].fd = *sslclient;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
@@ -1196,20 +1204,20 @@ shrinkStart:
 
                                 if ( !conn[nClients]->ssl_accept ) {
                                     if ( SSL_accept ( conn[nClients]->ssl ) <= 0 ) {
-                                        fprintf ( stderr, "WARN: SSL_accept: failure : %s \n", clientAddress );
+                                        debuglog (  "WARN: SSL_accept: failure : %s \n", clientAddress );
                                     } else {
-                                        fprintf ( stderr, "WARN: SSL_accept: success : %s \n", clientAddress );
+                                        debuglog (  "WARN: SSL_accept: success : %s \n", clientAddress );
                                         conn[nClients]->ssl_accept = true;
                                     }
                                 }
 
                                 nClients++;
                             } else {
-                                fprintf ( stderr, "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                                debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 PR_Close ( sslclient );
                             }
                         } else {
-                            fprintf ( stderr, "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
+                            debuglog (  "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
                             PR_Shutdown ( sslclient, PR_SHUTDOWN_BOTH );
                             PR_Close ( sslclient );
                         }
@@ -1218,7 +1226,7 @@ shrinkStart:
                     //printf("INFO: Received socket accept finished \n");
                 } else {
                     if ( pollfds[2].revents & PR_POLL_NVAL || pollfds[2].revents & PR_POLL_ERR ) {
-                        fprintf ( stderr, "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
+                        debuglog (  "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
                         PR_Closefd ( pollfds[2].fd );
                         pollfds[2].fd = 0;
                         goto start;
@@ -1254,7 +1262,7 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //fprintf(stderr, "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
+                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
                                 std::cerr << "INFO: SSL IPv6 DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
@@ -1263,7 +1271,7 @@ shrinkStart:
                             }
                         }
 
-                        fprintf ( stderr, "SSL IPv6 connection received from: %s:%d -> %d \n", clientAddress, ntohs ( clientAddr6.sin6_port ), nClients );
+                        debuglog (  "E: SSL IPv6 connection received from: %s:%d -> %d \n", clientAddress, ntohs ( clientAddr6.sin6_port ), nClients );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1272,10 +1280,10 @@ shrinkStart:
                                 flags |= O_NONBLOCK;
 
                                 if ( fcntl ( *sslclient6, F_SETFL, flags ) != 0 ) {
-                                    fprintf ( stderr, "ERRR: Unable to set socket option \n" );
+                                    debuglog (  "ERRR: Unable to set socket option \n" );
                                 }
 
-                                fprintf ( stderr, "INFO: Received Connection on fd=%d\n", *sslclient6 );
+                                debuglog (  "INFO: Received Connection on fd=%d\n", *sslclient6 );
                                 pollfds[nClients].fd = *sslclient6;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
@@ -1299,11 +1307,11 @@ shrinkStart:
 
                                 nClients++;
                             } else {
-                                fprintf ( stderr, "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                                debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 PR_Close ( sslclient6 );
                             }
                         } else {
-                            fprintf ( stderr, "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
+                            debuglog (  "WARN: Connection closed because of ACL / DOS list entry: %s \n", clientAddress );
                             PR_Shutdown ( sslclient6, PR_SHUTDOWN_BOTH );
                             PR_Close ( sslclient6 );
                         }
@@ -1311,7 +1319,7 @@ shrinkStart:
 
                 } else {
                     if ( pollfds[3].revents & PR_POLL_NVAL || pollfds[3].revents & PR_POLL_ERR ) {
-                        fprintf ( stderr, "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
+                        debuglog (  "ERRR: Receive socket invalid !!!!!!!!!!! \n" );
                         PR_Closefd ( pollfds[3].fd );
                         pollfds[3].fd = 0;
                         goto start;
@@ -1326,7 +1334,7 @@ shrinkStart:
             for ( i = MIN_PORT_COUNT ; i < nClients; i++ ) {
 
                 if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
-                    fprintf ( stderr, "INFO: Invalid fd , closing \n" );
+                    debuglog (  "INFO: Invalid fd , closing \n" );
 
                     conn_close ( conn[i] );
                     conn[i] = 0;
@@ -1364,7 +1372,7 @@ shrinkStart:
                             if ( ( sslerror = SSL_get_error ( conn[i]->ssl, rc ) ) == SSL_ERROR_WANT_ACCEPT ) {
                                 continue;
                             } else {
-                                fprintf ( stderr, "ERRR: SSL_accept() gave error %d , sslerror=%d \n", rc, sslerror );
+                                debuglog (  "ERRR: SSL_accept() gave error %d , sslerror=%d \n", rc, sslerror );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1378,11 +1386,11 @@ shrinkStart:
                             int sslerror = SSL_get_error ( conn[i]->ssl, rc );
 
                             if ( sslerror == SSL_ERROR_WANT_WRITE || sslerror == SSL_ERROR_WANT_READ ) {
-                                fprintf ( stderr, "ERRR: SSL_accept() gave error but can continue %d, sslerror=%d  \n", rc, sslerror );
+                                debuglog (  "WARN: SSL_accept() gave error but can continue %d, sslerror=%d  \n", rc, sslerror );
                                 conn[i]->ssl_accept = true;
                             } else {
 
-                                fprintf ( stderr, "ERRR: SSL_accept() gave error %d, sslerror=%d  \n", rc, sslerror );
+                                debuglog (  "ERRR: SSL_accept() gave error %d, sslerror=%d  \n", rc, sslerror );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1429,7 +1437,7 @@ shrinkStart:
 
                             if ( temp->isHdrInvalid() ) {
                                 temp->buf[temp->len] = 0;
-                                fprintf ( stderr, "ERRR: Header invalid, Received Header :\n %s \n", temp->buf );
+                                debuglog (  "ERRR: Header invalid, Received Header :\n %s \n", temp->buf );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1441,7 +1449,7 @@ shrinkStart:
                             }
 
                             if ( temp->hLen <= 0 ) {
-                                fprintf ( stderr, "WARN: Incomplete header received\n" );
+                                debuglog (  "WARN: Incomplete header received\n" );
                                 //pollfds[i].revents = 0;
                                 pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                 continue;
@@ -1481,20 +1489,20 @@ shrinkStart:
 
                                 if ( conn[i]->sess ) {
                                     conn[i]->setAuthLvl();
-                                    fprintf ( stderr, "INFO: Session Active, SID: %s -> Auth Level : %s \n",
+                                    debuglog (  "INFO: Session Active, SID: %s -> Auth Level : %s \n",
                                               conn[i]->sess->sid.c_str(), conn[i]->sess->getVariable ( "auth" ) );
                                 }
                             } else {
-                                fprintf ( stderr, "ERRR: Unable to find SID in cookies \n" );
+                                debuglog (  "ERRR: Unable to find SID in cookies \n" );
                             }
 
                             delete cookies;
                         } else {
-                            fprintf ( stderr, "ERRR: Cookies not present \n" );
+                            debuglog (  "DBUG: Cookies not present \n" );
                         }
 
                         if ( !conn[i]->sess ) {
-                            fprintf ( stderr, "WARN: No valid Session Present, creating new \n" );
+                            debuglog (  "WARN: No valid Session Present, creating new \n" );
                             time_t now = time ( NULL );
                             now += 86400;
                             conn[i]->sess = hSMgr->startSession ( conn[i]->ip, now );
@@ -1516,7 +1524,7 @@ shrinkStart:
                                 fileType[ftn - 2] = 0;
                             }
 
-                            fprintf ( stderr, "DBUG: Requesting %s type \n", fileType );
+                            debuglog (  "DBUG: Requesting %s type \n", fileType );
 
                             if ( ( strcasecmp ( fileType, ".html" ) == 0 ) ||
                                     ( strcasecmp ( fileType, ".js" )   == 0 ) ||
@@ -1527,7 +1535,7 @@ shrinkStart:
                                 char *authFile = temp->getReqFileAuth ( conn[i]->authLvl );
                                 * ( conn[i]->file )  = PR_Open ( authFile, PR_RDONLY, 0 );
                                 fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
-                                fprintf ( stderr, "WARN: Requesting html/scriptfile file type : %s \n", authFile );
+                                debuglog (  "WARN: Requesting html/scriptfile file type : %s \n", authFile );
 								if( fInfoStatus != PR_SUCCESS && strcasecmp(fileType, ".xyz") != 0 ){
 									notFound = true;
 								} 
@@ -1541,14 +1549,14 @@ shrinkStart:
                                       ) {
                                 char *authFile = temp->getReqFileAuth ( );
                                 * ( conn[i]->file ) = PR_Open ( authFile, PR_RDONLY, 0 );
-                                fprintf ( stderr, "WARN: Requesting static file : %s \n", authFile );
+                                debuglog (  "WARN: Requesting static file : %s \n", authFile );
                                 fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
 								if( fInfoStatus != PR_SUCCESS ){
 									notFound = true;
 								} 
                             } else {
                                 isForbidden = true;
-                                fprintf ( stderr, "WARN: Requesting unsupported file type \n" );
+                                debuglog (  "WARN: Requesting unsupported file type \n" );
                                 HttpResp *tempResp   = &conn[i]->resp;
                                 //tempResp->setContentLen( conn[i]->fid->fileSize);
                                 tempResp->setStatus ( 403 );
@@ -1559,8 +1567,9 @@ shrinkStart:
                                 conn[i]->len = tempResp->getHeader ( ( char * ) conn[i]->buf );
                                 conn[i]->len += conn[i]->sess->dumpSessionCookies ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
                                 conn[i]->len += tempResp->finishHdr ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
-                                fprintf ( stderr, "\nDBUG: Response Header: \n%s\n", ( char * ) conn[i]->buf );
-                                fprintf ( stderr, "DBUG: ____________________________________\n" );
+                                debuglog (  "E: Request file : %s -> Status code = %d \n", ( char * ) conn[i]->req.getReqFile(), 403 );
+                                debuglog (  "XTRA: Response Header: \n%s\n", ( char * ) conn[i]->buf );
+                                debuglog (  "XTRA: ____________________________________\n" );
                             }
 
                             /*
@@ -1577,11 +1586,12 @@ shrinkStart:
                                 conn[i]->len = tempResp->getHeader ( ( char * ) conn[i]->buf );
                                 conn[i]->len += conn[i]->sess->dumpSessionCookies ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
                                 conn[i]->len += tempResp->finishHdr ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
-                                fprintf ( stderr, "\nDBUG: Response Header: \n%s\n", ( char * ) conn[i]->buf );
-                                fprintf ( stderr, "DBUG: ____________________________________\n" );
+                                debuglog (  "E: Request file : %s -> Status code = %d \n", ( char * ) conn[i]->req.getReqFile(), tempResp->getStatus() );
+                                debuglog (  "XTRA: Response Header: \n%s\n", ( char * ) conn[i]->buf );
+                                debuglog (  "XTRA: ____________________________________\n" );
                             } else {
 								if ( notFound || isForbidden ){
-                                	fprintf ( stderr, "\nERRR: Static doc : '%s' NOT FOUND\n",
+                                	debuglog (  "\nERRR: Static doc : '%s' NOT FOUND\n",
                                           temp->getReqFileAuth() );
 									if( notFound )
 										sendConnRespHdr( conn[i], 404 );
@@ -1601,7 +1611,7 @@ shrinkStart:
 
 
                                 if ( MAX_THREADS == 0 ) {
-                                	fprintf ( stderr, "\nERRR: Dynamic Page (in Static server mode): '%s' \n",
+                                	debuglog (  "\nERRR: Dynamic Page (in Static server mode): '%s' \n",
                                           temp->getReqFileAuth() );
 
 									sendConnRespHdr( conn[i], 404 );
@@ -1618,7 +1628,7 @@ shrinkStart:
 									//Only forward .xyz plugin associated files to backend threads
 									HttpHandler *hHdlr = HttpHandler::createInstance();
 									PluginHandler *pluginHandler = ( PluginHandler * ) hHdlr->getHandler ( temp->getReqFile() );
-                                	fprintf ( stderr, "\nERRR: Dynamic Page : '%s' \n",
+                                	debuglog (  "\nERRR: Dynamic Page : '%s' \n",
                                           temp->getReqFile() );
 
                                     if ( ! isForbidden && strcasecmp(fileType, ".xyz" ) == 0 && pluginHandler ) {
@@ -1655,7 +1665,7 @@ shrinkStart:
                             if ( SSL_get_error ( conn[i]->ssl, tempLen ) == SSL_ERROR_WANT_READ )
                             { goto writesection; }
                             else {
-                                fprintf ( stderr, "ERRR: SSL_read Error: '%s' file %d -> socket %d pollfd %d \n",
+                                debuglog (  "ERRR: SSL_read Error: '%s' file %d -> socket %d pollfd %d \n",
                                           conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
@@ -1696,10 +1706,10 @@ writesection:
                             int sslerror = 0;
 
                             if ( ( sslerror = SSL_get_error ( conn[i]->ssl, rc ) ) == SSL_ERROR_WANT_ACCEPT ) {
-                                fprintf ( stderr, "ERRR: SSL_accept() gave error but can continue to accept %d, sslerror=%d  \n", rc, sslerror );
+                                debuglog (  "WARN: SSL_accept() gave error but can continue to accept %d, sslerror=%d  \n", rc, sslerror );
                                 continue;
                             } else {
-                                fprintf ( stderr, "ERRR: SSL_accept() gave error %d , sslerror=%d \n", rc, sslerror );
+                                debuglog (  "ERRR: SSL_accept() gave error %d , sslerror=%d \n", rc, sslerror );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1713,11 +1723,11 @@ writesection:
                             int sslerror = SSL_get_error ( conn[i]->ssl, rc );
 
                             if ( sslerror == SSL_ERROR_WANT_WRITE || sslerror == SSL_ERROR_WANT_READ ) {
-                                fprintf ( stderr, "ERRR: SSL_accept() gave error but can continue %d, sslerror=%d  \n", rc, sslerror );
+                                debuglog (  "WARN: SSL_accept() gave error but can continue %d, sslerror=%d  \n", rc, sslerror );
                                 conn[i]->ssl_accept = true;
                             } else {
 
-                                fprintf ( stderr, "ERRR: SSL_accept() gave error %d, sslerror=%d  \n", rc, sslerror );
+                                debuglog (  "ERRR: SSL_accept() gave error %d, sslerror=%d  \n", rc, sslerror );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1806,7 +1816,7 @@ writesection:
 #ifdef USE_SSL
 
                             if ( conn[i]->ssl ) {
-                                fprintf ( stderr, "ERRR: SSL_write Error: '%s' file %d -> socket %d pollfd %d \n",
+                                debuglog (  "ERRR: SSL_write Error: '%s' file %d -> socket %d pollfd %d \n",
                                           conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
@@ -1818,7 +1828,7 @@ writesection:
                             } else {
 #endif
 
-                                fprintf ( stderr, "ERRR: Socket Write Error: '%s' file %d -> socket %d pollfd %d \n",
+                                debuglog (  "ERRR: Socket Write Error: '%s' file %d -> socket %d pollfd %d \n",
                                           conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
@@ -1833,9 +1843,9 @@ writesection:
 #endif
                         }
                     } else {
-                        fprintf ( stderr, "\nINFO: --------------------------------------------------------------------------\n" );
-                        fprintf ( stderr, "INFO: Sent File='%s' Fd=%d Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), pollfds[i].fd,  conn[i]->sent );
-                        fprintf ( stderr, "INFO: --------------------------------------------------------------------------\n\n\n" );
+                        debuglog (  "\nINFO: --------------------------------------------------------------------------\n" );
+                        debuglog (  "INFO: Sent File='%s' Fd=%d Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), pollfds[i].fd,  conn[i]->sent );
+                        debuglog (  "INFO: --------------------------------------------------------------------------\n\n\n" );
 
                         conn_close ( conn[i] );
                         conn[i] = 0;
@@ -1867,7 +1877,7 @@ writesection:
             if ( retVal < 0 ) {
                 //PR_Sleep ( 1 );
                 std::this_thread::sleep_for ( std::chrono::microseconds ( 100 ) );
-                fprintf ( stderr, "ERRR: Poll failed \n" );
+                debuglog (  "ERRR: Poll failed \n" );
             }
         }
     }
