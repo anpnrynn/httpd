@@ -4,5 +4,6 @@
 
 void debuglog( const char *format, ...);
 extern int loglevel;
+extern int logdump;
 
 #endif

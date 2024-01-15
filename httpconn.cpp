@@ -175,7 +175,7 @@ int HttpReq::processHttpFirstLine() {
             strcpy ( encodedUrl, "index.html" );
         }
 
-        debuglog (  "E: Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
+        debuglog (  " Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
         hdrInvalid = false;
     }  else {
         debuglog (  "ERRR: Header invalid <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n" );
@@ -964,6 +964,7 @@ void HttpResp::resetHttpHeader() {
     data          = 0;
 }
 
+long long int Connection::indexCount = 1;
 
 void sendRemainderData ( Connection *conn ) {
 	if ( conn->resp.getContentLen() < 0 ){
@@ -1126,7 +1127,7 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
 
 unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     HttpResp *tempResp = & ( conn->resp );
-	debuglog( "E: Request for: %s -> Status code : %d \n", conn->req.getReqFile(), status );
+	debuglog( " Request for: %s -> Status code : %d \n", conn->req.getReqFile(), status );
 	string statusMsg = getStatusInfo( status );
     tempResp->setStatus ( status );
     tempResp->setAddOn(1);

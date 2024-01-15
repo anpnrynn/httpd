@@ -1,3 +1,13 @@
+16/01/2024 - 1
+==============
+Added changes to logging.
+Made some fixes wrt to server loop logic that involves skipping write part if there is a read error
+Added connection object counter
+Script changes to redirect logs to a file 
+Log message changes 
+REQ and RESP macro added to derefernce connection object versions of the same
+
+
 15/01/2024 - 2
 ==============
 Adding copyright information 
