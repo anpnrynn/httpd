@@ -1,3 +1,4 @@
+//Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 #include <httpconn.h>
 #include <plugin.h>
 #include <httphandlers.h>
