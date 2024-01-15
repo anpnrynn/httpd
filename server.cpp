@@ -400,13 +400,13 @@ int main ( int argc, char *argv[] ) {
     { exit ( 56 ); }
 
     if ( argc < 6 ) {
-        debuglog (  "E: %s Exited \n", argv[0] );
-        debuglog (  "E: Format: %s port count sslport\n", argv[0] );
-        debuglog (  "E: port    - Server port number to use \n" );
-        debuglog (  "E: count   - Number of threads to launch \n" );
-        debuglog (  "E: dosthrehsold   - DOS threshold \n" );
-        debuglog (  "E: sslport - SSL server port number to use \n" );
-        debuglog (  "E: loglevel - 1-6, 6 churning out most logs \n" );
+        debuglog (  " %s Exited \n", argv[0] );
+        debuglog (  " Format: %s port count sslport\n", argv[0] );
+        debuglog (  " port    - Server port number to use \n" );
+        debuglog (  " count   - Number of threads to launch \n" );
+        debuglog (  " dosthrehsold   - DOS threshold \n" );
+        debuglog (  " sslport - SSL server port number to use \n" );
+        debuglog (  " loglevel - 1-6, 6 churning out most logs \n" );
         exit ( 1 );
     } else {
         SRVPORT = atoi ( argv[1] );
@@ -419,7 +419,7 @@ int main ( int argc, char *argv[] ) {
     int DOS_THRESHOLD = 50;
 
     if ( argc == 6 ) {
-        debuglog (  "E: Received threads count: %s \n", argv[2] );
+        debuglog (  " Received threads count: %s \n", argv[2] );
         MAX_THREADS = atoi ( argv[2] );
         DOS_THRESHOLD = atoi ( argv[3] );
 
@@ -910,9 +910,9 @@ shrinkStart:
                 }
             }
 
-            debuglog (  "Shrunk: Number of clients = %d \n", nClients ); //cout << "Number of clients = " << nClients << endl;
+            debuglog (  " Shrunk: Number of clients = %d \n", nClients ); //cout << "Number of clients = " << nClients << endl;
             i = 0;
-            debuglog (  "\nActive fds=%d After shrinking \n", nClients );
+            debuglog (  "DBUG: Active fds=%d After shrinking \n", nClients );
 
             while  ( i < nClients ) {
                 debuglog (  "%d, ", pollfds[i].fd );
@@ -925,9 +925,9 @@ shrinkStart:
 
         if ( displayfds ) {
             int l = 0;
-            debuglog (  "\n" );
-            debuglog (  "____________________________________\n" );
-            debuglog (  "Active fds=%d \n", nClients );
+            debuglog (  "DBUG: \n" );
+            debuglog (  "DBUG: ____________________________________\n" );
+            debuglog (  "DBUG: Active fds=%d \n", nClients );
 
             while  ( l < nClients ) {
                 debuglog (  "%d, ", pollfds[l].fd );
@@ -943,7 +943,7 @@ shrinkStart:
             }
 
             l = 0;
-            debuglog (  "\nActive fds=%d After clearing \n", nClients );
+            debuglog (  "DBUG: Active fds=%d After clearing \n", nClients );
 
             while  ( l < nClients ) {
                 debuglog (  "%d, ", pollfds[l].fd );
@@ -963,7 +963,7 @@ shrinkStart:
         if ( ( retVal = PR_Poll ( pollfds, nClients, 10 ) ) > 0 ) {
 
             if ( clientmanage ( 2 ) < MAX_BACKLOG ) {
-				debuglog ("E: Active main thread connection fds = %d \n", nClients);
+				debuglog ("DBUG: Active main thread connection fds = %d \n", nClients);
 
                 /* IPv4 Server Socket */
                 if ( pollfds[0].revents & PR_POLL_READ ) {
@@ -1004,7 +1004,7 @@ shrinkStart:
                             }
                         }
 
-                        debuglog (  "E: IPv4 Connection Received from : %s:%d \n", clientAddress, ntohs ( clientAddr.sin_port ) );
+                        debuglog (  " IPv4 Connection Received from : %s:%d \n", clientAddress, ntohs ( clientAddr.sin_port ) );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1088,7 +1088,7 @@ shrinkStart:
                             }
                         }
 
-                        debuglog (  "E: IPv6 connection received from: %s:%d ...\n", clientAddress, ntohs ( clientAddr6.sin6_port ) );
+                        debuglog (  " IPv6 connection received from: %s:%d ...\n", clientAddress, ntohs ( clientAddr6.sin6_port ) );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1176,7 +1176,7 @@ shrinkStart:
                             }
                         }
 
-                        debuglog (  "E: SSL IPv4 Connection Received from : %s:%d -> %d \n", clientAddress, ntohs ( clientAddr.sin_port ), nClients );
+                        debuglog (  " SSL IPv4 Connection Received from : %s:%d -> %d \n", clientAddress, ntohs ( clientAddr.sin_port ), nClients );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1271,7 +1271,7 @@ shrinkStart:
                             }
                         }
 
-                        debuglog (  "E: SSL IPv6 connection received from: %s:%d -> %d \n", clientAddress, ntohs ( clientAddr6.sin6_port ), nClients );
+                        debuglog (  " SSL IPv6 connection received from: %s:%d -> %d \n", clientAddress, ntohs ( clientAddr6.sin6_port ), nClients );
 
                         if ( allowConnect ) {
                             if ( nClients < MAXCLIENTS ) {
@@ -1332,6 +1332,10 @@ shrinkStart:
 
 
             for ( i = MIN_PORT_COUNT ; i < nClients; i++ ) {
+			
+				bool isWritable = false;
+				if (pollfds[i].revents & PR_POLL_WRITE )
+					isWritable = true;
 
                 if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
                     debuglog (  "INFO: Invalid fd , closing \n" );
@@ -1359,7 +1363,6 @@ shrinkStart:
                     continue;
                 }
 
-//readsection:
                 if ( pollfds[i].fd > MIN_PORT_COUNT && pollfds[i].revents & PR_POLL_READ ) {
 #ifdef USE_SSL
 
@@ -1407,22 +1410,25 @@ shrinkStart:
                     }
 
 #endif
-                    HttpReq *temp = &conn[i]->req;
+                    //HttpReq *temp = &conn[i]->req;
+#define             REQ   conn[i]->req
+#define             RESP  conn[i]->resp
+
                     int tempLen = 0;
 #ifdef USE_SSL
 
                     if ( conn[i]->ssl ) {
-                        if ( temp->hLen <= 0 )
-                        { tempLen   = SSL_read ( conn[i]->ssl, &temp->buf[temp->len], MAXBUF - temp->len ); }
+                        if ( REQ.hLen <= 0 )
+                        { tempLen   = SSL_read ( conn[i]->ssl, &(REQ.buf[REQ.len]), MAXBUF - REQ.len ); }
                         else
-                        { tempLen   = SSL_read ( conn[i]->ssl, &temp->buf[temp->hLen], MAXBUF - temp->hLen ); }
+                        { tempLen   = SSL_read ( conn[i]->ssl, &(REQ.buf[REQ.hLen]), MAXBUF - REQ.hLen ); }
                     } else {
 #endif
 
-                        if ( temp->hLen <= 0 )
-                        { tempLen   = PR_Recvfd ( pollfds[i].fd, &temp->buf[temp->len], MAXBUF - temp->len, 0, 1 ); }
+                        if ( REQ.hLen <= 0 )
+                        { tempLen   = PR_Recvfd ( pollfds[i].fd, &(REQ.buf[REQ.len]), MAXBUF - REQ.len, 0, 1 ); }
                         else
-                        { tempLen   = PR_Recvfd ( pollfds[i].fd, &temp->buf[temp->hLen], MAXBUF - temp->hLen, 0, 1 ); }
+                        { tempLen   = PR_Recvfd ( pollfds[i].fd, &(REQ.buf[REQ.hLen]), MAXBUF - REQ.hLen, 0, 1 ); }
 
 #ifdef USE_SSL
                     }
@@ -1430,14 +1436,14 @@ shrinkStart:
 #endif
 
                     if ( tempLen > 0 ) {
-                        temp->len += tempLen; // Total Data Length;
+                        REQ.len += tempLen; // Total Data Length;
 
-                        if ( temp->hLen <= 0 ) {
-                            temp->readHttpHeader();
+                        if ( REQ.hLen <= 0 ) {
+                            REQ.readHttpHeader();
 
-                            if ( temp->isHdrInvalid() ) {
-                                temp->buf[temp->len] = 0;
-                                debuglog (  "ERRR: Header invalid, Received Header :\n %s \n", temp->buf );
+                            if ( REQ.isHdrInvalid() ) {
+                                REQ.buf[REQ.len] = 0;
+                                debuglog (  "ERRR: Header invalid, Received Header :\n %s \n", REQ.buf );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1448,16 +1454,16 @@ shrinkStart:
                                 continue;
                             }
 
-                            if ( temp->hLen <= 0 ) {
+                            if ( REQ.hLen <= 0 ) {
                                 debuglog (  "WARN: Incomplete header received\n" );
                                 //pollfds[i].revents = 0;
                                 pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                 continue;
                             } else {
-                                if ( temp->getMethod() == HTTP_POST ) {
-                                    temp->processHttpPostData ( temp->hLen, temp->len - temp->hLen );
+                                if ( REQ.getMethod() == HTTP_POST ) {
+                                    REQ.processHttpPostData ( REQ.hLen, REQ.len - REQ.hLen );
 
-                                    if (  temp->cLen > temp->len - temp->hLen ) {
+                                    if (  REQ.cLen > REQ.len - REQ.hLen ) {
                                         //pollfds[i].revents = 0;
                                         pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                         continue;
@@ -1465,12 +1471,12 @@ shrinkStart:
                                 }
                             }
                         } else {
-                            if ( temp->getMethod() == HTTP_POST ) {
-                                if ( temp->cLen > 0 ) {
-                                    temp->processHttpPostData ( temp->hLen, tempLen );
+                            if ( REQ.getMethod() == HTTP_POST ) {
+                                if ( REQ.cLen > 0 ) {
+                                    REQ.processHttpPostData ( REQ.hLen, tempLen );
                                 }
 
-                                if ( temp->cLen > temp->len - temp->hLen ) {
+                                if ( REQ.cLen > REQ.len - REQ.hLen ) {
                                     //pollfds[i].revents = 0;
                                     pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
                                     continue;
@@ -1478,7 +1484,7 @@ shrinkStart:
                             }
                         }
 
-                        MapStrStr *cookies = HttpSession::readCookies ( ( char * ) temp->getCookie() );
+                        MapStrStr *cookies = HttpSession::readCookies ( ( char * ) REQ.getCookie() );
                         conn[i]->sess = 0;
 
                         if ( cookies ) {
@@ -1516,7 +1522,7 @@ shrinkStart:
                             bool isForbidden = false;
 							bool notFound = false;
 
-                            char *fileType = temp->getReqFileType();
+                            char *fileType = REQ.getReqFileType();
                             int ftn = strlen ( fileType );
 
                             if ( fileType[ftn - 1] == '\n' ) {
@@ -1532,7 +1538,7 @@ shrinkStart:
                                     ( strcasecmp ( fileType, ".xyz" )  == 0 ) ||
                                     ( strcasecmp ( fileType, ".css" )  == 0 )
                                ) {
-                                char *authFile = temp->getReqFileAuth ( conn[i]->authLvl );
+                                char *authFile = REQ.getReqFileAuth ( conn[i]->authLvl );
                                 * ( conn[i]->file )  = PR_Open ( authFile, PR_RDONLY, 0 );
                                 fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
                                 debuglog (  "WARN: Requesting html/scriptfile file type : %s \n", authFile );
@@ -1547,7 +1553,7 @@ shrinkStart:
                                         ( strcasecmp ( fileType, ".sthtml" )   == 0 ) ||
                                         ( strcasecmp ( fileType, ".jpeg" )  == 0 )
                                       ) {
-                                char *authFile = temp->getReqFileAuth ( );
+                                char *authFile = REQ.getReqFileAuth ( );
                                 * ( conn[i]->file ) = PR_Open ( authFile, PR_RDONLY, 0 );
                                 debuglog (  "WARN: Requesting static file : %s \n", authFile );
                                 fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
@@ -1557,17 +1563,17 @@ shrinkStart:
                             } else {
                                 isForbidden = true;
                                 debuglog (  "WARN: Requesting unsupported file type \n" );
-                                HttpResp *tempResp   = &conn[i]->resp;
+                                //HttpResp *tempResp   = &conn[i]->resp;
                                 //tempResp->setContentLen( conn[i]->fid->fileSize);
-                                tempResp->setStatus ( 403 );
-                                tempResp->setContentLen ( 0 );
-                                tempResp->setAddOn ( 1 );
+                                RESP.setStatus ( 403 );
+                                RESP.setContentLen ( 0 );
+                                RESP.setAddOn ( 1 );
                                 pollfds[i].events  = PR_POLL_READ | PR_POLL_EXCEPT | PR_POLL_WRITE;
-                                tempResp->setContentType ( ( char * ) identifyContentType ( temp->getReqFile() ) );
-                                conn[i]->len = tempResp->getHeader ( ( char * ) conn[i]->buf );
+                                RESP.setContentType ( ( char * ) identifyContentType ( REQ.getReqFile() ) );
+                                conn[i]->len = RESP.getHeader ( ( char * ) conn[i]->buf );
                                 conn[i]->len += conn[i]->sess->dumpSessionCookies ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
-                                conn[i]->len += tempResp->finishHdr ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
-                                debuglog (  "E: Request file : %s -> Status code = %d \n", ( char * ) conn[i]->req.getReqFile(), 403 );
+                                conn[i]->len += RESP.finishHdr ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
+                                debuglog (  " Request file : %s -> Status code = %d \n", ( char * ) conn[i]->req.getReqFile(), 403 );
                                 debuglog (  "XTRA: Response Header: \n%s\n", ( char * ) conn[i]->buf );
                                 debuglog (  "XTRA: ____________________________________\n" );
                             }
@@ -1577,22 +1583,22 @@ shrinkStart:
                              */
                             if ( conn[i]->file && * ( conn[i]->file ) > -1 && fInfoStatus == PR_SUCCESS ) {
                                 //TODO:
-                                HttpResp *tempResp   = &conn[i]->resp;
+                                //HttpResp *tempResp   = &conn[i]->resp;
                                 //tempResp->setContentLen( conn[i]->fid->fileSize);
-                                tempResp->setContentLen ( conn[i]->fInfo.st_size );
-                                tempResp->setAddOn ( 1 );
+                                RESP.setContentLen ( conn[i]->fInfo.st_size );
+                                RESP.setAddOn ( 1 );
                                 pollfds[i].events  = PR_POLL_READ | PR_POLL_EXCEPT | PR_POLL_WRITE;
-                                tempResp->setContentType ( ( char * ) identifyContentType ( temp->getReqFile() ) );
-                                conn[i]->len = tempResp->getHeader ( ( char * ) conn[i]->buf );
+                                RESP.setContentType ( ( char * ) identifyContentType ( REQ.getReqFile() ) );
+                                conn[i]->len = RESP.getHeader ( ( char * ) conn[i]->buf );
                                 conn[i]->len += conn[i]->sess->dumpSessionCookies ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
-                                conn[i]->len += tempResp->finishHdr ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
-                                debuglog (  "E: Request file : %s -> Status code = %d \n", ( char * ) conn[i]->req.getReqFile(), tempResp->getStatus() );
+                                conn[i]->len += RESP.finishHdr ( ( char * ) & ( conn[i]->buf[conn[i]->len] ) );
+                                debuglog (  " Request file : %s -> Status code = %d \n", ( char * ) REQ.getReqFile(), RESP.getStatus() );
                                 debuglog (  "XTRA: Response Header: \n%s\n", ( char * ) conn[i]->buf );
                                 debuglog (  "XTRA: ____________________________________\n" );
                             } else {
 								if ( notFound || isForbidden ){
                                 	debuglog (  "\nERRR: Static doc : '%s' NOT FOUND\n",
-                                          temp->getReqFileAuth() );
+                                          REQ.getReqFileAuth() );
 									if( notFound )
 										sendConnRespHdr( conn[i], 404 );
 									else
@@ -1612,7 +1618,7 @@ shrinkStart:
 
                                 if ( MAX_THREADS == 0 ) {
                                 	debuglog (  "\nERRR: Dynamic Page (in Static server mode): '%s' \n",
-                                          temp->getReqFileAuth() );
+                                          REQ.getReqFileAuth() );
 
 									sendConnRespHdr( conn[i], 404 );
                                     conn_close ( conn[i] );
@@ -1627,9 +1633,9 @@ shrinkStart:
                                 } else {
 									//Only forward .xyz plugin associated files to backend threads
 									HttpHandler *hHdlr = HttpHandler::createInstance();
-									PluginHandler *pluginHandler = ( PluginHandler * ) hHdlr->getHandler ( temp->getReqFile() );
+									PluginHandler *pluginHandler = ( PluginHandler * ) hHdlr->getHandler ( REQ.getReqFile() );
                                 	debuglog (  "\nERRR: Dynamic Page : '%s' \n",
-                                          temp->getReqFile() );
+                                          REQ.getReqFile() );
 
                                     if ( ! isForbidden && strcasecmp(fileType, ".xyz" ) == 0 && pluginHandler ) {
 
@@ -1640,6 +1646,7 @@ shrinkStart:
                                         pollfds[i].events = 0;
                                         pollfds[i].revents = 0;
                                         shrink = true;
+										continue;
                                     } else {
 										sendConnRespHdr( conn[i], 404 );
                                     	conn_close ( conn[i] );
@@ -1663,7 +1670,7 @@ shrinkStart:
 
                         if ( conn[i]->ssl ) {
                             if ( SSL_get_error ( conn[i]->ssl, tempLen ) == SSL_ERROR_WANT_READ )
-                            { goto writesection; }
+                            { /*goto writesection;*/ }
                             else {
                                 debuglog (  "ERRR: SSL_read Error: '%s' file %d -> socket %d pollfd %d \n",
                                           conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
@@ -1674,6 +1681,7 @@ shrinkStart:
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
                                 shrink = true;
+								continue;
                             }
                         } else {
 #endif
@@ -1684,17 +1692,18 @@ shrinkStart:
                             pollfds[i].events = 0;
                             pollfds[i].revents = 0;
                             shrink = true;
+								continue;
 #ifdef USE_SSL
                         }
 
 #endif
                     }
 
-                    //pollfds[i].revents = 0;
-                    pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
+					if( pollfds[i].fd > 0 && isWritable ){
+                    	pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
+					}
                 }
 
-writesection:
 
                 if ( pollfds[i].fd > MIN_PORT_COUNT && pollfds[i].revents & PR_POLL_WRITE && conn[i] && conn[i]->file && * ( conn[i]->file ) > MIN_PORT_COUNT ) {
 #ifdef USE_SSL
@@ -1752,7 +1761,13 @@ writesection:
                         int temp = PR_Read ( conn[i]->file, & ( conn[i]->buf[len] ), SMALLBUF - len );
 
                         //TODO: use fread
-                        if ( temp <= 0 ) {
+                        if ( temp < 0 ) {
+							if( errno != EAGAIN && errno !=  EWOULDBLOCK ){
+                            	PR_Close ( conn[i]->file );
+                            	conn[i]->filefd = -1;
+                            	conn[i]->file = 0;
+							}
+						} else if ( temp == 0 ) {
                             PR_Close ( conn[i]->file );
                             conn[i]->filefd = -1;
                             conn[i]->file = 0;
@@ -1825,6 +1840,7 @@ writesection:
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
                                 shrink = true;
+								continue;
                             } else {
 #endif
 
@@ -1837,6 +1853,7 @@ writesection:
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
                                 shrink = true;
+								continue;
 #ifdef USE_SSL
                             }
 
@@ -1855,6 +1872,7 @@ writesection:
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
                         shrink = true;
+						continue;
                     }
                 } else {
                     if ( conn[i] && conn[i]->file == 0 ) {
@@ -1867,9 +1885,9 @@ writesection:
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
                         shrink = true;
+						continue;
                     }
                 }
-
 
                 pollfds[i].revents = 0;
             }

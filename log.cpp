@@ -6,6 +6,7 @@
 #define LOGBUFSIZE 8192
 __thread char logbuf[LOGBUFSIZE];
 int loglevel = 1;
+int logdump  = 0;
 
 void debuglog( const char *format, ... ){
 	va_list ap;
@@ -13,6 +14,9 @@ void debuglog( const char *format, ... ){
 	int p = 0;
 	
 	switch( format[0] ){
+		case ' ':
+				p = 1;
+				break;	
 		case 'E':
 				if( loglevel >= 1 )
 					p = 1;
@@ -30,11 +34,11 @@ void debuglog( const char *format, ... ){
 					p = 1;
 				break;	
 		case 'X':
-				if( loglevel >= 5 )
+				if( logdump )
 					p = 1;
 				break;	
 		default:
-				if( loglevel >= 6 )
+				if( loglevel >= 5 )
 					p = 1;
 				break;	
 	}
