@@ -66,7 +66,7 @@ HttpReq::HttpReq() {
 
 HttpReq::~HttpReq() {
     if ( post ) {
-	    removePostTempFile();
+        removePostTempFile();
     }
 }
 
@@ -109,17 +109,17 @@ void HttpReq::skipHdrTag ( size_t &start, size_t d ) {
     { start = k - d; }
 }
 
-bool isHttpMethod( char *mthd ){
-	if ( strcmp( mthd, "GET" ) != 0 &&
-		strcmp( mthd, "POST") != 0 &&
-		strcmp( mthd, "HEAD") != 0 &&
-		strcmp( mthd, "PUT")  != 0 &&
-		strcmp( mthd, "PATCH")  != 0 &&
-		strcmp( mthd, "DELETE")  != 0 ){
-		return false;
-	} else {
-		return true;
-	}
+bool isHttpMethod ( char *mthd ) {
+    if ( strcmp ( mthd, "GET" ) != 0 &&
+            strcmp ( mthd, "POST" ) != 0 &&
+            strcmp ( mthd, "HEAD" ) != 0 &&
+            strcmp ( mthd, "PUT" )  != 0 &&
+            strcmp ( mthd, "PATCH" )  != 0 &&
+            strcmp ( mthd, "DELETE" )  != 0 ) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 int HttpReq::processHttpFirstLine() {
@@ -130,50 +130,56 @@ int HttpReq::processHttpFirstLine() {
     int k = 0;
     char *hdrReq[3] = { mthd, encodedUrl, prot };
 
-    while ( buf[i] < MAXBUF ){
-	    if( buf[i] == ' '){
-	        hdrReq[j][k] = 0;
-		j++;
-		k=0;
-		if( j == 1 ){
-			if(!isHttpMethod(mthd) ) {
-				hdrInvalid = true;
-				return 10;
-			}
-		} else if( j > 3 ){
-			hdrInvalid = true;
-			return 11;
-		}
-		if( buf[i+1] == '/' ){
-			i++;
-		}
-	    }else if( buf[i] =='\r' || buf[i] =='\n' ) {
-		hdrReq[j][k] = 0;
-		j++;
-		k=0;
-		break;
-   	    }else {
-		if( ( j == 0 || j == 2 ) && k >= 15 ){
-			hdrInvalid = true;
-			return 12;
-		} else if ( j == 1 && k >= 4095 ){
-			hdrInvalid = true;
-			return 13;
-		}
-	    	hdrReq[j][k++] = buf[i];
-	    }
-	    i++;
+    while ( buf[i] < MAXBUF ) {
+        if ( buf[i] == ' ' ) {
+            hdrReq[j][k] = 0;
+            j++;
+            k = 0;
+
+            if ( j == 1 ) {
+                if ( !isHttpMethod ( mthd ) ) {
+                    hdrInvalid = true;
+                    return 10;
+                }
+            } else if ( j > 3 ) {
+                hdrInvalid = true;
+                return 11;
+            }
+
+            if ( buf[i + 1] == '/' ) {
+                i++;
+            }
+        } else if ( buf[i] == '\r' || buf[i] == '\n' ) {
+            hdrReq[j][k] = 0;
+            j++;
+            k = 0;
+            break;
+        } else {
+            if ( ( j == 0 || j == 2 ) && k >= 15 ) {
+                hdrInvalid = true;
+                return 12;
+            } else if ( j == 1 && k >= 4095 ) {
+                hdrInvalid = true;
+                return 13;
+            }
+
+            hdrReq[j][k++] = buf[i];
+        }
+
+        i++;
     }
-    if( j == 3 ){
-	if( encodedUrl[0]  == 0 ) {
-		strcpy( encodedUrl , "index.html" );
-	}
-    	fprintf ( stderr, "DBUG: Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
-	hdrInvalid = false;
+
+    if ( j == 3 ) {
+        if ( encodedUrl[0]  == 0 ) {
+            strcpy ( encodedUrl, "index.html" );
+        }
+
+        fprintf ( stderr, "DBUG: Method=%s Version=%s EncodedUrl=%s \n", mthd, prot, encodedUrl );
+        hdrInvalid = false;
     }  else {
-    	fprintf ( stderr, "DBUG: Header invalid <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
-	hdrInvalid = true;
-	return 10;
+        fprintf ( stderr, "DBUG: Header invalid <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n" );
+        hdrInvalid = true;
+        return 10;
     }
 
     processHttpMethod ( mthd );
@@ -241,7 +247,7 @@ void HttpReq::readHttpHeader() {
 
         if ( processHttpFirstLine() != 3 ) {
             fprintf ( stderr, "ERRR: Invalid Http Header, dropping connection \n" );
-	    hdrInvalid = true;
+            hdrInvalid = true;
             hLen = ( size_t ) 0;
             return;
         }
@@ -433,89 +439,90 @@ char *HttpReq::getReqFileType() {
     return fileType;
 }
 
-char *HttpReq::getReqFileAuth ( ){
+char *HttpReq::getReqFileAuth ( ) {
     if ( authUrl == "" ) {
-	//sprintf( authUrl, "%s%s", PAGE_STORE, decodedUrl );
-	//strcat( authUrl, PAGE_STORE );
-	//strcat( authUrl, decodedUrl );
-	authUrl += PAGE_STORE;
-	authUrl += decodedUrl;
+        //sprintf( authUrl, "%s%s", PAGE_STORE, decodedUrl );
+        //strcat( authUrl, PAGE_STORE );
+        //strcat( authUrl, decodedUrl );
+        authUrl += PAGE_STORE;
+        authUrl += decodedUrl;
     }
-    return const_cast<char*>(authUrl.c_str());
+
+    return const_cast<char*> ( authUrl.c_str() );
 }
 
 char *HttpReq::getReqFileAuth ( int auth ) {
     if ( authUrl == "" ) {
 
 #ifdef LINUX_BUILD
-	//strcpy ( authUrl, PAGE_STORE );
-	authUrl += PAGE_STORE;
+        //strcpy ( authUrl, PAGE_STORE );
+        authUrl += PAGE_STORE;
 #else
-	//strcpy ( authUrl, PAGE_STORE );
-	authUrl += PAGE_STORE;
+        //strcpy ( authUrl, PAGE_STORE );
+        authUrl += PAGE_STORE;
 #endif
 
         if ( strcasecmp ( decodedUrl, "login.html" ) == 0 ||
                 strcasecmp ( decodedUrl, "public.html" ) == 0 ||
                 strcasecmp ( decodedUrl, "index.html" ) == 0 ) {
             //strcat ( authUrl, decodedUrl );
-	    authUrl += decodedUrl;
-            return const_cast<char*>(authUrl.c_str());
+            authUrl += decodedUrl;
+            return const_cast<char*> ( authUrl.c_str() );
         }
 
         switch ( auth ) {
             case AUTH_SUPERUSER:
                 //strcat ( authUrl, "super_" );
-		authUrl += "super_";
+                authUrl += "super_";
                 break;
 
             case AUTH_ROOTUSER:
                 //strcat ( authUrl, "root_" );
-		authUrl += "root_";
+                authUrl += "root_";
                 break;
 
             case AUTH_ADMIN:
                 //strcat ( authUrl, "admin_" );
-		authUrl += "admin_";
+                authUrl += "admin_";
                 break;
 
             case AUTH_PUBLIC:
             default:
                 //strcat ( authUrl, "all_" );
-		authUrl += "all_";
+                authUrl += "all_";
                 break;
         };
 
         if ( ( strcmp ( decodedUrl, "HTTP/1.1" ) == 0 ) || ( strcmp ( decodedUrl, "HTTP/1.0" ) == 0 ) ) {
             //strcat ( authUrl, "index.html" );
-	    authUrl += "index.html";
+            authUrl += "index.html";
         } else {
             //strcat ( authUrl, decodedUrl );
-	    authUrl += decodedUrl;
+            authUrl += decodedUrl;
         }
 
         fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
-        return const_cast<char*>(authUrl.c_str());
+        return const_cast<char*> ( authUrl.c_str() );
     } else {
         fprintf ( stderr, "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
-        return const_cast<char*>(authUrl.c_str());
+        return const_cast<char*> ( authUrl.c_str() );
     }
 }
 
 int postCount = 0;
 
-int HttpReq::processHttpPostData ( Connection *conn) {
+int HttpReq::processHttpPostData ( Connection *conn ) {
     if ( conn && post ) {
         while ( rLen < cLen ) {
-            size_t bytesR  = PR_Recvfd ( * (conn->socket), buf, MAXBUF, 0, 1 );
-            size_t bytesW  = PR_Write ( post, buf, bytesR);
-	    rLen += bytesR;
+            size_t bytesR  = PR_Recvfd ( * ( conn->socket ), buf, MAXBUF, 0, 1 );
+            size_t bytesW  = PR_Write ( post, buf, bytesR );
+            rLen += bytesR;
 
-            if ( bytesW < bytesR )
-            {
-	    	fprintf( stderr, "ERRR: Bytes dropped , read = %ld, written = %ld \n", bytesR, bytesW );
-	    }
+            if ( bytesW < bytesR ) {
+                fprintf ( stderr, "ERRR: Bytes dropped , read = %ld, written = %ld \n", bytesR, bytesW );
+            }
         }
+
         return rLen;
     }
 
@@ -560,7 +567,7 @@ int HttpReq::processHttpPostData ( size_t hPkt, size_t dLen ) {
         }
 
         //printf("INFO: Wrote %d bytes\n",bytesW);
-	rLen += tempLen;
+        rLen += tempLen;
         return tempLen;
     }
 
@@ -921,8 +928,8 @@ int HttpResp::getHeader ( char *hdr ) {
         bytesW += sprintf ( &hdr[bytesW], "Location: %s\r\n", location );
     }
 
-    if ( addon == 0 )
-    { bytesW += sprintf ( &hdr[bytesW], "\r\n" ); }
+    //if ( addon == 0 )
+    //{ bytesW += sprintf ( &hdr[bytesW], "\r\n" ); }
 
     return bytesW;
 }
@@ -932,7 +939,7 @@ int  HttpResp::finishHdr ( char *buf ) {
 }
 
 int  HttpResp::finishChunked ( char *buf ) {
-    if ( contentLen <= 0 ) {
+    if ( contentLen < 0 ) {
         return sprintf ( buf, "0\r\n\r\n" );
     }
 
@@ -958,6 +965,7 @@ void HttpResp::resetHttpHeader() {
 
 
 void sendRemainderData ( Connection *conn ) {
+	if ( conn->resp.getContentLen() < 0 ){
     if ( conn->len > 0 ) {
         if ( conn->len <= CHUNK_HDR_SIZE ) {
             lastChunk ( conn->buf, conn->len );
@@ -974,24 +982,16 @@ void sendRemainderData ( Connection *conn ) {
     } else {
         lastChunk ( conn->buf, conn->len );
     }
+	} else {
 
     if ( conn->len > 0 ) {
-	unsigned int tempLen = 0;
-#ifdef USE_SSL
-	
-	    if( conn->ssl ){
-               tempLen = sendConnectionData ( conn, conn->buf, conn->len );
-	    } else {
-#endif
-               tempLen = sendConnectionData ( conn, conn->buf, conn->len );
-#ifdef USE_SSL
-	    }
-#endif
-
-        if ( tempLen > SMALLBUF ) {
+        unsigned int tempLen = 0;
+        tempLen = sendConnectionData ( conn, conn->buf, conn->len );
+        if ( tempLen != conn->len ) {
             fprintf ( stderr, "ERRR: Unable to send complete data\n" );
         }
     }
+	}
 
     conn->len = 0;
 }
@@ -999,101 +999,94 @@ void sendRemainderData ( Connection *conn ) {
 unsigned int sendConnectionData (    Connection *conn,
                                      unsigned char *buf,
                                      unsigned int len ) {
+	if ( conn->resp.getContentLen() < 0 ){
+		//Use chunked transfer code here
+		return 0;
+	}
 #ifdef USE_SSL
-    if( conn->ssl ){
-    unsigned int bytesW = 0;
-    int temp = 0;
-    PRErrorCode error = 0;
-    fprintf ( stderr, "INFO: Sending %d bytes \n", len );
 
-    do {
-        temp = SSL_write ( conn->ssl, buf + bytesW, len - bytesW  );
+    if ( conn->ssl ) {
+        unsigned int bytesW = 0;
+        int temp  = 0;
+		int retry = 0;
+        fprintf ( stderr, "INFO: SSL_write: Sending %d bytes \n", len );
 
-        if ( temp > 0 ) {
-            bytesW += temp;
-            fprintf ( stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
-        } else {
-            fprintf ( stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
-	    int rc = 0;
-	    if( ( rc = SSL_get_error(conn->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ){
+        do {
+            temp = SSL_write ( conn->ssl, buf + bytesW, len - bytesW  );
 
-	    } else {
-		
-                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
-                bytesW = 0;
-                break;
-	    }
-#if 0
-            error = PR_GetError();
-
-            if ( error == EWOULDBLOCK || error == EAGAIN ) {
-                fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
-                std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+            if ( temp > 0 ) {
+                bytesW += temp;
+                fprintf ( stderr, "DBUG: SSL_write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
             } else {
-                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
-                bytesW = 0;
-                break;
+                int rc = 0;
+				retry++;
+                if ( ( rc = SSL_get_error ( conn->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ) {
+                    fprintf ( stderr, "WARN: SSL_write : Problem sending data %d, retrying...\n", rc );
+					if( retry >= 24 )
+						break;
+                	std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+                } else {
+                    fprintf ( stderr, "ERRR: SSL_write : Problem sending data %d\n", rc );
+                    bytesW = 0;
+                    break;
+                }
             }
-#endif
-        }
-    } while ( bytesW < len );
+        } while ( bytesW < len );
 
-    if ( bytesW != len ) {
-        fprintf ( stderr, "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
-        len = len + 1;
-    } else {
-        len = 0;
-    }
+        if ( bytesW != len ) {
+            fprintf ( stderr, "ERRR: SSL_write: Unable to send all data, bytes sent=%d, total bytes=%d\n", bytesW, len );
+            len = len + 1;
+        } else {
+            len = 0;
+        }
 
         return len;
 
     } else {
 #endif
-    PRFileDesc *sock = conn->socket;
-    unsigned int bytesW = 0;
-    int temp = 0;
-    PRErrorCode error = 0;
-    fprintf ( stderr, "INFO: Sending %d bytes \n", len );
+        PRFileDesc *sock = conn->socket;
+        unsigned int bytesW = 0;
+        int temp = 0;
+        PRErrorCode error = 0;
+        fprintf ( stderr, "INFO: Write: Sending %d bytes \n", len );
 
-    do {
-        temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
+        do {
+            temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
 
-        if ( temp > 0 ) {
-            bytesW += temp;
-            fprintf ( stderr, "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
-        } else {
-            fprintf ( stderr, "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
-            error = PR_GetError();
-
-            if ( error == EWOULDBLOCK || error == EAGAIN ) {
-                fprintf ( stderr, "WARN: Blocking, temp=%d \n", temp );
-                std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+            if ( temp > 0 ) {
+                bytesW += temp;
+                fprintf ( stderr, "DBUG: Write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
             } else {
-                fprintf ( stderr, "ERRR: Problem sending data %d,%d\n", error, errno );
-                bytesW = 0;
-                break;
+                error = PR_GetError();
+
+                if ( error == EWOULDBLOCK || error == EAGAIN ) {
+                    fprintf ( stderr, "WARN: Write: Blocking, temp=%d \n", temp );
+                    std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+                } else {
+                    fprintf ( stderr, "ERRR: Write: Problem sending data %d,%d\n", error, errno );
+                    bytesW = 0;
+                    break;
+                }
             }
+        } while ( bytesW < len );
+
+        if ( bytesW != len ) {
+            fprintf ( stderr, "ERRR: Write: Unable to send all data, bytes sent %d, data size %d, error %d)\n", bytesW, len, error );
+            len = len + 1;
+        } else {
+            len = 0;
         }
-    } while ( bytesW < len );
 
-    if ( bytesW != len ) {
-        fprintf ( stderr, "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
-        len = len + 1;
-    } else {
-        len = 0;
-    }
-
-    return len;
-   
-    //    return sendConnectionDataToSock ( conn->socket, buf, len );
+        return len;
 #ifdef USE_SSL
     }
+
 #endif
 }
 
 unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
-                                     unsigned char *buf,
-                                     unsigned int len ) {
+        unsigned char *buf,
+        unsigned int len ) {
     unsigned int bytesW = 0;
     int temp = 0;
     PRErrorCode error = 0;
@@ -1132,20 +1125,26 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
 
 unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     HttpResp *tempResp = & ( conn->resp );
+	string statusMsg = getStatusInfo( status );
     tempResp->setStatus ( status );
+    tempResp->setAddOn(1);
+	if( status != 200 ) {
+	 tempResp->setContentType( "text/plain" );
+	 tempResp->setContentLen( statusMsg.length() );	
+    }
     conn->len  = tempResp->getHeader ( ( char * ) conn->buf );
-
     conn->len += conn->sess->dumpSessionCookies ( ( char * ) & ( conn->buf[conn->len] ) );
-    conn->buf[conn->len] = '\r';
-    conn->len++;
-    conn->buf[conn->len] = '\n';
-    conn->len++;
+    conn->len += tempResp->finishHdr ( ( char * ) & ( conn->buf[conn->len] ) );
+	if( status != 200 ) {
+	 strcpy( (char*)&conn->buf[conn->len], statusMsg.c_str() );
+     conn->len += tempResp->getContentLen();
+	}
     conn->buf[conn->len] = 0;
 
     char *tempbuf = ( char * ) conn->buf;
     fprintf ( stderr, "\nDBUG: Response Header:\n%s\n", tempbuf );
     fprintf ( stderr, "DBUG: ____________________________________\n" );
-    conn->len = sendConnectionData ( conn, conn->buf, conn->len );
+    int tempLen = sendConnectionData ( conn, conn->buf, conn->len );
     conn->len = 0;
-    return 0;
+    return tempLen;
 }

@@ -151,8 +151,8 @@ void ThreadMgr::stopThreads() {
     }
 }
 
-extern int clientmanage(int);
-extern int reduce_ipbin(uint32_t);
+extern int clientmanage ( int );
+extern int reduce_ipbin ( Connection * );
 
 #ifdef  USE_CPP11THREAD
 void ThreadMgr::httpthread ( int *data )
@@ -202,46 +202,50 @@ void* ThreadMgr::httpthread ( void *data )
                         tempResp->setContentLen ( 0 );
                         sendConnRespHdr ( conn, HTTP_RESP_INTERNALERR );
 #ifdef USE_SSL
-			if( conn->ssl ) {
-			SSL_shutdown(conn->ssl);
-			SSL_free(conn->ssl);
-			conn->ssl = 0;
-			conn->is_ssl = false;
-			conn->ssl_accept = false;
-			}
+
+                        if ( conn->ssl ) {
+                            SSL_shutdown ( conn->ssl );
+                            SSL_free ( conn->ssl );
+                            conn->ssl = 0;
+                            conn->is_ssl = false;
+                            conn->ssl_accept = false;
+                        }
+
 #endif
                         PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
                         fprintf ( stderr, "INFO: Shuting down socket \n" );
                         PR_Close ( conn->socket );
-			*(conn->socket) = -1;
+                        * ( conn->socket ) = -1;
                         conn->socket = 0;
-        	    	reduce_ipbin( conn->ip );
+                        reduce_ipbin ( conn );
                         delete conn;
-			clientmanage(0);
+                        clientmanage ( 0 );
                         continue;
                     } else {
-                        tempResp->setContentLen ( -1 );
+                        tempResp->setContentLen ( -1 ); //Set to chunked, Let plugin handle it
                         tempResp->setStatus ( HTTP_RESP_OK );
                         conn->db    = db;
                         conn->udata = 0;
                         int rc = temp->processReq ( conn );
                         fprintf ( stderr, "INFO: Plugin execution completed = %d \n", rc );
 #ifdef USE_SSL
-			if( conn->ssl ) {
-			SSL_shutdown(conn->ssl);
-			SSL_free(conn->ssl);
-			conn->ssl = 0;
-			conn->is_ssl = false;
-			conn->ssl_accept = false;
-			}
+
+                        if ( conn->ssl ) {
+                            SSL_shutdown ( conn->ssl );
+                            SSL_free ( conn->ssl );
+                            conn->ssl = 0;
+                            conn->is_ssl = false;
+                            conn->ssl_accept = false;
+                        }
+
 #endif
                         PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
                         PR_Close ( conn->socket );
-			*(conn->socket) = -1;
+                        * ( conn->socket ) = -1;
                         conn->socket = 0;
-        	    	reduce_ipbin( conn->ip );
+                        reduce_ipbin ( conn );
                         delete conn;
-			clientmanage(0);
+                        clientmanage ( 0 );
                         fprintf ( stderr, "INFO: Deleted connection \n" );
                     }
                 } else {
@@ -249,20 +253,22 @@ void* ThreadMgr::httpthread ( void *data )
                     tempResp->setContentLen ( 0 );
                     sendConnRespHdr ( conn, HTTP_RESP_NOTFOUND );
 #ifdef USE_SSL
-		    if( conn->ssl ) {
-			SSL_shutdown(conn->ssl);
-			SSL_free(conn->ssl);
-			conn->ssl = 0;
-			conn->is_ssl = false;
-			conn->ssl_accept = false;
-		    }
+
+                    if ( conn->ssl ) {
+                        SSL_shutdown ( conn->ssl );
+                        SSL_free ( conn->ssl );
+                        conn->ssl = 0;
+                        conn->is_ssl = false;
+                        conn->ssl_accept = false;
+                    }
+
 #endif
                     PR_Close ( conn->socket );
-		    *(conn->socket) = -1;
+                    * ( conn->socket ) = -1;
                     conn->socket = 0;
-        	    reduce_ipbin( conn->ip );
+                    reduce_ipbin ( conn );
                     delete conn;
-		    clientmanage(0);
+                    clientmanage ( 0 );
                 }
             }
 
@@ -271,9 +277,9 @@ void* ThreadMgr::httpthread ( void *data )
     } while ( cmd != THREAD_CMD_EXIT );
 
     if ( cmd == THREAD_CMD_EXIT && conn ) {
-        reduce_ipbin( conn->ip );
+        reduce_ipbin ( conn );
         delete conn;
-	clientmanage(0);
+        clientmanage ( 0 );
     }
 
 #ifdef USE_PTHREAD

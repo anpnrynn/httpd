@@ -7,7 +7,7 @@
 
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif 
+#endif
 
 #define _FILE_OFFSET_BITS 64
 

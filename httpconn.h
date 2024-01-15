@@ -94,7 +94,7 @@ class HttpReq {
         char encodedUrl[4096]; // if every character is expressed as % values 256 * 3 = 768
         char decodedUrl[1024];
         //char authUrl[2048]; //there maybe a prefix, so the size is increased
-	string authUrl;
+        string authUrl;
         char fileType[64];
         char cookie[256];
         char referer[256];
@@ -127,7 +127,7 @@ class HttpReq {
         char postFileName[1024];
         bool hdrPartial;
         bool hdrReadComplete;
-	bool hdrInvalid;
+        bool hdrInvalid;
         bool isVal;
         bool isEnd;
         bool isTagEnd;
@@ -154,7 +154,7 @@ class HttpReq {
 
         size_t       len;
         size_t      cLen;
-	size_t      rLen;
+        size_t      rLen;
         size_t      hLen;
 
         int          postfd;
@@ -168,28 +168,30 @@ class HttpReq {
         char* getReqFileAuth ( );
         char* getReqFileAuth ( int auth );
         int   getMethod () { return method; }
-	char* getPostTempFileName ( ) { 
-		return postFileName; 
-	}
-	void  removePostTempFile() {
-		fprintf( stderr, "WARN: Removing post temp file: %s \n", postFileName );
-		if( post && postfd >= 0 ){
-			PR_Close(post);
-			post = 0;
-			postfd = -1;
-		} else {
-			post = 0;
-			postfd = -1;
-		}
-		PR_Unlink( postFileName );
-		postFileName[0] = 0;
-	}
+        char* getPostTempFileName ( ) {
+            return postFileName;
+        }
+        void  removePostTempFile() {
+            fprintf ( stderr, "WARN: Removing post temp file: %s \n", postFileName );
+
+            if ( post && postfd >= 0 ) {
+                PR_Close ( post );
+                post = 0;
+                postfd = -1;
+            } else {
+                post = 0;
+                postfd = -1;
+            }
+
+            PR_Unlink ( postFileName );
+            postFileName[0] = 0;
+        }
         bool  isMultipart () { return ( bool ) multipart; }
         char* getBoundary () { return boundary; }
         void  readHttpHeader();
-	bool  isHdrInvalid() { return hdrInvalid; }
-        int   processHttpPostData ( size_t , size_t );
-        int   processHttpPostData ( Connection *conn); //to be used from plugins only
+        bool  isHdrInvalid() { return hdrInvalid; }
+        int   processHttpPostData ( size_t, size_t );
+        int   processHttpPostData ( Connection *conn ); //to be used from plugins only
         void  convertGetDataToMap ( MapStrStr *paramMap ); //converts get parameters to a Map
         void  convertGetDataToVector ( Vector *param );
         int   convertPostDataToMap ( MapStrStr *paramMap, const char *stopAt ); //converts post parameters to a Map
@@ -258,13 +260,13 @@ class Connection {
         unsigned int   len;
         unsigned int   offset;
 #ifdef USE_SSL
-	//0 - nossl, 1 ssv1, 2 sslv2, 3 sslv3, 100 tls 1.0, 101 tls 1.1, 102 tls 1.2, ... etc 
-	SSL            *ssl;
-	bool           ssl_accept;
-	bool           is_ssl;
+        //0 - nossl, 1 ssv1, 2 sslv2, 3 sslv3, 100 tls 1.0, 101 tls 1.1, 102 tls 1.2, ... etc
+        SSL            *ssl;
+        bool           ssl_accept;
+        bool           is_ssl;
 #endif
         unsigned int   ip;
-	unsigned short ipv6[8];
+        unsigned short ipv6[8];
 
         unsigned int  authLvl;
         unsigned int  cmd;
@@ -286,19 +288,19 @@ class Connection {
             sent    = 0;
             offset  = 0;
 #ifdef USE_SSL
-	    is_ssl  = false;
-	    ssl_accept = false;
-	    ssl     = 0;
+            is_ssl  = false;
+            ssl_accept = false;
+            ssl     = 0;
 #endif
             ip      = 0;
-	    ipv6[0] = 0;
-	    ipv6[1] = 0;
-	    ipv6[2] = 0;
-	    ipv6[3] = 0;
-	    ipv6[4] = 0;
-	    ipv6[5] = 0;
-	    ipv6[6] = 0;
-	    ipv6[7] = 0;
+            ipv6[0] = 0;
+            ipv6[1] = 0;
+            ipv6[2] = 0;
+            ipv6[3] = 0;
+            ipv6[4] = 0;
+            ipv6[5] = 0;
+            ipv6[6] = 0;
+            ipv6[7] = 0;
             authLvl = AUTH_PUBLIC;
             cmd    = 0;
             filefd   = -1;
@@ -322,19 +324,19 @@ class Connection {
             sent    = 0;
             offset  = 0;
 #ifdef USE_SSL
-	    is_ssl  = false;
-	    ssl_accept = false;
-	    ssl     = 0;
+            is_ssl  = false;
+            ssl_accept = false;
+            ssl     = 0;
 #endif
             ip      = 0;
-	    ipv6[0] = 0;
-	    ipv6[1] = 0;
-	    ipv6[2] = 0;
-	    ipv6[3] = 0;
-	    ipv6[4] = 0;
-	    ipv6[5] = 0;
-	    ipv6[6] = 0;
-	    ipv6[7] = 0;
+            ipv6[0] = 0;
+            ipv6[1] = 0;
+            ipv6[2] = 0;
+            ipv6[3] = 0;
+            ipv6[4] = 0;
+            ipv6[5] = 0;
+            ipv6[6] = 0;
+            ipv6[7] = 0;
             authLvl = AUTH_PUBLIC;
             cmd    = 0;
             filefd = -1;
@@ -343,11 +345,11 @@ class Connection {
             file   = 0;
             fid    = 0;
             udata  = 0;
-	    //donot free sess, as there could other connection from the same system trying to access a different resource.
-	    //instead just reset the pointer, the sess is present in an internal stl::map, its not considered memory leak.
-	    //if( sess ){
-		//    delete sess;
-	    //}
+            //donot free sess, as there could other connection from the same system trying to access a different resource.
+            //instead just reset the pointer, the sess is present in an internal stl::map, its not considered memory leak.
+            //if( sess ){
+            //    delete sess;
+            //}
             sess   = 0;
             db     = 0;
         }

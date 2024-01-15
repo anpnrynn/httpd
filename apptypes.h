@@ -20,18 +20,19 @@ using namespace std;
 #define  SMALLBUF  65536
 
 class ACL {
-	public:
-		bool invert;
-		bool ipv4;
-		bool subnetmask;
-		bool prefixmask;
-		string ip;
-		long long int epochtime;
-		atomic_int counter;
-		bool block;
+    public:
+        bool invert;
+        bool ipv4;
+        bool subnetmask;
+        bool prefixmask;
+        string ip;
+        long long int epochtime;
+        atomic_int counter;
+        bool block;
 };
 
 #ifdef LINUX_BUILD
+typedef unordered_map<string, int>    MapActivePlugins;
 typedef unordered_map<string, ACL*>   MapACL;
 typedef unordered_map<int, string>    MapIntStr;
 typedef unordered_map<int, string>    HttpCodes;
@@ -40,6 +41,8 @@ typedef unordered_map<string, string> COOKIES;
 typedef unordered_map<string, void*>  MapHttpHdlr;
 typedef vector<string>     Vector;
 #else
+typedef map<string, int>    MapActivePlugins;
+typedef map<string, ACL*>   MapACL;
 typedef map<int, string>    MapIntStr;
 typedef map<int, string>    HttpCodes;
 typedef map<string, string> MapStrStr;

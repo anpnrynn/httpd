@@ -225,7 +225,7 @@ MapStrStr* HttpSession::readCookies ( char *buf ) {
     }
 
     data[j] = 0;
-    fprintf(stderr, "DBUG: Adding cookie %s = %s \n", name , value );
+    fprintf ( stderr, "DBUG: Adding cookie %s = %s \n", name, value );
     cookies->insert ( pair<string, string> ( name, value ) );
     return cookies;
 }
