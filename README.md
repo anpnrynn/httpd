@@ -45,13 +45,12 @@ Features:
 6. Supports Multithreads for plugin execution, thread pool for dynamic page handling (configurable)
 7. Supports Chunked data transfer for dynamic pages.
 8. Supports GET and POST queries.
-9. Supports SSL through redirect lighttpd <---- redirect ---> httpd (>= 0.24.1) as of now. (Should SSL reinventing the wheel happen ?)
-10. Supports Large file upload through POST multipart (>= 5.0GB)
-11. Supports CppThreads (-DUSE_CPP11THREAD) and Pthreads ( -DUSE_PTHREAD)
-12. Supports thttpd like operation by setting threads to 0 during startup. Becomes a static http file server.
-13. Supports trivial DOS prevention.    
-14. Supports both IPv4 and IPv6 sockets, http over IPv4 and IPv6 is now possible.    
-15. Supports native SSL sockets.
+9. Supports Large file upload through POST multipart (>= 5.0GB)
+10. Supports CppThreads (-DUSE_CPP11THREAD) and Pthreads ( -DUSE_PTHREAD)
+11. Supports thttpd like operation by setting threads to 0 during startup. Becomes a static http file server.
+12. Supports trivial DOS prevention.    
+13. Supports both IPv4 and IPv6 sockets, http over IPv4 and IPv6 is now possible.    
+14. Supports native SSL sockets.
 
 
 COMPILE:
@@ -64,6 +63,7 @@ cd /tmp/httpd/bin/
 RUN:
 ----
 ./httpdsrv.sh    
+log file httpd.log is generated in the same folder, and by default loglevel is set to 1 which is the lowest.    
 
 
 NOTE (VERY IMPORTANT, PLEASE READ):
