@@ -69,6 +69,7 @@
 #define PR_Open(filename,flags,mode)     open((filename),(flags),(mode))
 #define PR_Read(fd,buf,len)              read(*(fd),(buf),(len))
 #define PR_Write(fd,buf,len)             write(*(fd),(buf),(len))
+#define PR_Send(fd,buf,len)              send(*(fd),(buf),(len),MSG_DONTWAIT|MSG_NOSIGNAL )
 #define PR_Close(fd)                     close(*(fd))
 #define PR_Closefd(fd)                   close((fd))
 #define PR_Seek64(fd,offset,whence)      lseek((*fd),(offset),(whence))

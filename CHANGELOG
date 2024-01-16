@@ -1,3 +1,8 @@
+16/01/2024 - 2
+==============
+Stability fix, write changed to send , handling SIGPIPE, deletion of connection object is done differently
+
+
 16/01/2024 - 1
 ==============
 Added changes to logging.

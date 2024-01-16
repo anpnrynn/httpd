@@ -59,7 +59,7 @@ class CSVReader {
 unsigned int bytesW = 0; \
 int temp; \
 do{ \
-    temp = PR_Write( (socket), (buffer)+bytesW, (length)-bytesW  ); \
+    temp = PR_Send( (socket), (buffer)+bytesW, (length)-bytesW  ); \
     if( temp > 0 ) \
         bytesW += temp; \
     else \

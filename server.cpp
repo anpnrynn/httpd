@@ -81,6 +81,8 @@ void performCleanupOperations() {
     }
 }
 
+void signalIgnore ( int signal ) {
+}
 
 //SIGNAL HANDLER
 void signalStop ( int signal ) {
@@ -377,7 +379,7 @@ void conn_close ( Connection *curconn ) {
 
 #endif
         reduce_ipbin ( curconn );
-        delete curconn;
+		curconn->delobj = true;
         clientmanage ( 0 );
     }
 }
@@ -442,6 +444,7 @@ int main ( int argc, char *argv[] ) {
     signal ( SIGINT, signalStop );
     signal ( SIGSTOP, signalStop );
     signal ( SIGABRT, signalStop );
+    signal ( SIGPIPE, signalIgnore );
 #endif
 
 start:
@@ -877,6 +880,17 @@ shrinkStart:
             offset = 1;
             shift  = 0;
 
+			//clear out invalid fds
+			int i = MIN_PORT_COUNT;
+			while  ( i < nClients ) {
+                if ( pollfds[i].fd == -1 ) {
+					debuglog( " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Poll fd is invalid %d , Deleting connection object \n", pollfds[i].fd );
+					pollfds[i].fd = 0;
+                }
+                i++;
+            }
+
+
             for ( i = MIN_PORT_COUNT; i < MAXCLIENTS; i++ ) {
                 if ( pollfds[i].fd == 0 ) {
                     shift = i + offset;
@@ -929,6 +943,7 @@ shrinkStart:
             debuglog (  "DBUG: ____________________________________\n" );
             debuglog (  "DBUG: Active fds=%d \n", nClients );
 
+#if 0
             while  ( l < nClients ) {
                 debuglog (  "%d, ", pollfds[l].fd );
 
@@ -941,6 +956,7 @@ shrinkStart:
 
                 l++;
             }
+#endif
 
             l = 0;
             debuglog (  "DBUG: Active fds=%d After clearing \n", nClients );
@@ -1332,7 +1348,15 @@ shrinkStart:
 
 
             for ( i = MIN_PORT_COUNT ; i < nClients; i++ ) {
-			
+
+				//int j = 0;
+				//for( j = MIN_PORT_COUNT; j < nClients; j++ ){
+					if( conn[i-1] && conn[i-1]->delobj ){
+						delete conn[i-1];
+						conn[i-1] = 0;
+					}
+				//}			
+
 				bool isWritable = false;
 				if (pollfds[i].revents & PR_POLL_WRITE )
 					isWritable = true;
@@ -1341,7 +1365,7 @@ shrinkStart:
                     debuglog (  "INFO: Invalid fd , closing \n" );
 
                     conn_close ( conn[i] );
-                    conn[i] = 0;
+                    //conn[i] = 0;
 
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                     PR_Closefd ( pollfds[i].fd );
@@ -1377,7 +1401,7 @@ shrinkStart:
                             } else {
                                 debuglog (  "ERRR: SSL_accept() gave error %d , sslerror=%d \n", rc, sslerror );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1395,7 +1419,7 @@ shrinkStart:
 
                                 debuglog (  "ERRR: SSL_accept() gave error %d, sslerror=%d  \n", rc, sslerror );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1445,7 +1469,7 @@ shrinkStart:
                                 REQ.buf[REQ.len] = 0;
                                 debuglog (  "ERRR: Header invalid, Received Header :\n %s \n", REQ.buf );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1605,7 +1629,7 @@ shrinkStart:
 										sendConnRespHdr( conn[i], 403 );
 
                                     conn_close ( conn[i] );
-                                    conn[i] = 0;
+                                    //conn[i] = 0;
                                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                     PR_Closefd ( pollfds[i].fd );
                                     pollfds[i].fd = 0;
@@ -1622,7 +1646,7 @@ shrinkStart:
 
 									sendConnRespHdr( conn[i], 404 );
                                     conn_close ( conn[i] );
-                                    conn[i] = 0;
+                                    //conn[i] = 0;
                                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                     PR_Closefd ( pollfds[i].fd );
                                     pollfds[i].fd = 0;
@@ -1639,6 +1663,13 @@ shrinkStart:
 
                                     if ( ! isForbidden && strcasecmp(fileType, ".xyz" ) == 0 && pluginHandler ) {
 
+                                		int flags = fcntl ( conn[i]->socketfd, F_GETFL );
+                                		flags &= ~O_NONBLOCK;
+
+                                		if ( fcntl ( conn[i]->socketfd, F_SETFL, flags ) != 0 ) {
+                                    		debuglog (  "ERRR: Unable to set socket option \n" );
+                                		}
+
                                         conn[i]->cmd  = THREAD_CMD_PTASK;
                                         tMgr->assignTask ( conn[i] );
                                         conn[i]       = 0;
@@ -1650,7 +1681,7 @@ shrinkStart:
                                     } else {
 										sendConnRespHdr( conn[i], 404 );
                                     	conn_close ( conn[i] );
-                                    	conn[i] = 0;
+                                    	//conn[i] = 0;
                                     	PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                     	PR_Closefd ( pollfds[i].fd );
                                     	pollfds[i].fd = 0;
@@ -1675,7 +1706,7 @@ shrinkStart:
                                 debuglog (  "ERRR: SSL_read Error: '%s' file %d -> socket %d pollfd %d \n",
                                           conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1686,7 +1717,7 @@ shrinkStart:
                         } else {
 #endif
                             conn_close ( conn[i] );
-                            conn[i] = 0;
+                            //conn[i] = 0;
                             PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                             pollfds[i].fd = 0;
                             pollfds[i].events = 0;
@@ -1720,7 +1751,7 @@ shrinkStart:
                             } else {
                                 debuglog (  "ERRR: SSL_accept() gave error %d , sslerror=%d \n", rc, sslerror );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1738,7 +1769,7 @@ shrinkStart:
 
                                 debuglog (  "ERRR: SSL_accept() gave error %d, sslerror=%d  \n", rc, sslerror );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1802,7 +1833,8 @@ shrinkStart:
                                 }
                             } else {
 #endif
-                                temp = PR_Write ( conn[i]->socket, conn[i]->buf, conn[i]->len );
+                                //temp = PR_Write ( conn[i]->socket, conn[i]->buf, conn[i]->len );
+                                temp = PR_Send ( conn[i]->socket, conn[i]->buf, conn[i]->len );
 
                                 if ( temp >= 0 )
                                 { bytesW += temp; }
@@ -1834,7 +1866,7 @@ shrinkStart:
                                 debuglog (  "ERRR: SSL_write Error: '%s' file %d -> socket %d pollfd %d \n",
                                           conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1847,7 +1879,7 @@ shrinkStart:
                                 debuglog (  "ERRR: Socket Write Error: '%s' file %d -> socket %d pollfd %d \n",
                                           conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
-                                conn[i] = 0;
+                                //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
@@ -1860,12 +1892,13 @@ shrinkStart:
 #endif
                         }
                     } else {
-                        debuglog (  "\nINFO: --------------------------------------------------------------------------\n" );
-                        debuglog (  "INFO: Sent File='%s' Fd=%d Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), pollfds[i].fd,  conn[i]->sent );
-                        debuglog (  "INFO: --------------------------------------------------------------------------\n\n\n" );
+                        //debuglog (  "\nINFO: --------------------------------------------------------------------------\n" );
+                        //debuglog (  "xxxxINFO: Sent File='%s' Fd=%d Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), pollfds[i].fd,  conn[i]->sent );
+                        debuglog (  " [Complete] Sent File='%s' Fd=%d Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), pollfds[i].fd,  conn[i]->sent );
+                        //debuglog (  "INFO: --------------------------------------------------------------------------\n\n\n" );
 
                         conn_close ( conn[i] );
-                        conn[i] = 0;
+                        //conn[i] = 0;
 
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                         pollfds[i].fd = 0;
@@ -1878,7 +1911,7 @@ shrinkStart:
                     if ( conn[i] && conn[i]->file == 0 ) {
 
                         conn_close ( conn[i] );
-                        conn[i] = 0;
+                        //conn[i] = 0;
 
                         PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                         pollfds[i].fd = 0;

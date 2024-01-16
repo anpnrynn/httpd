@@ -1053,7 +1053,8 @@ unsigned int sendConnectionData (    Connection *conn,
         debuglog (  "INFO: Write: Sending %d bytes \n", len );
 
         do {
-            temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
+            //temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
+            temp = PR_Send ( sock, buf + bytesW, len - bytesW  );
 
             if ( temp > 0 ) {
                 bytesW += temp;
@@ -1095,7 +1096,8 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
     debuglog (  "INFO: Sending %d bytes \n", len );
 
     do {
-        temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
+        //temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
+        temp = PR_Send ( sock, buf + bytesW, len - bytesW  );
 
         if ( temp > 0 ) {
             bytesW += temp;

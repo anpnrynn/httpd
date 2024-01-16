@@ -260,6 +260,7 @@ class Connection {
     public:
 		static long long int indexCount;
 		long long int            index;
+		bool           delobj;
         unsigned char  buf[SMALLBUF];
         unsigned int   sent;
         unsigned int   len;
@@ -290,6 +291,7 @@ class Connection {
 
         Connection() {
 			index   = indexCount++;
+			delobj  = false;
             debuglog( " Connection Object created with index-%ld \n", index );
             len     = 0;
             sent    = 0;
