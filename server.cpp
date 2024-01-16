@@ -109,6 +109,7 @@ void unloadPlugins() {
 
 MapACL aclMap;
 MapACL dosMap;
+std::mutex dosMapMutex;
 
 int aclLoad ( void *udata, int argc, char **argv, char **col ) {
     if ( argv[0] && argv[1] && argv[2] && argv[3] && argv[4] && argv[5] && argv[6] ) {
@@ -341,8 +342,8 @@ int clientmanage ( int op ) {
 
 void reduce_r ( string ip ) {
     //debuglog (  "DBUG: reducing counter for ip %s \n", ip.c_str() );
+	dosMapMutex.lock();
     MapACL::iterator iter = dosMap.find ( ip );
-
     if ( iter != dosMap.end() ) {
         std::cerr << "DOS PREVENTION: Reducing counter for " << ip << " ---> " << iter->second->counter << std::endl;
         iter->second->counter -= 1;
@@ -351,6 +352,7 @@ void reduce_r ( string ip ) {
             iter->second->counter = 0;
         }
     }
+	dosMapMutex.unlock();
 }
 
 void reduce_ipbin ( Connection *conn ) {
@@ -362,6 +364,18 @@ void reduce_ipbin ( Connection *conn ) {
 	}
     string ipstr = clientAddress;
     reduce_r ( ipstr );
+}
+
+void reverse( unsigned char *data, int len )
+{
+	int i = 0;
+	int n = len/2;
+	while ( i < n ) {
+		unsigned char c = data[i];
+		data[i] = data [n -i -1];
+		data[n-i-1] = c;
+		i++;
+	}
 }
 
 
@@ -992,10 +1006,9 @@ shrinkStart:
                         clientmanage ( 1 );
                         allowConnect = true;
                         tempIp = ntohl ( clientAddr.sin_addr.s_addr );
+						reverse( (unsigned char *) &tempIp, 4 );
                         char clientAddress[64];
-                        //sprintf ( clientAddress, "%d.%d.%d.%d", ( tempIp & 0xFF000000 ) >> 24, ( tempIp & 0x00FF0000 ) >> 16, ( tempIp & 0x0000FF00 ) >> 8, ( tempIp & 0x000000FF ) );
-                        //strcpy ( clientAddress, inet_ntoa ( clientAddr.sin_addr ) );
-        				inet_ntop ( AF_INET, & tempIp, clientAddress, 64 );
+        				//inet_ntop ( AF_INET, & tempIp, clientAddress, 64 );
                         string ipstr = clientAddress;
 
                         MapACL::iterator iter = dosMap.find ( ipstr );
@@ -1048,6 +1061,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                            	PR_Shutdown ( client, PR_SHUTDOWN_BOTH );
                                 PR_Close ( client );
                             }
                         } else {
@@ -1133,6 +1147,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                            	PR_Shutdown ( client6, PR_SHUTDOWN_BOTH );
                                 PR_Close ( client6 );
                             }
                         } else {
@@ -1166,6 +1181,7 @@ shrinkStart:
                         clientmanage ( 1 );
                         allowConnect = true;
                         tempIp = ntohl ( sslclientAddr.sin_addr.s_addr );
+						reverse( (unsigned char *) &tempIp, 4 );
                         char clientAddress[64];
 						inet_ntop( AF_INET, &tempIp, clientAddress, 64 );
                         string ipstr = clientAddress;
@@ -1230,6 +1246,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                            	PR_Shutdown ( sslclient, PR_SHUTDOWN_BOTH );
                                 PR_Close ( sslclient );
                             }
                         } else {
@@ -1324,6 +1341,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
+                            	PR_Shutdown ( sslclient6, PR_SHUTDOWN_BOTH );
                                 PR_Close ( sslclient6 );
                             }
                         } else {
@@ -1351,8 +1369,11 @@ shrinkStart:
 
 				//int j = 0;
 				//for( j = MIN_PORT_COUNT; j < nClients; j++ ){
-					if( conn[i-1] && conn[i-1]->delobj ){
+					if( conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0 && conn[i-1]->index <= Connection::indexCount ){
 						delete conn[i-1];
+						conn[i-1] = 0;
+					} else if ( conn[i-1] && conn[i-1]->delobj ) {
+						// Some bug ? Double delete ?
 						conn[i-1] = 0;
 					}
 				//}			

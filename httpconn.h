@@ -292,7 +292,7 @@ class Connection {
         Connection() {
 			index   = indexCount++;
 			delobj  = false;
-            debuglog( " Connection Object created with index-%ld \n", index );
+            debuglog( " Connection Object created with index-%016ld \n", index );
             len     = 0;
             sent    = 0;
             offset  = 0;
@@ -330,9 +330,9 @@ class Connection {
             { PR_Close ( file ); }
 
 			if( index < 0 )
-				debuglog( " Connection Object already deleted with index%ld \n", index);
+				debuglog( " Connection Object already deleted with index%016ld \n", index);
 			else 
-            	debuglog( " Connection Object deleted with index-%ld \n", index );
+            	debuglog( " Connection Object deleted with index-%016ld \n", index );
 
 			index   = -index;
             len     = 0;

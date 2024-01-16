@@ -43,8 +43,8 @@ void debuglog( const char *format, ... ){
 				break;	
 	}
 	if( p == 1 ) {
-		vsnprintf( logbuf, LOGBUFSIZE ,format, ap );
-		//fprintf( stderr, logbuf );
+		vsnprintf( logbuf, LOGBUFSIZE-1 ,format, ap );
+		logbuf[LOGBUFSIZE-1] = 0;
 		fputs( logbuf, stderr );
 	}
 	va_end(ap);
