@@ -11,7 +11,7 @@ Use the latest release zip files, they are stable. The main branch is not stable
 This is a http server written in C/C++ Programming language, that support threads, session management using SQLITE3 db and dynamic pages using C/C++ plugins.   
 The main thread is used to assign tasks to the threadpool, throttle, send and receive static data while the threadpool is used to handle dynamic pages.   
 This application is meant to be used for embedded systems but there aren't any limitations on its usage as of now.  
-Support HTTP HTTPS over IPv4 and IPv6.
+Supports HTTP HTTPS over IPv4 and IPv6.
 
 
 # History 
