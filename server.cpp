@@ -341,11 +341,10 @@ int clientmanage ( int op ) {
 }
 
 void reduce_r ( string ip ) {
-    //debuglog (  "DBUG: reducing counter for ip %s \n", ip.c_str() );
 	dosMapMutex.lock();
     MapACL::iterator iter = dosMap.find ( ip );
     if ( iter != dosMap.end() ) {
-        std::cerr << "DOS PREVENTION: Reducing counter for " << ip << " ---> " << iter->second->counter << std::endl;
+        debuglog ( " DOS PREVENTION: Reducing counter for : %s -> %d \n", ip.c_str(), iter->second->counter ) ;
         iter->second->counter -= 1;
 
         if ( iter->second->counter < 0 ) {
@@ -1006,11 +1005,11 @@ shrinkStart:
                         clientmanage ( 1 );
                         allowConnect = true;
                         tempIp = ntohl ( clientAddr.sin_addr.s_addr );
-						reverse( (unsigned char *) &tempIp, 4 );
                         char clientAddress[64];
-        				//inet_ntop ( AF_INET, & tempIp, clientAddress, 64 );
+        		inet_ntop ( AF_INET, & tempIp, clientAddress, 64 );
                         string ipstr = clientAddress;
 
+			dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1024,14 +1023,15 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
-                                std::cerr << "INFO: DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
+                                debuglog (  " DOS threshold for the client reached : %s -> %d \n", iter->second->ip.c_str(), DOS_THRESHOLD );
+                                //std::cerr << "INFO: DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
                                 allowConnect = true;
                                 iter->second->counter += 1;
                             }
                         }
+			dosMapMutex.unlock();
 
                         debuglog (  " IPv4 Connection Received from : %s:%d \n", clientAddress, ntohs ( clientAddr.sin_port ) );
 
@@ -1096,6 +1096,7 @@ shrinkStart:
                         inet_ntop ( AF_INET6, & ( clientAddr6.sin6_addr ), clientAddress, 64 );
                         string ipstr = clientAddress;
 
+			dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1109,14 +1110,15 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
-                                std::cerr << "INFO: DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
+                                debuglog (  "INFO: DOS threshold for the client reached : %s -> %d \n", iter->second->ip.c_str(), DOS_THRESHOLD);
+                                //std::cerr << "INFO: DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
                                 allowConnect = true;
                                 iter->second->counter += 1;
                             }
                         }
+			dosMapMutex.unlock();
 
                         debuglog (  " IPv6 connection received from: %s:%d ...\n", clientAddress, ntohs ( clientAddr6.sin6_port ) );
 
@@ -1181,11 +1183,11 @@ shrinkStart:
                         clientmanage ( 1 );
                         allowConnect = true;
                         tempIp = ntohl ( sslclientAddr.sin_addr.s_addr );
-						reverse( (unsigned char *) &tempIp, 4 );
                         char clientAddress[64];
-						inet_ntop( AF_INET, &tempIp, clientAddress, 64 );
+			inet_ntop( AF_INET, &tempIp, clientAddress, 64 );
                         string ipstr = clientAddress;
 
+			dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1199,14 +1201,15 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
-                                std::cerr << "INFO: SSL IPv4 DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
+                                debuglog (  " DOS threshold for the client reached : %s -> %d \n", iter->second->ip.c_str(), DOS_THRESHOLD );
+                                //std::cerr << "INFO: SSL IPv4 DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
                                 allowConnect = true;
                                 iter->second->counter += 1;
                             }
                         }
+			dosMapMutex.unlock();
 
                         debuglog (  " SSL IPv4 Connection Received from : %s:%d -> %d \n", clientAddress, ntohs ( clientAddr.sin_port ), nClients );
 
@@ -1279,9 +1282,9 @@ shrinkStart:
 
                         char clientAddress[64];
                         inet_ntop ( AF_INET6, & ( sslclientAddr6.sin6_addr ), clientAddress, 64 );
-
                         string ipstr = clientAddress;
 
+			dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1295,14 +1298,15 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                //debuglog (  "INFO: DOS threshold for the client reached %s : %d \n", iter->second->ip.c_str(), iter->second->counter );
-                                std::cerr << "INFO: SSL IPv6 DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
+                                debuglog (  "INFO: DOS threshold for the client reached : %s -> %d \n", iter->second->ip.c_str(), DOS_THRESHOLD );
+                                //std::cerr << "INFO: SSL IPv6 DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
                                 allowConnect = true;
                                 iter->second->counter += 1;
                             }
                         }
+			dosMapMutex.unlock();
 
                         debuglog (  " SSL IPv6 connection received from: %s:%d -> %d \n", clientAddress, ntohs ( clientAddr6.sin6_port ), nClients );
 

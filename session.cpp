@@ -27,7 +27,7 @@ HttpSession:: HttpSession ( unsigned int i, unsigned int addr, time_t e ) {
     char buf[64];
     char sessionId[128];
     memset ( buf, 0, 64 );
-    memset ( sessionId, 0, 64 );
+    memset ( sessionId, 0, 128 );
 
     uint32_t randr = ( uint32_t ) i;
     uint32_t *randoms = ( uint32_t* ) buf;

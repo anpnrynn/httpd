@@ -28,7 +28,7 @@ class ACL {
         bool prefixmask;
         string ip;
         long long int epochtime;
-        atomic_int counter;
+        int counter;
         bool block;
 };
 

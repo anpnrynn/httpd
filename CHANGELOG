@@ -1,3 +1,8 @@
+17/01/2024 - 1
+==============
+Stability related fixes, addition of mutex, removal of atomic_int, changes to log messages.
+
+
 16/01/2024 - 2
 ==============
 Stability fix, write changed to send , handling SIGPIPE, deletion of connection object is done differently
