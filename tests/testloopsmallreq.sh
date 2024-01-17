@@ -5,21 +5,21 @@ i=0
 while [[ $i -le 100 ]] 
 do
 	j=0
-	while [[ $j -le 10 ]]
+	while [[ $j -le 20 ]]
 	do
 		curl -v --retry-delay 10 --retry-all-errors --retry 16 -F key1=value1 -F upload=@/tmp/var/www/Pages/image.jpg -o 3types.$i.$j.1 http://127.0.0.1:15000/p3.xyz &
-		wget -O 3types.$i.$j.2  http://127.0.0.1:15000/image.jpg &
+		wget -O 3types.$i.$j.2   http://127.0.0.1:15000/image.jpg &
 		wget -O 3types.$i.$j.2a  http://127.0.0.1:15000/login.html &
 		wget -O 3types.$i.$j.2b  http://127.0.0.1:15000/router/index.html &
-		wget -O 3types.$i.$j.3  http://127.0.0.1:15000/p3.xyz &
+		wget -O 3types.$i.$j.3   http://127.0.0.1:15000/p3.xyz &
 		wget -O 3types.$i.$j.3a  http://127.0.0.1:15000/notthere.xyz &
 		wget -O 3types.$i.$j.3b  http://127.0.0.1:15000/notthere.txt &
 		wget -O 3types.$i.$j.3c  http://127.0.0.1:15000/login.xyz &
 		curl -v --retry-delay 10 --retry-all-errors --retry 16 -F key1=value1 -F upload=@/tmp/var/www/Pages/image.jpg -o 3types.$i.$j.4 http://[::1]:15000/p3.xyz &
-		wget -O 3types.$i.$j.5  http://[::1]:15000/image.jpg &
+		wget -O 3types.$i.$j.5   http://[::1]:15000/image.jpg &
 		wget -O 3types.$i.$j.5a  http://[::1]:15000/login.html &
 		wget -O 3types.$i.$j.5b  http://[::1]:15000/router/index.html &
-		wget -O 3types.$i.$j.6  http://[::1]:15000/p3.xyz &
+		wget -O 3types.$i.$j.6   http://[::1]:15000/p3.xyz &
 		wget -O 3types.$i.$j.6a  http://[::1]:15000/notthere.xyz &
 		wget -O 3types.$i.$j.6b  http://[::1]:15000/notthere.txt &
 		wget -O 3types.$i.$j.6c  http://[::1]:15000/login.xyz &

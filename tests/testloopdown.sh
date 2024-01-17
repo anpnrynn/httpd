@@ -13,6 +13,12 @@ do
 		wget -O staticdown.$i.$j.4  http://[::1]:15000/nandihills.jpg &
 		wget -O staticdown.$i.$j.5  http://[::1]:15000/login.html &
 		wget -O staticdown.$i.$j.6  http://[::1]:15000/image.jpg &
+		wget --no-check-certificate -O staticdown.$i.$j.s1  https://127.0.0.1:16000/nandihills.jpg &
+		wget --no-check-certificate -O staticdown.$i.$j.s2  https://127.0.0.1:16000/login.html &
+		wget --no-check-certificate -O staticdown.$i.$j.s3  https://127.0.0.1:16000/image.jpg &
+		wget --no-check-certificate -O staticdown.$i.$j.s4  https://[::1]:16000/nandihills.jpg &
+		wget --no-check-certificate -O staticdown.$i.$j.s5  https://[::1]:16000/login.html &
+		wget --no-check-certificate -O staticdown.$i.$j.s6  https://[::1]:16000/image.jpg &
 		j=$((j+1))
 	done
 	count=`ps -ef |egrep "(curl|wget)" | wc -l`

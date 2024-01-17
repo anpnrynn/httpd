@@ -53,6 +53,8 @@ void memoryIssue ( int s ) {
                    conn[mi], mi, conn[mi]->index );
         mi++;
     }
+
+    exit ( 100 );
 }
 
 int srvSocket = 0;
@@ -433,6 +435,8 @@ int main ( int argc, char *argv[] ) {
     //stderr = NULL;
     //stderr = fopen ( LOGFILE, "a+" );
     cerr << "HTTPD " << VERSION << " Server starting up... " << endl;
+
+    mallopt ( M_CHECK_ACTION, 0x05 );
 
     if ( !stderr )
     { exit ( 56 ); }
@@ -874,8 +878,8 @@ start:
         debuglog (  "ERRR: Reset to rlimit failed \n" );
     }
 
-    Connection   *conn[MAXCLIENTS + 2];
-    PRPollDesc pollfds[MAXCLIENTS + 2];
+    Connection   **conn = new Connection*[MAXCLIENTS + 2];
+    PRPollDesc   *pollfds = new PRPollDesc[MAXCLIENTS + 2];
     global_conn  = conn;
     global_MAXCLIENTS = MAXCLIENTS;
     //Connection **conn = ( Connection ** ) malloc ( MAXCLIENTS * sizeof ( Connection* ) );
@@ -1039,7 +1043,16 @@ shrinkStart:
         if ( ( retVal = PR_Poll ( pollfds, nClients, 10 ) ) > 0 ) {
 
             if ( clientmanage ( 2 ) < MAX_BACKLOG ) {
-                debuglog ( "DBUG: Active main thread connection fds = %d \n", nClients );
+                int old_count = 0;
+                int new_count = MIN_PORT_COUNT;
+
+                if ( nClients == MIN_PORT_COUNT || nClients >= MAX_BACKLOG ) {
+                    old_count = new_count;
+                    new_count = nClients;
+
+                    if ( old_count != new_count )
+                    { debuglog ( " Thread connection fds = %d \n", nClients ); }
+                }
 
                 /* IPv4 Server Socket */
                 if ( pollfds[0].revents & PR_POLL_READ ) {
@@ -1475,7 +1488,7 @@ shrinkStart:
                 //int j = 0;
                 //for( j = MIN_PORT_COUNT; j < nClients; j++ ){
                 if ( conn[i - 1] && conn[i - 1]->delobj && conn[i - 1]->index > 0LL && conn[i - 1]->index <= Connection::indexCount ) {
-                    debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i] ? conn[i - 1]->index : 0LL );
+                    //debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i - 1] ? conn[i - 1]->index : 0LL );
 
                     try {
                         delete conn[i - 1];
@@ -1486,6 +1499,13 @@ shrinkStart:
                     conn[i - 1] = 0;
                 } else if ( conn[i - 1] && conn[i - 1]->delobj ) {
                     debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i - 1] ? conn[i - 1]->index : 0LL, conn[i - 1] ? conn[i - 1]->req.rawHdr.c_str() : "HEADER: NULL OBJECT" );
+
+                    try {
+                        delete conn[i - 1];
+                    } catch ( std::exception &e ) {
+                        debuglog ( " [EXCP] : Delete memory exception \n" );
+                    }
+
                     // Some bug ? Double delete ?
                     conn[i - 1] = 0;
                 }
@@ -2064,7 +2084,7 @@ shrinkStart:
 
 
             if ( i == nClients && conn[i - 1] && conn[i - 1]->delobj && conn[i - 1]->index > 0LL && conn[i - 1]->index <= Connection::indexCount ) {
-                debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i] ? conn[i - 1]->index : 0LL );
+                //debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i - 1] ? conn[i - 1]->index : 0LL );
 
                 try {
                     delete conn[i - 1];
@@ -2075,6 +2095,13 @@ shrinkStart:
                 conn[i - 1] = 0;
             } else if ( i == nClients && conn[i - 1] && conn[i - 1]->delobj ) {
                 debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i - 1] ? conn[i - 1]->index : 0LL, conn[i - 1] ? conn[i - 1]->req.rawHdr.c_str() : "HEADER: NULL OBJECT" );
+
+                try {
+                    delete conn[i - 1];
+                } catch ( std::exception &e ) {
+                    debuglog ( " [EXCP] : Delete memory exception \n" );
+                }
+
                 // Some bug ? Double delete ?
                 conn[i - 1] = 0;
             }

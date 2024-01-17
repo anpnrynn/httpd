@@ -1,7 +1,7 @@
 #Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 INC_DIR=-I./ -I/usr/include -I/usr/local/include
 
-SSL=
+SSL=-DUSE_SSL
 SSLINC=
 SSLLIB=-lssl -lcrypto
 

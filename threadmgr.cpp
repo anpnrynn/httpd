@@ -218,6 +218,7 @@ void* ThreadMgr::httpthread ( void *data )
                         PR_Close ( conn->socket );
                         * ( conn->socket ) = -1;
                         conn->socket = 0;
+                        conn->delobj = true;
                         reduce_ipbin ( conn );
                         delete conn;
                         clientmanage ( 0 );
@@ -244,6 +245,7 @@ void* ThreadMgr::httpthread ( void *data )
                         PR_Close ( conn->socket );
                         * ( conn->socket ) = -1;
                         conn->socket = 0;
+                        conn->delobj = true;
                         reduce_ipbin ( conn );
                         delete conn;
                         clientmanage ( 0 );
@@ -267,6 +269,7 @@ void* ThreadMgr::httpthread ( void *data )
                     PR_Close ( conn->socket );
                     * ( conn->socket ) = -1;
                     conn->socket = 0;
+                    conn->delobj = true;
                     reduce_ipbin ( conn );
                     delete conn;
                     clientmanage ( 0 );
