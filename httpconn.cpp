@@ -577,8 +577,8 @@ int HttpReq::processHttpPostData ( size_t hPkt, size_t dLen ) {
 
 
 void HttpReq::convertGetDataToMap ( MapStrStr *param ) {
-    char qname[256];
-    char qvalue[256];
+    char qname[2048];
+    char qvalue[2048];
     char *data = qname;
     int n = strlen ( query );
     int i = 0;
@@ -610,8 +610,8 @@ void HttpReq::convertGetDataToMap ( MapStrStr *param ) {
 }
 
 void HttpReq::convertGetDataToVector ( Vector *param ) {
-    char qname[256];
-    char qvalue[256];
+    char qname[2048];
+    char qvalue[2048];
     char *data = qname;
     int n = strlen ( query );
     int i = 0;
@@ -648,8 +648,15 @@ int HttpReq::convertPostDataToMap ( MapStrStr *param, const char *stopAt ) {
     if ( contentLen[0] == 0 )
     { return 0; }
 
-    char name [256];
-    char value[256];
+    //char name [256];
+    //char value[256];
+    char *name   = new char[MAXBUF]; 
+    if ( !name )
+    { return 1; }
+    char *value  = new char[MAXBUF];
+    if ( !value )
+    { delete []name; return 1; }
+
     char *varPtr = name;
     unsigned int  j = 0, dataLen = 0;
 
@@ -673,6 +680,8 @@ int HttpReq::convertPostDataToMap ( MapStrStr *param, const char *stopAt ) {
 
                 if ( stopAt ) {
                     if ( strcmp ( name, stopAt ) ) {
+			delete []name;
+			delete []value;
                         return 1;
                     }
                 }
@@ -706,6 +715,12 @@ int HttpReq::convertPostDataToMap ( MapStrStr *param, const char *stopAt ) {
         param->insert ( pair<string, string> ( name, value ) );
     }
 
+    if ( name )
+	    delete []name;
+    if ( value )
+	    delete []value;
+
+
     return 0;
 }
 
@@ -715,11 +730,12 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
     if ( contentLen[0] == 0 )
     { return 0; }
 
-    char  name[256];
-    char *value  = ( char * ) malloc ( 16384 );
-
-    if ( value == NULL )
+    char *name   = new char[MAXBUF]; 
+    if ( !name )
     { return 1; }
+    char *value  = new char[MAXBUF];
+    if ( !value )
+    { delete []name; return 1; }
 
     char *varPtr = name;
     unsigned int  j = 0, dataLen = 0;
@@ -746,7 +762,9 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
                 if ( stopAt ) {
                     if ( strcmp ( name, stopAt ) ) {
                         //free ( name );
-                        free ( value );
+                        //free ( value );
+			delete []name;
+			delete []value;
                         return 1;
                     }
                 }
@@ -789,8 +807,11 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
 
 #endif
 
+    if ( name )
+	    delete []name;
+
     if ( value )
-    { free ( value ); }
+	   delete []value;
 
     //free( name );
     //free( value);

@@ -44,7 +44,7 @@ void HttpHandler::delHandler ( string name ) {
 
     if ( i != httpHdlrs->end() ) {
         if ( i->second != NULL )
-        { free ( i->second ); }
+        {  }
     }
 
     httpHdlrs->erase ( i );

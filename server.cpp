@@ -359,7 +359,9 @@ void reduce_ipbin ( Connection *conn ) {
 	if( conn->ip == 0 ){
         inet_ntop ( AF_INET6, & ( conn->ipv6[0] ), clientAddress, 64 );
 	} else {
-        inet_ntop ( AF_INET, & ( conn->ip ), clientAddress, 64 );
+	sockaddr_in addr;
+	addr.sin_addr.s_addr = conn->ip;
+        inet_ntop ( AF_INET, & addr.sin_addr,  clientAddress, 64 );
 	}
     string ipstr = clientAddress;
     reduce_r ( ipstr );
@@ -457,7 +459,22 @@ int main ( int argc, char *argv[] ) {
     signal ( SIGINT, signalStop );
     signal ( SIGSTOP, signalStop );
     signal ( SIGABRT, signalStop );
-    signal ( SIGPIPE, signalIgnore );
+    //signal ( SIGPIPE, signalIgnore );
+
+    struct sigaction sh;
+    struct sigaction osh;
+    sh.sa_handler = &signalIgnore;
+    sh.sa_flags = SA_RESTART;
+    sigemptyset(&sh.sa_mask);
+    if (sigaction(SIGPIPE, &sh, &osh) < 0)
+    {
+        return -1;
+    }
+
+    sigset_t bs;
+	sigemptyset(&bs);
+	sigaddset(&bs, SIGPIPE);
+	pthread_sigmask(SIG_BLOCK, &bs, NULL);
 #endif
 
 start:
@@ -795,7 +812,7 @@ start:
         initPlugins();
         debuglog (  "WARN: Starting plugins \n" );
 #ifdef LINUX_BUILD
-        malloc_trim ( 0 );
+        //malloc_trim ( 0 );
 #endif
     }
 
@@ -836,10 +853,10 @@ start:
         debuglog (  "ERRR: Reset to rlimit failed \n" );
     }
 
-    //Connection *conn[MAXCLIENTS];
-    //PRPollDesc pollfds[MAXCLIENTS];
-    Connection **conn = ( Connection ** ) malloc ( MAXCLIENTS * sizeof ( Connection* ) );
-    PRPollDesc *pollfds = ( PRPollDesc* ) malloc ( MAXCLIENTS * sizeof ( PRPollDesc ) );
+    Connection   *conn[MAXCLIENTS+2];
+    PRPollDesc pollfds[MAXCLIENTS+2];
+    //Connection **conn = ( Connection ** ) malloc ( MAXCLIENTS * sizeof ( Connection* ) );
+    //PRPollDesc *pollfds = ( PRPollDesc* ) malloc ( MAXCLIENTS * sizeof ( PRPollDesc ) );
 
     bool exitMain = false;
     bool shrink   = true;
@@ -1004,9 +1021,9 @@ shrinkStart:
                         //allowConnect = false;
                         clientmanage ( 1 );
                         allowConnect = true;
-                        tempIp = ntohl ( clientAddr.sin_addr.s_addr );
+                        tempIp = clientAddr.sin_addr.s_addr;
                         char clientAddress[64];
-        		inet_ntop ( AF_INET, & tempIp, clientAddress, 64 );
+			inet_ntop( AF_INET, &clientAddr.sin_addr, clientAddress, 64 );
                         string ipstr = clientAddress;
 
 			dosMapMutex.lock();
@@ -1182,9 +1199,9 @@ shrinkStart:
                         //allowConnect = false;
                         clientmanage ( 1 );
                         allowConnect = true;
-                        tempIp = ntohl ( sslclientAddr.sin_addr.s_addr );
+                        tempIp = sslclientAddr.sin_addr.s_addr;
                         char clientAddress[64];
-			inet_ntop( AF_INET, &tempIp, clientAddress, 64 );
+			inet_ntop( AF_INET, &sslclientAddr.sin_addr, clientAddress, 64 );
                         string ipstr = clientAddress;
 
 			dosMapMutex.lock();
@@ -1373,7 +1390,7 @@ shrinkStart:
 
 				//int j = 0;
 				//for( j = MIN_PORT_COUNT; j < nClients; j++ ){
-					if( conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0 && conn[i-1]->index <= Connection::indexCount ){
+					if( conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0LL && conn[i-1]->index <= Connection::indexCount ){
 						delete conn[i-1];
 						conn[i-1] = 0;
 					} else if ( conn[i-1] && conn[i-1]->delobj ) {
@@ -1387,7 +1404,7 @@ shrinkStart:
 					isWritable = true;
 
                 if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
-                    debuglog (  "INFO: Invalid fd , closing \n" );
+                    debuglog (  " Invalid fd, closing , connection object id = %016lld \n", conn[i]?conn[i]->index:0LL );
 
                     conn_close ( conn[i] );
                     //conn[i] = 0;
@@ -1949,6 +1966,16 @@ shrinkStart:
 
                 pollfds[i].revents = 0;
             }
+
+
+		if( i == nClients && conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0LL && conn[i-1]->index <= Connection::indexCount ){
+			delete conn[i-1];
+			conn[i-1] = 0;
+		} else if ( i == nClients && conn[i-1] && conn[i-1]->delobj ) {
+			// Some bug ? Double delete ?
+			conn[i-1] = 0;
+		}
+	    
         } else {
             if ( retVal < 0 ) {
                 //PR_Sleep ( 1 );

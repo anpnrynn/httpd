@@ -53,8 +53,8 @@ int login_handler ( void *data, int argc, char **argv, char **col ) {
         { conn->sess->addVariable ( conn->db, "auth", public_auth, 0, 0 ); }
 
         if ( argv[1] ) {
-            char *lpage = ( char * ) malloc ( 256 );
-            lpage[0] = 0;
+            char *lpage = new char[256];
+            lpage[0] = 0; lpage[255] = 0;
             strcpy ( lpage, argv[1] );
             conn->udata = lpage;
         } else {
@@ -146,7 +146,9 @@ int login_processReq ( Connection *conn ) {
         if ( conn->udata ) {
             conn->resp.setLocation ( ( char* ) conn->udata );
             debuglog (  "INFO: Setting Location: %s\n", ( char * ) conn->udata );
-            free ( conn->udata );
+            //free ( conn->udata );
+	    char *udata = (char*)conn->udata;
+	    delete []udata;
             conn->udata = 0;
         } else {
             conn->resp.setLocation ( ( char* ) "403.sthtml" );

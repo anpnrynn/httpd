@@ -1,6 +1,9 @@
 17/01/2024 - 1
 ==============
 Stability related fixes, addition of mutex, removal of atomic_int, changes to log messages.
+Addition of sigprocmask, pthread_sigmask, changing size of buffer to MAXBUF
+Removing all use of malloc and free and replacing it with new and delete.
+IP address display fix
 
 
 16/01/2024 - 2
