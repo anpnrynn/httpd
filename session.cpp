@@ -634,6 +634,7 @@ int  HttpSessionMgr::readSessionInfo ( void *udata, int argc, char **argv, char 
             temp->loadVariable ( ( const char * ) argv[4], argv[5], atoi ( argv[3] ), atoi ( argv[2] ) );
         }
     }
+
     debuglog (  "INFO: Read Session Data \n" );
 
     return 0;

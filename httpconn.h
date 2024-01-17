@@ -165,7 +165,7 @@ class HttpReq {
         PRFileDesc  *post;
         unsigned char buf[MAXBUF];
         unsigned char *dataPtr;
-	string rawHdr;
+        string rawHdr;
         char* getCookie()  { return cookie; }
         char* getReqFile();
         char* getReqFileType();
@@ -260,9 +260,9 @@ class HttpResp {
 
 class Connection {
     public:
-		static long long int indexCount;
-		long long int            index;
-		bool           delobj;
+        static long long int indexCount;
+        long long int            index;
+        bool           delobj;
         unsigned char  buf[SMALLBUF];
         unsigned int   sent;
         unsigned int   len;
@@ -292,9 +292,9 @@ class Connection {
         void          *udata;
 
         Connection() {
-			index   = indexCount++;
-			delobj  = false;
-            debuglog( " Connection Object created with index-%016ld \n", index );
+            index   = indexCount++;
+            delobj  = false;
+            debuglog ( " Connection Object created with index-%016ld \n", index );
             len     = 0;
             sent    = 0;
             offset  = 0;
@@ -331,12 +331,12 @@ class Connection {
             if ( file )
             { PR_Close ( file ); }
 
-			if( index < 0 )
-				debuglog( " Connection Object already deleted with index%016ld \n", index);
-			else 
-            	debuglog( " Connection Object deleted with index-%016ld \n", index );
+            if ( index < 0 )
+            { debuglog ( " Connection Object already deleted with index%016ld \n", index ); }
+            else
+            { debuglog ( " Connection Object deleted with index-%016ld \n", index ); }
 
-			index   = -index;
+            index   = -index;
             len     = 0;
             sent    = 0;
             offset  = 0;

@@ -241,8 +241,8 @@ char* HttpReq::getTagBuffer ( char *tag ) {
 
 void HttpReq::readHttpHeader() {
 
-    if ( hdrInvalid ){
-	    return;
+    if ( hdrInvalid ) {
+        return;
     }
 
     if ( !hdrPartial ) {
@@ -255,9 +255,9 @@ void HttpReq::readHttpHeader() {
             return;
         }
 
-	if( hdrInvalid ){
-		return;
-	}
+        if ( hdrInvalid ) {
+            return;
+        }
 
         skipHdrTag ( i );
     }
@@ -350,7 +350,7 @@ void HttpReq::readHttpHeader() {
 
     if ( hdrReadComplete ) {
         buf[i - 1] = 0;
-	rawHdr = (const char*)buf;
+        rawHdr = ( const char* ) buf;
         hLen   = i;
         debuglog (  "XTRA: ____________________________________\n" );
         debuglog (  "XTRA: Request Header:\n%s\n\n", ( char * ) buf );
@@ -657,10 +657,13 @@ int HttpReq::convertPostDataToMap ( MapStrStr *param, const char *stopAt ) {
 
     //char name [256];
     //char value[256];
-    char *name   = new char[MAXBUF]; 
+    char *name   = new char[MAXBUF];
+
     if ( !name )
     { return 1; }
+
     char *value  = new char[MAXBUF];
+
     if ( !value )
     { delete []name; return 1; }
 
@@ -687,8 +690,8 @@ int HttpReq::convertPostDataToMap ( MapStrStr *param, const char *stopAt ) {
 
                 if ( stopAt ) {
                     if ( strcmp ( name, stopAt ) ) {
-			delete []name;
-			delete []value;
+                        delete []name;
+                        delete []value;
                         return 1;
                     }
                 }
@@ -723,9 +726,10 @@ int HttpReq::convertPostDataToMap ( MapStrStr *param, const char *stopAt ) {
     }
 
     if ( name )
-	    delete []name;
+    { delete []name; }
+
     if ( value )
-	    delete []value;
+    { delete []value; }
 
 
     return 0;
@@ -737,10 +741,13 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
     if ( contentLen[0] == 0 )
     { return 0; }
 
-    char *name   = new char[MAXBUF]; 
+    char *name   = new char[MAXBUF];
+
     if ( !name )
     { return 1; }
+
     char *value  = new char[MAXBUF];
+
     if ( !value )
     { delete []name; return 1; }
 
@@ -770,8 +777,8 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
                     if ( strcmp ( name, stopAt ) ) {
                         //free ( name );
                         //free ( value );
-			delete []name;
-			delete []value;
+                        delete []name;
+                        delete []value;
                         return 1;
                     }
                 }
@@ -815,10 +822,10 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
 #endif
 
     if ( name )
-	    delete []name;
+    { delete []name; }
 
     if ( value )
-	   delete []value;
+    { delete []value; }
 
     //free( name );
     //free( value);
@@ -995,33 +1002,34 @@ void HttpResp::resetHttpHeader() {
 long long int Connection::indexCount = 1;
 
 void sendRemainderData ( Connection *conn ) {
-	if ( conn->resp.getContentLen() < 0 ){
-    if ( conn->len > 0 ) {
-        if ( conn->len <= CHUNK_HDR_SIZE ) {
-            lastChunk ( conn->buf, conn->len );
-        } else {
-            if ( SMALLBUF - conn->len  < 8 ) {
-                truncateChunk ( &conn->buf[2], conn->len );
-                conn->len = sendConnectionData ( conn, conn->buf, conn->len );
+    if ( conn->resp.getContentLen() < 0 ) {
+        if ( conn->len > 0 ) {
+            if ( conn->len <= CHUNK_HDR_SIZE ) {
                 lastChunk ( conn->buf, conn->len );
             } else {
-                truncateChunk ( &conn->buf[2], conn->len );
-                lastChunk ( &conn->buf[conn->len], conn->len );
+                if ( SMALLBUF - conn->len  < 8 ) {
+                    truncateChunk ( &conn->buf[2], conn->len );
+                    conn->len = sendConnectionData ( conn, conn->buf, conn->len );
+                    lastChunk ( conn->buf, conn->len );
+                } else {
+                    truncateChunk ( &conn->buf[2], conn->len );
+                    lastChunk ( &conn->buf[conn->len], conn->len );
+                }
             }
+        } else {
+            lastChunk ( conn->buf, conn->len );
         }
     } else {
-        lastChunk ( conn->buf, conn->len );
-    }
-	} else {
 
-    if ( conn->len > 0 ) {
-        unsigned int tempLen = 0;
-        tempLen = sendConnectionData ( conn, conn->buf, conn->len );
-        if ( tempLen != conn->len ) {
-            debuglog (  "ERRR: Unable to send complete data\n" );
+        if ( conn->len > 0 ) {
+            unsigned int tempLen = 0;
+            tempLen = sendConnectionData ( conn, conn->buf, conn->len );
+
+            if ( tempLen != conn->len ) {
+                debuglog (  "ERRR: Unable to send complete data\n" );
+            }
         }
     }
-	}
 
     conn->len = 0;
 }
@@ -1029,16 +1037,17 @@ void sendRemainderData ( Connection *conn ) {
 unsigned int sendConnectionData (    Connection *conn,
                                      unsigned char *buf,
                                      unsigned int len ) {
-	if ( conn->resp.getContentLen() < 0 ){
-		//Use chunked transfer code here
-		return 0;
-	}
+    if ( conn->resp.getContentLen() < 0 ) {
+        //Use chunked transfer code here
+        return 0;
+    }
+
 #ifdef USE_SSL
 
     if ( conn->ssl ) {
         unsigned int bytesW = 0;
         int temp  = 0;
-		int retry = 0;
+        int retry = 0;
         debuglog (  "INFO: SSL_write: Sending %d bytes \n", len );
 
         do {
@@ -1049,12 +1058,15 @@ unsigned int sendConnectionData (    Connection *conn,
                 debuglog (  "DBUG: SSL_write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
             } else {
                 int rc = 0;
-				retry++;
+                retry++;
+
                 if ( ( rc = SSL_get_error ( conn->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ) {
                     debuglog (  "WARN: SSL_write : Problem sending data %d, retrying...\n", rc );
-					if( retry >= 24 )
-						break;
-                	std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
+
+                    if ( retry >= 24 )
+                    { break; }
+
+                    std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
                 } else {
                     debuglog (  "ERRR: SSL_write : Problem sending data %d\n", rc );
                     bytesW = 0;
@@ -1157,21 +1169,25 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
 
 unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     HttpResp *tempResp = & ( conn->resp );
-	debuglog( " Request for: %s -> Status code : %d \n", conn->req.getReqFile(), status );
-	string statusMsg = getStatusInfo( status );
+    debuglog ( " Request for: %s -> Status code : %d \n", conn->req.getReqFile(), status );
+    string statusMsg = getStatusInfo ( status );
     tempResp->setStatus ( status );
-    tempResp->setAddOn(1);
-	if( status != 200 ) {
-	 tempResp->setContentType( "text/plain" );
-	 tempResp->setContentLen( statusMsg.length() );	
+    tempResp->setAddOn ( 1 );
+
+    if ( status != 200 ) {
+        tempResp->setContentType ( "text/plain" );
+        tempResp->setContentLen ( statusMsg.length() );
     }
+
     conn->len  = tempResp->getHeader ( ( char * ) conn->buf );
     conn->len += conn->sess->dumpSessionCookies ( ( char * ) & ( conn->buf[conn->len] ) );
     conn->len += tempResp->finishHdr ( ( char * ) & ( conn->buf[conn->len] ) );
-	if( status != 200 ) {
-	 strcpy( (char*)&conn->buf[conn->len], statusMsg.c_str() );
-     conn->len += tempResp->getContentLen();
-	}
+
+    if ( status != 200 ) {
+        strcpy ( ( char* ) &conn->buf[conn->len], statusMsg.c_str() );
+        conn->len += tempResp->getContentLen();
+    }
+
     conn->buf[conn->len] = 0;
 
     char *tempbuf = ( char * ) conn->buf;

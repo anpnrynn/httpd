@@ -54,7 +54,8 @@ int login_handler ( void *data, int argc, char **argv, char **col ) {
 
         if ( argv[1] ) {
             char *lpage = new char[256];
-            lpage[0] = 0; lpage[255] = 0;
+            lpage[0] = 0;
+            lpage[255] = 0;
             strcpy ( lpage, argv[1] );
             conn->udata = lpage;
         } else {
@@ -138,8 +139,8 @@ int login_processReq ( Connection *conn ) {
         } while ( rc == SQLITE_BUSY );
 
         debuglog (  "WARN: Login User:%s Status:%s Power:%s\n", ( ( *param ) [0] ).c_str(),
-                  rc == SQLITE_OK ? "Success" : "Failure",
-                  conn->sess->getVariable ( "auth" ) );
+                    rc == SQLITE_OK ? "Success" : "Failure",
+                    conn->sess->getVariable ( "auth" ) );
         //conn->sess->saveSession ( conn->db );
         //conn->sess->updateSaveSession ( conn->db );
 
@@ -147,8 +148,8 @@ int login_processReq ( Connection *conn ) {
             conn->resp.setLocation ( ( char* ) conn->udata );
             debuglog (  "INFO: Setting Location: %s\n", ( char * ) conn->udata );
             //free ( conn->udata );
-	    char *udata = (char*)conn->udata;
-	    delete []udata;
+            char *udata = ( char* ) conn->udata;
+            delete []udata;
             conn->udata = 0;
         } else {
             conn->resp.setLocation ( ( char* ) "403.sthtml" );

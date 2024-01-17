@@ -40,19 +40,20 @@ using namespace std;
 PRLibrary *lib[MAXPLUGINS];
 
 
-    Connection   **global_conn;
-    PRPollDesc   **global_pollfds;
-    int            global_MAXCLIENTS;
+Connection   **global_conn;
+PRPollDesc   **global_pollfds;
+int            global_MAXCLIENTS;
 
-    void memoryIssue( int s ){
-    	int mi = 0;
-	Connection **conn = global_conn;
-	while( mi < global_MAXCLIENTS && conn[mi] ){
-		debuglog( " crash and burn on deleted %llu -> conn[%d] = %lld \n", 
-				conn[mi], mi, conn[mi]->index );
-		mi++;
-	}
+void memoryIssue ( int s ) {
+    int mi = 0;
+    Connection **conn = global_conn;
+
+    while ( mi < global_MAXCLIENTS && conn[mi] ) {
+        debuglog ( " crash and burn on deleted %llu -> conn[%d] = %lld \n",
+                   conn[mi], mi, conn[mi]->index );
+        mi++;
     }
+}
 
 int srvSocket = 0;
 int clientSocket = 0;
@@ -357,8 +358,9 @@ int clientmanage ( int op ) {
 }
 
 void reduce_r ( string ip ) {
-	dosMapMutex.lock();
+    dosMapMutex.lock();
     MapACL::iterator iter = dosMap.find ( ip );
+
     if ( iter != dosMap.end() ) {
         debuglog ( " DOS PREVENTION: Reducing counter for : %s -> %d \n", ip.c_str(), iter->second->counter ) ;
         iter->second->counter -= 1;
@@ -367,32 +369,35 @@ void reduce_r ( string ip ) {
             iter->second->counter = 0;
         }
     }
-	dosMapMutex.unlock();
+
+    dosMapMutex.unlock();
 }
 
 void reduce_ipbin ( Connection *conn ) {
     char clientAddress[64];
-	if( conn->ip == 0 ){
+
+    if ( conn->ip == 0 ) {
         inet_ntop ( AF_INET6, & ( conn->ipv6[0] ), clientAddress, 64 );
-	} else {
-	sockaddr_in addr;
-	addr.sin_addr.s_addr = conn->ip;
+    } else {
+        sockaddr_in addr;
+        addr.sin_addr.s_addr = conn->ip;
         inet_ntop ( AF_INET, & addr.sin_addr,  clientAddress, 64 );
-	}
+    }
+
     string ipstr = clientAddress;
     reduce_r ( ipstr );
 }
 
-void reverse( unsigned char *data, int len )
-{
-	int i = 0;
-	int n = len/2;
-	while ( i < n ) {
-		unsigned char c = data[i];
-		data[i] = data [n -i -1];
-		data[n-i-1] = c;
-		i++;
-	}
+void reverse ( unsigned char *data, int len ) {
+    int i = 0;
+    int n = len / 2;
+
+    while ( i < n ) {
+        unsigned char c = data[i];
+        data[i] = data [n - i - 1];
+        data[n - i - 1] = c;
+        i++;
+    }
 }
 
 
@@ -410,7 +415,7 @@ void conn_close ( Connection *curconn ) {
 
 #endif
         reduce_ipbin ( curconn );
-		curconn->delobj = true;
+        curconn->delobj = true;
         clientmanage ( 0 );
     }
 }
@@ -422,7 +427,7 @@ int main ( int argc, char *argv[] ) {
     short firstTime = 0;
     clientsOnboard  = 0;
 
-	loglevel = 1;
+    loglevel = 1;
 
     //fclose ( stderr );
     //stderr = NULL;
@@ -446,7 +451,7 @@ int main ( int argc, char *argv[] ) {
         SRVPORT6 = atoi ( argv[1] );
         SSLSRVPORT = atoi ( argv[4] );
         SSLSRVPORT6 = atoi ( argv[4] );
-		loglevel = atoi( argv[5]);
+        loglevel = atoi ( argv[5] );
     }
 
     int DOS_THRESHOLD = 50;
@@ -481,16 +486,16 @@ int main ( int argc, char *argv[] ) {
     struct sigaction osh;
     sh.sa_handler = &signalIgnore;
     sh.sa_flags = SA_RESTART;
-    sigemptyset(&sh.sa_mask);
-    if (sigaction(SIGPIPE, &sh, &osh) < 0)
-    {
+    sigemptyset ( &sh.sa_mask );
+
+    if ( sigaction ( SIGPIPE, &sh, &osh ) < 0 ) {
         return -1;
     }
 
     sigset_t bs;
-	sigemptyset(&bs);
-	sigaddset(&bs, SIGPIPE);
-	pthread_sigmask(SIG_BLOCK, &bs, NULL);
+    sigemptyset ( &bs );
+    sigaddset ( &bs, SIGPIPE );
+    pthread_sigmask ( SIG_BLOCK, &bs, NULL );
 #endif
 
 start:
@@ -869,8 +874,8 @@ start:
         debuglog (  "ERRR: Reset to rlimit failed \n" );
     }
 
-    Connection   *conn[MAXCLIENTS+2];
-    PRPollDesc pollfds[MAXCLIENTS+2];
+    Connection   *conn[MAXCLIENTS + 2];
+    PRPollDesc pollfds[MAXCLIENTS + 2];
     global_conn  = conn;
     global_MAXCLIENTS = MAXCLIENTS;
     //Connection **conn = ( Connection ** ) malloc ( MAXCLIENTS * sizeof ( Connection* ) );
@@ -931,13 +936,15 @@ shrinkStart:
             offset = 1;
             shift  = 0;
 
-			//clear out invalid fds
-			int i = MIN_PORT_COUNT;
-			while  ( i < nClients ) {
+            //clear out invalid fds
+            int i = MIN_PORT_COUNT;
+
+            while  ( i < nClients ) {
                 if ( pollfds[i].fd == -1 ) {
-					debuglog( " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Poll fd is invalid %d , Deleting connection object \n", pollfds[i].fd );
-					pollfds[i].fd = 0;
+                    debuglog ( " >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Poll fd is invalid %d , Deleting connection object \n", pollfds[i].fd );
+                    pollfds[i].fd = 0;
                 }
+
                 i++;
             }
 
@@ -995,6 +1002,7 @@ shrinkStart:
             debuglog (  "DBUG: Active fds=%d \n", nClients );
 
 #if 0
+
             while  ( l < nClients ) {
                 debuglog (  "%d, ", pollfds[l].fd );
 
@@ -1007,6 +1015,7 @@ shrinkStart:
 
                 l++;
             }
+
 #endif
 
             l = 0;
@@ -1030,7 +1039,7 @@ shrinkStart:
         if ( ( retVal = PR_Poll ( pollfds, nClients, 10 ) ) > 0 ) {
 
             if ( clientmanage ( 2 ) < MAX_BACKLOG ) {
-				debuglog ("DBUG: Active main thread connection fds = %d \n", nClients);
+                debuglog ( "DBUG: Active main thread connection fds = %d \n", nClients );
 
                 /* IPv4 Server Socket */
                 if ( pollfds[0].revents & PR_POLL_READ ) {
@@ -1044,10 +1053,10 @@ shrinkStart:
                         allowConnect = true;
                         tempIp = clientAddr.sin_addr.s_addr;
                         char clientAddress[64];
-			inet_ntop( AF_INET, &clientAddr.sin_addr, clientAddress, 64 );
+                        inet_ntop ( AF_INET, &clientAddr.sin_addr, clientAddress, 64 );
                         string ipstr = clientAddress;
 
-			dosMapMutex.lock();
+                        dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1069,7 +1078,8 @@ shrinkStart:
                                 iter->second->counter += 1;
                             }
                         }
-			dosMapMutex.unlock();
+
+                        dosMapMutex.unlock();
 
                         debuglog (  " IPv4 Connection Received from : %s:%d \n", clientAddress, ntohs ( clientAddr.sin_port ) );
 
@@ -1087,16 +1097,18 @@ shrinkStart:
                                 pollfds[nClients].fd = *client;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
-                                if( !( conn[nClients] = new Connection ) ) {
-					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
-					conn[nClients] = 0;
-					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
-					PR_Closefd( pollfds[nClients].fd );
-                                	pollfds[nClients].fd = 0;
-                                	pollfds[nClients].events = 0;
-                                	pollfds[nClients].revents = 0;
-					continue;
-				}
+
+                                if ( ! ( conn[nClients] = new Connection ) ) {
+                                    debuglog ( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+                                    conn[nClients] = 0;
+                                    PR_Shutdownfd ( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+                                    PR_Closefd ( pollfds[nClients].fd );
+                                    pollfds[nClients].fd = 0;
+                                    pollfds[nClients].events = 0;
+                                    pollfds[nClients].revents = 0;
+                                    continue;
+                                }
+
                                 * ( conn[nClients]->socket ) = *client;
 #ifdef USE_SSL
                                 conn[nClients]->is_ssl    = 0;
@@ -1108,7 +1120,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
-                            	PR_Shutdown ( client, PR_SHUTDOWN_BOTH );
+                                PR_Shutdown ( client, PR_SHUTDOWN_BOTH );
                                 PR_Close ( client );
                             }
                         } else {
@@ -1143,7 +1155,7 @@ shrinkStart:
                         inet_ntop ( AF_INET6, & ( clientAddr6.sin6_addr ), clientAddress, 64 );
                         string ipstr = clientAddress;
 
-			dosMapMutex.lock();
+                        dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1157,7 +1169,7 @@ shrinkStart:
                             dosMap[ipstr] = dosAcl;
                         } else {
                             if ( iter->second->counter > DOS_THRESHOLD ) {
-                                debuglog (  "INFO: DOS threshold for the client reached : %s -> %d \n", iter->second->ip.c_str(), DOS_THRESHOLD);
+                                debuglog (  "INFO: DOS threshold for the client reached : %s -> %d \n", iter->second->ip.c_str(), DOS_THRESHOLD );
                                 //std::cerr << "INFO: DOS treshold reached " << iter->second->ip << ", " << iter->second->counter << std::endl;
                                 allowConnect = false;
                             } else {
@@ -1165,7 +1177,8 @@ shrinkStart:
                                 iter->second->counter += 1;
                             }
                         }
-			dosMapMutex.unlock();
+
+                        dosMapMutex.unlock();
 
                         debuglog (  " IPv6 connection received from: %s:%d ...\n", clientAddress, ntohs ( clientAddr6.sin6_port ) );
 
@@ -1183,17 +1196,19 @@ shrinkStart:
                                 pollfds[nClients].fd = *client6;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
+
                                 //while( !( conn[nClients] = new Connection ) ) {}
-                                if( !( conn[nClients] = new Connection ) ) {
-					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
-					conn[nClients] = 0;
-					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
-					PR_Closefd( pollfds[nClients].fd );
-                                	pollfds[nClients].fd = 0;
-                                	pollfds[nClients].events = 0;
-                                	pollfds[nClients].revents = 0;
-					continue;
-				}
+                                if ( ! ( conn[nClients] = new Connection ) ) {
+                                    debuglog ( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+                                    conn[nClients] = 0;
+                                    PR_Shutdownfd ( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+                                    PR_Closefd ( pollfds[nClients].fd );
+                                    pollfds[nClients].fd = 0;
+                                    pollfds[nClients].events = 0;
+                                    pollfds[nClients].revents = 0;
+                                    continue;
+                                }
+
                                 //conn[nClients] = new Connection;
                                 * ( conn[nClients]->socket ) = *client6;
 #ifdef USE_SSL
@@ -1207,7 +1222,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
-                            	PR_Shutdown ( client6, PR_SHUTDOWN_BOTH );
+                                PR_Shutdown ( client6, PR_SHUTDOWN_BOTH );
                                 PR_Close ( client6 );
                             }
                         } else {
@@ -1242,10 +1257,10 @@ shrinkStart:
                         allowConnect = true;
                         tempIp = sslclientAddr.sin_addr.s_addr;
                         char clientAddress[64];
-			inet_ntop( AF_INET, &sslclientAddr.sin_addr, clientAddress, 64 );
+                        inet_ntop ( AF_INET, &sslclientAddr.sin_addr, clientAddress, 64 );
                         string ipstr = clientAddress;
 
-			dosMapMutex.lock();
+                        dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1267,7 +1282,8 @@ shrinkStart:
                                 iter->second->counter += 1;
                             }
                         }
-			dosMapMutex.unlock();
+
+                        dosMapMutex.unlock();
 
                         debuglog (  " SSL IPv4 Connection Received from : %s:%d -> %d \n", clientAddress, ntohs ( clientAddr.sin_port ), nClients );
 
@@ -1285,17 +1301,19 @@ shrinkStart:
                                 pollfds[nClients].fd = *sslclient;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
+
                                 //while( !( conn[nClients] = new Connection ) ) {}
-                                if( !( conn[nClients] = new Connection ) ) {
-					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
-					conn[nClients] = 0;
-					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
-					PR_Closefd( pollfds[nClients].fd );
-                                	pollfds[nClients].fd = 0;
-                                	pollfds[nClients].events = 0;
-                                	pollfds[nClients].revents = 0;
-					continue;
-				}
+                                if ( ! ( conn[nClients] = new Connection ) ) {
+                                    debuglog ( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+                                    conn[nClients] = 0;
+                                    PR_Shutdownfd ( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+                                    PR_Closefd ( pollfds[nClients].fd );
+                                    pollfds[nClients].fd = 0;
+                                    pollfds[nClients].events = 0;
+                                    pollfds[nClients].revents = 0;
+                                    continue;
+                                }
+
                                 //conn[nClients] = new Connection;
                                 * ( conn[nClients]->socket ) = *sslclient;
                                 conn[nClients]->is_ssl = true;
@@ -1318,7 +1336,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
-                            	PR_Shutdown ( sslclient, PR_SHUTDOWN_BOTH );
+                                PR_Shutdown ( sslclient, PR_SHUTDOWN_BOTH );
                                 PR_Close ( sslclient );
                             }
                         } else {
@@ -1353,7 +1371,7 @@ shrinkStart:
                         inet_ntop ( AF_INET6, & ( sslclientAddr6.sin6_addr ), clientAddress, 64 );
                         string ipstr = clientAddress;
 
-			dosMapMutex.lock();
+                        dosMapMutex.lock();
                         MapACL::iterator iter = dosMap.find ( ipstr );
 
                         if ( iter == dosMap.end() ) {
@@ -1375,7 +1393,8 @@ shrinkStart:
                                 iter->second->counter += 1;
                             }
                         }
-			dosMapMutex.unlock();
+
+                        dosMapMutex.unlock();
 
                         debuglog (  " SSL IPv6 connection received from: %s:%d -> %d \n", clientAddress, ntohs ( clientAddr6.sin6_port ), nClients );
 
@@ -1393,17 +1412,19 @@ shrinkStart:
                                 pollfds[nClients].fd = *sslclient6;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
+
                                 //while( !( conn[nClients] = new Connection ) ) {}
-                                if( !( conn[nClients] = new Connection ) ) {
-					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
-					conn[nClients] = 0;
-					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
-					PR_Closefd( pollfds[nClients].fd );
-                                	pollfds[nClients].fd = 0;
-                                	pollfds[nClients].events = 0;
-                                	pollfds[nClients].revents = 0;
-					continue;
-				}
+                                if ( ! ( conn[nClients] = new Connection ) ) {
+                                    debuglog ( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+                                    conn[nClients] = 0;
+                                    PR_Shutdownfd ( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+                                    PR_Closefd ( pollfds[nClients].fd );
+                                    pollfds[nClients].fd = 0;
+                                    pollfds[nClients].events = 0;
+                                    pollfds[nClients].revents = 0;
+                                    continue;
+                                }
+
                                 //conn[nClients] = new Connection;
                                 * ( conn[nClients]->socket ) = *sslclient6;
                                 conn[nClients]->is_ssl    = true;
@@ -1425,7 +1446,7 @@ shrinkStart:
                                 nClients++;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
-                            	PR_Shutdown ( sslclient6, PR_SHUTDOWN_BOTH );
+                                PR_Shutdown ( sslclient6, PR_SHUTDOWN_BOTH );
                                 PR_Close ( sslclient6 );
                             }
                         } else {
@@ -1451,29 +1472,33 @@ shrinkStart:
 
             for ( i = MIN_PORT_COUNT ; i < nClients; i++ ) {
 
-				//int j = 0;
-				//for( j = MIN_PORT_COUNT; j < nClients; j++ ){
-					if( conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0LL && conn[i-1]->index <= Connection::indexCount ){
-                    				debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i]?conn[i-1]->index:0LL );
-						try{
-							delete conn[i-1];
-						} catch ( std::exception &e ){
-							debuglog( " [EXCP] : Delete memory exception \n");
-						}
-						conn[i-1] = 0;
-					} else if ( conn[i-1] && conn[i-1]->delobj ) {
-                    				debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i-1]?conn[i-1]->index:0LL, conn[i-1]?conn[i-1]->req.rawHdr.c_str():"HEADER: NULL OBJECT" );
-						// Some bug ? Double delete ?
-						conn[i-1] = 0;
-					}
-				//}			
+                //int j = 0;
+                //for( j = MIN_PORT_COUNT; j < nClients; j++ ){
+                if ( conn[i - 1] && conn[i - 1]->delobj && conn[i - 1]->index > 0LL && conn[i - 1]->index <= Connection::indexCount ) {
+                    debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i] ? conn[i - 1]->index : 0LL );
 
-				bool isWritable = false;
-				if (pollfds[i].revents & PR_POLL_WRITE )
-					isWritable = true;
+                    try {
+                        delete conn[i - 1];
+                    } catch ( std::exception &e ) {
+                        debuglog ( " [EXCP] : Delete memory exception \n" );
+                    }
+
+                    conn[i - 1] = 0;
+                } else if ( conn[i - 1] && conn[i - 1]->delobj ) {
+                    debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i - 1] ? conn[i - 1]->index : 0LL, conn[i - 1] ? conn[i - 1]->req.rawHdr.c_str() : "HEADER: NULL OBJECT" );
+                    // Some bug ? Double delete ?
+                    conn[i - 1] = 0;
+                }
+
+                //}
+
+                bool isWritable = false;
+
+                if ( pollfds[i].revents & PR_POLL_WRITE )
+                { isWritable = true; }
 
                 if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR ) {
-                    debuglog (  " Invalid fd, closing , connection object id = %016lld \n", conn[i]?conn[i]->index:0LL );
+                    debuglog (  " Invalid fd, closing , connection object id = %016lld \n", conn[i] ? conn[i]->index : 0LL );
 
                     conn_close ( conn[i] );
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1552,16 +1577,16 @@ shrinkStart:
 
                     if ( conn[i]->ssl ) {
                         if ( REQ.hLen <= 0 )
-                        { tempLen   = SSL_read ( conn[i]->ssl, &(REQ.buf[REQ.len]), MAXBUF - REQ.len ); }
+                        { tempLen   = SSL_read ( conn[i]->ssl, & ( REQ.buf[REQ.len] ), MAXBUF - REQ.len ); }
                         else
-                        { tempLen   = SSL_read ( conn[i]->ssl, &(REQ.buf[REQ.hLen]), MAXBUF - REQ.hLen ); }
+                        { tempLen   = SSL_read ( conn[i]->ssl, & ( REQ.buf[REQ.hLen] ), MAXBUF - REQ.hLen ); }
                     } else {
 #endif
 
                         if ( REQ.hLen <= 0 )
-                        { tempLen   = PR_Recvfd ( pollfds[i].fd, &(REQ.buf[REQ.len]), MAXBUF - REQ.len, 0, 1 ); }
+                        { tempLen   = PR_Recvfd ( pollfds[i].fd, & ( REQ.buf[REQ.len] ), MAXBUF - REQ.len, 0, 1 ); }
                         else
-                        { tempLen   = PR_Recvfd ( pollfds[i].fd, &(REQ.buf[REQ.hLen]), MAXBUF - REQ.hLen, 0, 1 ); }
+                        { tempLen   = PR_Recvfd ( pollfds[i].fd, & ( REQ.buf[REQ.hLen] ), MAXBUF - REQ.hLen, 0, 1 ); }
 
 #ifdef USE_SSL
                     }
@@ -1629,7 +1654,7 @@ shrinkStart:
                                 if ( conn[i]->sess ) {
                                     conn[i]->setAuthLvl();
                                     debuglog (  "INFO: Session Active, SID: %s -> Auth Level : %s \n",
-                                              conn[i]->sess->sid.c_str(), conn[i]->sess->getVariable ( "auth" ) );
+                                                conn[i]->sess->sid.c_str(), conn[i]->sess->getVariable ( "auth" ) );
                                 }
                             } else {
                                 debuglog (  "ERRR: Unable to find SID in cookies \n" );
@@ -1653,7 +1678,7 @@ shrinkStart:
                             //TODO:
                             PRStatus fInfoStatus = PR_SUCCESS;
                             bool isForbidden = false;
-							bool notFound = false;
+                            bool notFound = false;
 
                             char *fileType = REQ.getReqFileType();
                             int ftn = strlen ( fileType );
@@ -1675,9 +1700,10 @@ shrinkStart:
                                 * ( conn[i]->file )  = PR_Open ( authFile, PR_RDONLY, 0 );
                                 fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
                                 debuglog (  "WARN: Requesting html/scriptfile file type : %s \n", authFile );
-								if( fInfoStatus != PR_SUCCESS && strcasecmp(fileType, ".xyz") != 0 ){
-									notFound = true;
-								} 
+
+                                if ( fInfoStatus != PR_SUCCESS && strcasecmp ( fileType, ".xyz" ) != 0 ) {
+                                    notFound = true;
+                                }
                             } else if ( ( strcasecmp ( fileType, ".png" )   == 0 ) ||
                                         ( strcasecmp ( fileType, ".jpg" )   == 0 ) ||
                                         ( strcasecmp ( fileType, ".ico" )   == 0 ) ||
@@ -1690,9 +1716,10 @@ shrinkStart:
                                 * ( conn[i]->file ) = PR_Open ( authFile, PR_RDONLY, 0 );
                                 debuglog (  "WARN: Requesting static file : %s \n", authFile );
                                 fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
-								if( fInfoStatus != PR_SUCCESS ){
-									notFound = true;
-								} 
+
+                                if ( fInfoStatus != PR_SUCCESS ) {
+                                    notFound = true;
+                                }
                             } else {
                                 isForbidden = true;
                                 debuglog (  "WARN: Requesting unsupported file type \n" );
@@ -1729,13 +1756,14 @@ shrinkStart:
                                 debuglog (  "XTRA: Response Header: \n%s\n", ( char * ) conn[i]->buf );
                                 debuglog (  "XTRA: ____________________________________\n" );
                             } else {
-								if ( notFound || isForbidden ){
-                                	debuglog (  "\nERRR: Static doc : '%s' NOT FOUND\n",
-                                          REQ.getReqFileAuth() );
-									if( notFound )
-										sendConnRespHdr( conn[i], 404 );
-									else
-										sendConnRespHdr( conn[i], 403 );
+                                if ( notFound || isForbidden ) {
+                                    debuglog (  "\nERRR: Static doc : '%s' NOT FOUND\n",
+                                                REQ.getReqFileAuth() );
+
+                                    if ( notFound )
+                                    { sendConnRespHdr ( conn[i], 404 ); }
+                                    else
+                                    { sendConnRespHdr ( conn[i], 403 ); }
 
                                     conn_close ( conn[i] );
                                     //conn[i] = 0;
@@ -1746,14 +1774,14 @@ shrinkStart:
                                     pollfds[i].revents = 0;
                                     shrink = true;
                                     continue;
-								}
+                                }
 
 
                                 if ( MAX_THREADS == 0 ) {
-                                	debuglog (  "\nERRR: Dynamic Page (in Static server mode): '%s' \n",
-                                          REQ.getReqFileAuth() );
+                                    debuglog (  "\nERRR: Dynamic Page (in Static server mode): '%s' \n",
+                                                REQ.getReqFileAuth() );
 
-									sendConnRespHdr( conn[i], 404 );
+                                    sendConnRespHdr ( conn[i], 404 );
                                     conn_close ( conn[i] );
                                     //conn[i] = 0;
                                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1764,20 +1792,20 @@ shrinkStart:
                                     shrink = true;
                                     continue;
                                 } else {
-									//Only forward .xyz plugin associated files to backend threads
-									HttpHandler *hHdlr = HttpHandler::createInstance();
-									PluginHandler *pluginHandler = ( PluginHandler * ) hHdlr->getHandler ( REQ.getReqFile() );
-                                	debuglog (  "\nERRR: Dynamic Page : '%s' \n",
-                                          REQ.getReqFile() );
+                                    //Only forward .xyz plugin associated files to backend threads
+                                    HttpHandler *hHdlr = HttpHandler::createInstance();
+                                    PluginHandler *pluginHandler = ( PluginHandler * ) hHdlr->getHandler ( REQ.getReqFile() );
+                                    debuglog (  "\nERRR: Dynamic Page : '%s' \n",
+                                                REQ.getReqFile() );
 
-                                    if ( ! isForbidden && strcasecmp(fileType, ".xyz" ) == 0 && pluginHandler ) {
+                                    if ( ! isForbidden && strcasecmp ( fileType, ".xyz" ) == 0 && pluginHandler ) {
 
-                                		int flags = fcntl ( conn[i]->socketfd, F_GETFL );
-                                		flags &= ~O_NONBLOCK;
+                                        int flags = fcntl ( conn[i]->socketfd, F_GETFL );
+                                        flags &= ~O_NONBLOCK;
 
-                                		if ( fcntl ( conn[i]->socketfd, F_SETFL, flags ) != 0 ) {
-                                    		debuglog (  "ERRR: Unable to set socket option \n" );
-                                		}
+                                        if ( fcntl ( conn[i]->socketfd, F_SETFL, flags ) != 0 ) {
+                                            debuglog (  "ERRR: Unable to set socket option \n" );
+                                        }
 
                                         conn[i]->cmd  = THREAD_CMD_PTASK;
                                         tMgr->assignTask ( conn[i] );
@@ -1786,19 +1814,19 @@ shrinkStart:
                                         pollfds[i].events = 0;
                                         pollfds[i].revents = 0;
                                         shrink = true;
-										continue;
+                                        continue;
                                     } else {
-										sendConnRespHdr( conn[i], 404 );
-                                    	conn_close ( conn[i] );
-                                    	//conn[i] = 0;
-                                    	PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
-                                    	PR_Closefd ( pollfds[i].fd );
-                                    	pollfds[i].fd = 0;
-                                    	pollfds[i].events = 0;
-                                    	pollfds[i].revents = 0;
-                                    	shrink = true;
-                                    	continue;
-									}
+                                        sendConnRespHdr ( conn[i], 404 );
+                                        conn_close ( conn[i] );
+                                        //conn[i] = 0;
+                                        PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
+                                        PR_Closefd ( pollfds[i].fd );
+                                        pollfds[i].fd = 0;
+                                        pollfds[i].events = 0;
+                                        pollfds[i].revents = 0;
+                                        shrink = true;
+                                        continue;
+                                    }
                                 }
                             }
                         }
@@ -1813,7 +1841,7 @@ shrinkStart:
                             { /*goto writesection;*/ }
                             else {
                                 debuglog (  "ERRR: SSL_read Error: '%s' file %d -> socket %d pollfd %d \n",
-                                          conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
+                                            conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
                                 //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1821,7 +1849,7 @@ shrinkStart:
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
                                 shrink = true;
-								continue;
+                                continue;
                             }
                         } else {
 #endif
@@ -1832,16 +1860,16 @@ shrinkStart:
                             pollfds[i].events = 0;
                             pollfds[i].revents = 0;
                             shrink = true;
-								continue;
+                            continue;
 #ifdef USE_SSL
                         }
 
 #endif
                     }
 
-					if( pollfds[i].fd > 0 && isWritable ){
-                    	pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
-					}
+                    if ( pollfds[i].fd > 0 && isWritable ) {
+                        pollfds[i].revents = pollfds[i].revents & ~PR_POLL_READ;
+                    }
                 }
 
 
@@ -1902,12 +1930,12 @@ shrinkStart:
 
                         //TODO: use fread
                         if ( temp < 0 ) {
-							if( errno != EAGAIN && errno !=  EWOULDBLOCK ){
-                            	PR_Close ( conn[i]->file );
-                            	conn[i]->filefd = -1;
-                            	conn[i]->file = 0;
-							}
-						} else if ( temp == 0 ) {
+                            if ( errno != EAGAIN && errno !=  EWOULDBLOCK ) {
+                                PR_Close ( conn[i]->file );
+                                conn[i]->filefd = -1;
+                                conn[i]->file = 0;
+                            }
+                        } else if ( temp == 0 ) {
                             PR_Close ( conn[i]->file );
                             conn[i]->filefd = -1;
                             conn[i]->file = 0;
@@ -1973,7 +2001,7 @@ shrinkStart:
 
                             if ( conn[i]->ssl ) {
                                 debuglog (  "ERRR: SSL_write Error: '%s' file %d -> socket %d pollfd %d \n",
-                                          conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
+                                            conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
                                 //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1981,12 +2009,12 @@ shrinkStart:
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
                                 shrink = true;
-								continue;
+                                continue;
                             } else {
 #endif
 
                                 debuglog (  "ERRR: Socket Write Error: '%s' file %d -> socket %d pollfd %d \n",
-                                          conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
+                                            conn[i]->req.getReqFileAuth(), conn[i]->filefd, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
                                 //conn[i] = 0;
                                 PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
@@ -1994,7 +2022,7 @@ shrinkStart:
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
                                 shrink = true;
-								continue;
+                                continue;
 #ifdef USE_SSL
                             }
 
@@ -2014,7 +2042,7 @@ shrinkStart:
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
                         shrink = true;
-						continue;
+                        continue;
                     }
                 } else {
                     if ( conn[i] && conn[i]->file == 0 ) {
@@ -2027,7 +2055,7 @@ shrinkStart:
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
                         shrink = true;
-						continue;
+                        continue;
                     }
                 }
 
@@ -2035,20 +2063,22 @@ shrinkStart:
             }
 
 
-		if( i == nClients && conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0LL && conn[i-1]->index <= Connection::indexCount ){
-			debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i]?conn[i-1]->index:0LL );
-			try{
-				delete conn[i-1];
-			} catch ( std::exception &e ){
-				debuglog( " [EXCP] : Delete memory exception \n");
-			}
-			conn[i-1] = 0;
-		} else if ( i == nClients && conn[i-1] && conn[i-1]->delobj ) {
-			debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i-1]?conn[i-1]->index:0LL, conn[i-1]?conn[i-1]->req.rawHdr.c_str():"HEADER: NULL OBJECT" );
-			// Some bug ? Double delete ?
-			conn[i-1] = 0;
-		}
-	    
+            if ( i == nClients && conn[i - 1] && conn[i - 1]->delobj && conn[i - 1]->index > 0LL && conn[i - 1]->index <= Connection::indexCount ) {
+                debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i] ? conn[i - 1]->index : 0LL );
+
+                try {
+                    delete conn[i - 1];
+                } catch ( std::exception &e ) {
+                    debuglog ( " [EXCP] : Delete memory exception \n" );
+                }
+
+                conn[i - 1] = 0;
+            } else if ( i == nClients && conn[i - 1] && conn[i - 1]->delobj ) {
+                debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i - 1] ? conn[i - 1]->index : 0LL, conn[i - 1] ? conn[i - 1]->req.rawHdr.c_str() : "HEADER: NULL OBJECT" );
+                // Some bug ? Double delete ?
+                conn[i - 1] = 0;
+            }
+
         } else {
             if ( retVal < 0 ) {
                 //PR_Sleep ( 1 );
