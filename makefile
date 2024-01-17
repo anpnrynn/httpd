@@ -1,7 +1,7 @@
 #Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 INC_DIR=-I./ -I/usr/include -I/usr/local/include
 
-SSL=-DUSE_SSL
+SSL=
 SSLINC=
 SSLLIB=-lssl -lcrypto
 
@@ -12,7 +12,7 @@ ELIBS=-lhttp
 CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD $(SSL) -fPIC 
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
-DEBUG=-O2
+DEBUG=-g3
 
 OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o log.o
 SOBJS=threadmgr.o server.o

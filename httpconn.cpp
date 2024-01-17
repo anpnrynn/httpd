@@ -41,8 +41,9 @@ HttpReq::HttpReq() {
     ifModStr[0] = 0;
     connection[0] = 0;
     contentLen[0] = 0;
-    method = 0;
-    version = 0;
+    method = -1;
+    version = -1;
+    string rawHdr = "";
 
     i = 0;
     j = 0;
@@ -79,7 +80,7 @@ void HttpReq::processHttpMethod ( char* mthd ) {
     else if ( strcasecmp ( "HEAD", mthd ) == 0 )
     { method = HTTP_HEAD; }
     else
-    { method = HTTP_UNKNOWN; }
+    { method = HTTP_METHOD_MAX; hdrInvalid = true; }
 
 }
 
@@ -88,17 +89,13 @@ void HttpReq::processHttpProto ( char *prot ) {
     { version = 0; }
     else if ( strcasecmp ( "HTTP/1.1", prot ) == 0 )
     { version = 1; }
-    else if ( strcasecmp ( "HTTP/2", prot ) == 0 )
-    { version = 2; }
-    else if ( strcasecmp ( "HTTP/3", prot ) == 0 )
-    { version = 3; }
-    else { version = 1; }
+    else { version = -1; hdrInvalid = true; }
 }
 
 void HttpReq::skipHdrTag ( size_t &start, size_t d ) {
     size_t k = start;
 
-    while ( k < len - 1 && ( buf[k] != '\r' || buf[k + 1] != '\n' ) && buf[k] != '\n' ) {
+    while ( k < len - 1 && ( buf[k] != '\r' && buf[k + 1] != '\n' ) && buf[k] != '\n' ) {
         k++;
     }
 
@@ -243,6 +240,11 @@ char* HttpReq::getTagBuffer ( char *tag ) {
 }
 
 void HttpReq::readHttpHeader() {
+
+    if ( hdrInvalid ){
+	    return;
+    }
+
     if ( !hdrPartial ) {
         hdrPartial = true;
 
@@ -252,6 +254,10 @@ void HttpReq::readHttpHeader() {
             hLen = ( size_t ) 0;
             return;
         }
+
+	if( hdrInvalid ){
+		return;
+	}
 
         skipHdrTag ( i );
     }
@@ -344,6 +350,7 @@ void HttpReq::readHttpHeader() {
 
     if ( hdrReadComplete ) {
         buf[i - 1] = 0;
+	rawHdr = (const char*)buf;
         hLen   = i;
         debuglog (  "XTRA: ____________________________________\n" );
         debuglog (  "XTRA: Request Header:\n%s\n\n", ( char * ) buf );

@@ -183,7 +183,7 @@ void* ThreadMgr::httpthread ( void *data )
             continue;
         } else {
             //Process the request here
-            debuglog (  "DBUG: Thread %d received task %llu\n", *index, ( unsigned long long int ) conn );
+            debuglog (  " HttpThread %d received task %llu  Connection Object = %016lld \n", *index, ( unsigned long long int ) conn, conn->index );
             cmd = conn->cmd;
 
             if ( cmd == THREAD_CMD_PTASK ) {

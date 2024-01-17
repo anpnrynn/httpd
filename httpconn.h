@@ -28,11 +28,12 @@ using namespace std;
 
 //India's offset from GMT = +5:30 hrs 19800 is in secs
 enum HTTP_METHOD {
+    HTTP_UNKNOWN = -1,
     HTTP_GET = 0,
     HTTP_POST,
     HTTP_HEAD,
     HTTP_PUT,
-    HTTP_UNKNOWN
+    HTTP_METHOD_MAX,
 };
 
 enum HTTP_TAG_DREF {
@@ -135,7 +136,7 @@ class HttpReq {
         bool isEnd;
         bool isTagEnd;
         bool isHdrEnd;
-        char tag [128];
+        char tag [256];
         char *data;
 
         int   processHttpFirstLine();
@@ -164,6 +165,7 @@ class HttpReq {
         PRFileDesc  *post;
         unsigned char buf[MAXBUF];
         unsigned char *dataPtr;
+	string rawHdr;
         char* getCookie()  { return cookie; }
         char* getReqFile();
         char* getReqFileType();

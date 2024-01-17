@@ -1,3 +1,7 @@
+17/01/2024 - 2
+==============
+Logs update, some more stability improvements
+
 17/01/2024 - 1
 ==============
 Stability related fixes, addition of mutex, removal of atomic_int, changes to log messages.

@@ -1,5 +1,6 @@
 //Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 #include <iostream>
+#include <exception>
 #include <prwrapper.h>
 #include <sqlite3.h>
 #include <httpconn.h>
@@ -37,6 +38,21 @@
 
 using namespace std;
 PRLibrary *lib[MAXPLUGINS];
+
+
+    Connection   **global_conn;
+    PRPollDesc   **global_pollfds;
+    int            global_MAXCLIENTS;
+
+    void memoryIssue( int s ){
+    	int mi = 0;
+	Connection **conn = global_conn;
+	while( mi < global_MAXCLIENTS && conn[mi] ){
+		debuglog( " crash and burn on deleted %llu -> conn[%d] = %lld \n", 
+				conn[mi], mi, conn[mi]->index );
+		mi++;
+	}
+    }
 
 int srvSocket = 0;
 int clientSocket = 0;
@@ -855,8 +871,13 @@ start:
 
     Connection   *conn[MAXCLIENTS+2];
     PRPollDesc pollfds[MAXCLIENTS+2];
+    global_conn  = conn;
+    global_MAXCLIENTS = MAXCLIENTS;
     //Connection **conn = ( Connection ** ) malloc ( MAXCLIENTS * sizeof ( Connection* ) );
     //PRPollDesc *pollfds = ( PRPollDesc* ) malloc ( MAXCLIENTS * sizeof ( PRPollDesc ) );
+    //
+
+    signal ( SIGSEGV, memoryIssue );
 
     bool exitMain = false;
     bool shrink   = true;
@@ -1066,7 +1087,16 @@ shrinkStart:
                                 pollfds[nClients].fd = *client;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
-                                conn[nClients] = new Connection;
+                                if( !( conn[nClients] = new Connection ) ) {
+					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+					conn[nClients] = 0;
+					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+					PR_Closefd( pollfds[nClients].fd );
+                                	pollfds[nClients].fd = 0;
+                                	pollfds[nClients].events = 0;
+                                	pollfds[nClients].revents = 0;
+					continue;
+				}
                                 * ( conn[nClients]->socket ) = *client;
 #ifdef USE_SSL
                                 conn[nClients]->is_ssl    = 0;
@@ -1153,7 +1183,18 @@ shrinkStart:
                                 pollfds[nClients].fd = *client6;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
-                                conn[nClients] = new Connection;
+                                //while( !( conn[nClients] = new Connection ) ) {}
+                                if( !( conn[nClients] = new Connection ) ) {
+					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+					conn[nClients] = 0;
+					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+					PR_Closefd( pollfds[nClients].fd );
+                                	pollfds[nClients].fd = 0;
+                                	pollfds[nClients].events = 0;
+                                	pollfds[nClients].revents = 0;
+					continue;
+				}
+                                //conn[nClients] = new Connection;
                                 * ( conn[nClients]->socket ) = *client6;
 #ifdef USE_SSL
                                 conn[nClients]->is_ssl    = 0;
@@ -1244,7 +1285,18 @@ shrinkStart:
                                 pollfds[nClients].fd = *sslclient;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
-                                conn[nClients] = new Connection;
+                                //while( !( conn[nClients] = new Connection ) ) {}
+                                if( !( conn[nClients] = new Connection ) ) {
+					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+					conn[nClients] = 0;
+					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+					PR_Closefd( pollfds[nClients].fd );
+                                	pollfds[nClients].fd = 0;
+                                	pollfds[nClients].events = 0;
+                                	pollfds[nClients].revents = 0;
+					continue;
+				}
+                                //conn[nClients] = new Connection;
                                 * ( conn[nClients]->socket ) = *sslclient;
                                 conn[nClients]->is_ssl = true;
                                 conn[nClients]->ssl_accept = false;
@@ -1341,7 +1393,18 @@ shrinkStart:
                                 pollfds[nClients].fd = *sslclient6;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_EXCEPT;
                                 pollfds[nClients].revents = 0;
-                                conn[nClients] = new Connection;
+                                //while( !( conn[nClients] = new Connection ) ) {}
+                                if( !( conn[nClients] = new Connection ) ) {
+					debuglog( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
+					conn[nClients] = 0;
+					PR_Shutdownfd( pollfds[nClients].fd, PR_SHUTDOWN_BOTH );
+					PR_Closefd( pollfds[nClients].fd );
+                                	pollfds[nClients].fd = 0;
+                                	pollfds[nClients].events = 0;
+                                	pollfds[nClients].revents = 0;
+					continue;
+				}
+                                //conn[nClients] = new Connection;
                                 * ( conn[nClients]->socket ) = *sslclient6;
                                 conn[nClients]->is_ssl    = true;
                                 conn[nClients]->ssl_accept = false;
@@ -1391,9 +1454,15 @@ shrinkStart:
 				//int j = 0;
 				//for( j = MIN_PORT_COUNT; j < nClients; j++ ){
 					if( conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0LL && conn[i-1]->index <= Connection::indexCount ){
-						delete conn[i-1];
+                    				debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i]?conn[i-1]->index:0LL );
+						try{
+							delete conn[i-1];
+						} catch ( std::exception &e ){
+							debuglog( " [EXCP] : Delete memory exception \n");
+						}
 						conn[i-1] = 0;
 					} else if ( conn[i-1] && conn[i-1]->delobj ) {
+                    				debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i-1]?conn[i-1]->index:0LL, conn[i-1]?conn[i-1]->req.rawHdr.c_str():"HEADER: NULL OBJECT" );
 						// Some bug ? Double delete ?
 						conn[i-1] = 0;
 					}
@@ -1407,8 +1476,6 @@ shrinkStart:
                     debuglog (  " Invalid fd, closing , connection object id = %016lld \n", conn[i]?conn[i]->index:0LL );
 
                     conn_close ( conn[i] );
-                    //conn[i] = 0;
-
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                     PR_Closefd ( pollfds[i].fd );
                     pollfds[i].fd = 0;
@@ -1419,7 +1486,7 @@ shrinkStart:
                 }
 
                 if ( !conn[i] ) {
-                    cout << "ERRR: Unable to locate connection data  " << endl;
+                    debuglog (  "ERRR: Unable to locate connection data \n" );
                     PR_Shutdownfd ( pollfds[i].fd, PR_SHUTDOWN_BOTH );
                     PR_Closefd ( pollfds[i].fd );
                     pollfds[i].fd = 0;
@@ -1969,9 +2036,15 @@ shrinkStart:
 
 
 		if( i == nClients && conn[i-1] && conn[i-1]->delobj && conn[i-1]->index > 0LL && conn[i-1]->index <= Connection::indexCount ){
-			delete conn[i-1];
+			debuglog (  " [NORMAL] : Deleting connection object id = %016lld \n", conn[i]?conn[i-1]->index:0LL );
+			try{
+				delete conn[i-1];
+			} catch ( std::exception &e ){
+				debuglog( " [EXCP] : Delete memory exception \n");
+			}
 			conn[i-1] = 0;
 		} else if ( i == nClients && conn[i-1] && conn[i-1]->delobj ) {
+			debuglog (  " [ABNORMAL] : Deleting connection object Failed (Double delete ?) id = %016lld \n %s \n", conn[i-1]?conn[i-1]->index:0LL, conn[i-1]?conn[i-1]->req.rawHdr.c_str():"HEADER: NULL OBJECT" );
 			// Some bug ? Double delete ?
 			conn[i-1] = 0;
 		}

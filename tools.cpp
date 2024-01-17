@@ -264,7 +264,6 @@ void  appendChunkData (  unsigned char  **start,
         length  += dlength;
         *start   += dlength;
         rspace  -= dlength;
-        \
     } else {
         if ( ( rspace ) > 0 ) {
             memcpy ( *start, databuf, rspace );
