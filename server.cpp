@@ -1777,7 +1777,7 @@ shrinkStart:
                                 debuglog (  "XTRA: ____________________________________\n" );
                             } else {
                                 if ( notFound || isForbidden ) {
-                                    debuglog (  "\nERRR: Static doc : '%s' NOT FOUND\n",
+                                    debuglog (  "ERRR: Static doc : '%s' NOT FOUND\n",
                                                 REQ.getReqFileAuth() );
 
                                     if ( notFound )
@@ -1798,7 +1798,7 @@ shrinkStart:
 
 
                                 if ( MAX_THREADS == 0 ) {
-                                    debuglog (  "\nERRR: Dynamic Page (in Static server mode): '%s' \n",
+                                    debuglog (  "ERRR: Dynamic Page (in Static server mode): '%s' \n",
                                                 REQ.getReqFileAuth() );
 
                                     sendConnRespHdr ( conn[i], 404 );
@@ -1815,7 +1815,7 @@ shrinkStart:
                                     //Only forward .xyz plugin associated files to backend threads
                                     HttpHandler *hHdlr = HttpHandler::createInstance();
                                     PluginHandler *pluginHandler = ( PluginHandler * ) hHdlr->getHandler ( REQ.getReqFile() );
-                                    debuglog (  "\nERRR: Dynamic Page : '%s' \n",
+                                    debuglog (  "ERRR: Dynamic Page : '%s' \n",
                                                 REQ.getReqFile() );
 
                                     if ( ! isForbidden && strcasecmp ( fileType, ".xyz" ) == 0 && pluginHandler ) {
@@ -1836,6 +1836,9 @@ shrinkStart:
                                         shrink = true;
                                         continue;
                                     } else {
+                                    	debuglog (  "ERRR: Dynamic Page : '%s' NOT FOUND \n",
+                                                REQ.getReqFile() );
+
                                         sendConnRespHdr ( conn[i], 404 );
                                         conn_close ( conn[i] );
                                         //conn[i] = 0;

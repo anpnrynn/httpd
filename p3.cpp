@@ -30,6 +30,7 @@ int plugin_init() {
     //printf("Cool : plugin is getting inited\n");
     if ( hHdlr )
     { hHdlr->addHandler ( pInfo.sname, ( void * ) &pInfo ); }
+    debuglog(" PLUGIN: %s loaded \n", pInfo.sname );
 
     return 0;
 }

@@ -18,6 +18,8 @@ OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session
 SOBJS=threadmgr.o server.o
 MAKELIBS=
 
+PLUGINS=libp3.so liblogin.so libfileupload.so
+
 #Change these
 INSTALL_HOME=/tmp
 INSTALL_PAGE_STORE=/tmp
@@ -27,7 +29,7 @@ PAGE_STORE=$(INSTALL_PAGE_STORE)/var/www/Pages
 
 all:libhttp.so httpdsrv 
 
-httpdsrv:libhttp.so libp3.so liblogin.so $(SOBJS) 
+httpdsrv:libhttp.so $(PLUGINS) $(SOBJS) 
 	g++ -rdynamic -o httpdsrv $(SOBJS) $(INC_DIR) $(LIB_DIR) $(LIBS) $(ELIBS) $(CFLAGS) $(DEBUG)
 
 libhttp.so:$(OBJS)
@@ -77,20 +79,17 @@ threadmgr.o: threadmgr.cpp threadmgr.h
 liblogin.so: login.cpp
 	g++ login.cpp -shared -o liblogin.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
 
-#libp1.so: p1.cpp
-#	g++ p1.cpp -shared -o libp1.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
-#
-#libp2.so: p2.cpp
-#	g++ p2.cpp -shared -o libp2.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
+libfileupload.so: fileupload.cpp
+	g++ fileupload.cpp -shared -o libfileupload.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
 
 libp3.so: p3.cpp
 	g++ p3.cpp -shared -o libp3.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
 
 clean:
-	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.*
+	rm -f config.h *.o httpdsrv libp1.so libp2.so $(PLUGINS) libhttp.so core.*
 
 distclean:
-	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.* /var/local/infostore.sqlite3
+	rm -f config.h *.o httpdsrv libp1.so libp2.so $(PLUGINS) libhttp.so core.* /var/local/infostore.sqlite3
 
 install:
 	mkdir -p $(INSTALL_HOME)/httpd/bin/
@@ -101,8 +100,8 @@ install:
 	cp -f install.sql $(INSTALL_HOME)/httpd/share/
 	cp -f httpdsrv httpdsrv.sh $(INSTALL_HOME)/httpd/bin/
 	chmod 755 $(INSTALL_HOME)/httpd/bin/httpdsrv $(INSTALL_HOME)/httpd/bin/httpdsrv.sh
-	cp -f libhttp.so libp3.so liblogin.so $(INSTALL_HOME)/httpd/lib/
-	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so
+	cp -f $(PLUGINS) $(INSTALL_HOME)/httpd/lib/
+	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so $(INSTALL_HOME)/httpd/lib/libfileupload.so
 	cp -Rfp Pages/* $(INSTALL_PAGE_STORE)/var/www/Pages/ 
 	cp -f *.h $(INSTALL_HOME)/httpd/include/
 	chmod 744 $(INSTALL_HOME)/httpd/include/*.h

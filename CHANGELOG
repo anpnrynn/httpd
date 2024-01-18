@@ -1,3 +1,9 @@
+18/01/2024 - 2
+==============
+File upload plugin added, now you can upload files but the data will be stored in /tmp/post_%d.tmp as a multipart file
+makefile and install.sql changes for file upload plugin
+some debug message corrections 
+
 18/01/2024 - 1
 ==============
 Crash related debug code addition 

@@ -30,6 +30,7 @@ int login_init() {
         debuglog (  "INFO: Starting Login Plugin\n" );
         hHdlr->addHandler ( pInfo.sname, ( void * ) &pInfo );
     }
+    debuglog(" PLUGIN: %s loaded \n", pInfo.sname );
 
     return 0;
 }
