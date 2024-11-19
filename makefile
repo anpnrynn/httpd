@@ -1,9 +1,9 @@
 #Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 INC_DIR=-I./ -I/usr/include -I/usr/local/include
 
-SSL=-DUSE_SSL
-SSLINC=
-SSLLIB=-lssl -lcrypto
+#SSL=-DUSE_SSL
+#SSLINC=
+#SSLLIB=-lssl -lcrypto
 
 LIB_DIR=-L/usr/lib -L/usr/local/lib -L./
 LIBS=-lsqlite3 -lpthread -ldl $(SSLLIB)
@@ -94,17 +94,10 @@ libbash.so: bash.cpp chunkedencoding.h
 	g++ bash.cpp -shared -o libbash.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
 
 clean:
-<<<<<<< HEAD
-	rm -f config.h *.o httpdsrv libp1.so libp2.so $(PLUGINS) libhttp.so core.*
-
-distclean:
-	rm -f config.h *.o httpdsrv libp1.so libp2.so $(PLUGINS) libhttp.so core.* /var/local/infostore.sqlite3
-=======
-	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.* libbash.so vforkchild
+	rm -f config.h *.o httpdsrv libp1.so libp2.so libbash.so $(PLUGINS) libhttp.so core.*
 
 distclean:
 	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.* /var/local/infostore.sqlite3 libbash.so vforkchild
->>>>>>> ab4617e (shell support)
 
 install:
 	rm -f /var/local/infostore.sqlite3
@@ -117,14 +110,9 @@ install:
 	cp -f httpdsrv httpdsrv.sh $(INSTALL_HOME)/httpd/bin/
 	cp -f vforkchild contextscript.bash $(INSTALL_HOME)/httpd/bin/
 	chmod 755 $(INSTALL_HOME)/httpd/bin/httpdsrv $(INSTALL_HOME)/httpd/bin/httpdsrv.sh
-<<<<<<< HEAD
-	cp -f $(PLUGINS) $(INSTALL_HOME)/httpd/lib/
-	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so $(INSTALL_HOME)/httpd/lib/libfileupload.so
-=======
 	chmod 755 $(INSTALL_HOME)/httpd/bin/vforkchild $(INSTALL_HOME)/httpd/bin/contextscript.bash
 	cp -f libhttp.so libp3.so liblogin.so libbash.so $(INSTALL_HOME)/httpd/lib/
 	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so $(INSTALL_HOME)/httpd/lib/libbash.so 
->>>>>>> ab4617e (shell support)
 	cp -Rfp Pages/* $(INSTALL_PAGE_STORE)/var/www/Pages/ 
 	cp -f *.h $(INSTALL_HOME)/httpd/include/
 	chmod 744 $(INSTALL_HOME)/httpd/include/*.h
