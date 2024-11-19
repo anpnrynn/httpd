@@ -23,16 +23,20 @@ HttpHandler* HttpHandler::createInstance() {
 
 void* HttpHandler::getHandler ( string name ) {
     void *data = NULL;
+	debuglog("INFO: fetching handler %s \n", name.c_str());
     MapHttpHdlr::iterator i = httpHdlrs->find ( name );
 
     if ( i != httpHdlrs->end() ) {
         data = i->second;
     }
 
+	if( !data )
+		debuglog("INFO: did not find  handler %s \n", name.c_str());
     return data;
 }
 
 void HttpHandler::addHandler ( string name, void *data ) {
+	debuglog("INFO: adding handler %s , %u \n", name.c_str(), data);
     if ( !data )
     { return; }
 
@@ -42,6 +46,7 @@ void HttpHandler::addHandler ( string name, void *data ) {
 void HttpHandler::delHandler ( string name ) {
     MapHttpHdlr::iterator i = httpHdlrs->find ( name );
 
+	debuglog("INFO: adding handler %s \n", name.c_str());
     if ( i != httpHdlrs->end() ) {
         if ( i->second != NULL )
         {  }

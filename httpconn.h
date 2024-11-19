@@ -117,6 +117,7 @@ class HttpReq {
         char connection[32];
         char contentLen[32];
         char keepAlive[64];
+		char termId[8];
 
         char  *query;
         int    method;
@@ -146,7 +147,6 @@ class HttpReq {
         void  processHttpMethod ( char * );
         void  processHttpHeader();
         void  processContentType();
-        char* getTagBuffer ( char * );
         int   getHttpConnType ( char * );
         struct tm date;
         struct tm ifMod;
@@ -191,6 +191,7 @@ class HttpReq {
             PR_Unlink ( postFileName );
             postFileName[0] = 0;
         }
+        char* getTagBuffer ( char * );
         bool  isMultipart () { return ( bool ) multipart; }
         char* getBoundary () { return boundary; }
         void  readHttpHeader();
@@ -213,6 +214,7 @@ class HttpResp {
         int       contentLen;
         char      contentEnc[64];
         char      contentType[64];
+		char      termId[16];
         unsigned short acceptRanges;
         unsigned short connection;
         unsigned short cCtrl;
@@ -234,6 +236,8 @@ class HttpResp {
         { addon = 1; }
         void setContentType ( const char *contentType );
         void setContentEnc  ( const char *contentEnc );
+        void setTermId  ( char *tid );
+        void setTermId  ( int tid );
         void setCacheControl ( unsigned short );
         void setStatus      ( int status );
         void setContentLen  ( int contentLen );
@@ -256,7 +260,28 @@ class HttpResp {
 };
 
 
+class BashConnection {
+	public:
+		string         socket;
+		int            shellsockfd;
+		pid_t          pid;
+		int            input;
+	
 
+		BashConnection () {
+			socket = "";		
+			shellsockfd = -1;
+			pid    = 0;
+			input       = 0;
+		}
+
+		~BashConnection () {
+			socket = "";		
+			shellsockfd = -1;
+			pid    = 0;
+			input       = 0;
+		}
+};
 
 class Connection {
     public:
@@ -273,6 +298,7 @@ class Connection {
         bool           ssl_accept;
         bool           is_ssl;
 #endif
+		BashConnection *bash;
         unsigned int   ip;
         unsigned short ipv6[8];
 
@@ -303,6 +329,7 @@ class Connection {
             ssl_accept = false;
             ssl     = 0;
 #endif
+			bash    = 0;
             ip      = 0;
             ipv6[0] = 0;
             ipv6[1] = 0;
@@ -345,6 +372,7 @@ class Connection {
             ssl_accept = false;
             ssl     = 0;
 #endif
+			bash    = 0;
             ip      = 0;
             ipv6[0] = 0;
             ipv6[1] = 0;

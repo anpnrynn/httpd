@@ -9,6 +9,7 @@
 #else
 #include <unordered_map>
 #include <atomic>
+#include <map>
 #endif
 #include <string>
 
@@ -19,6 +20,8 @@ using namespace std;
 #define  GMT_INDIA 19800
 //#define  SMALLBUF  4096
 #define  SMALLBUF  65536
+
+class BashConnection;
 
 class ACL {
     public:
@@ -41,6 +44,7 @@ typedef unordered_map<string, string> MapStrStr;
 typedef unordered_map<string, string> COOKIES;
 typedef unordered_map<string, void*>  MapHttpHdlr;
 typedef vector<string>     Vector;
+typedef map<string, BashConnection *> MapToBash;
 #else
 typedef map<string, int>    MapActivePlugins;
 typedef map<string, ACL*>   MapACL;
@@ -50,6 +54,7 @@ typedef map<string, string> MapStrStr;
 typedef map<string, string> COOKIES;
 typedef map<string, void*>  MapHttpHdlr;
 typedef vector<string>     Vector;
+typedef map<string, BashConnection *> MapToBash;
 #endif
 
 #endif

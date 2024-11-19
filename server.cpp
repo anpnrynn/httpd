@@ -43,7 +43,8 @@ PRLibrary *lib[MAXPLUGINS];
 Connection   **global_conn;
 PRPollDesc   **global_pollfds;
 int            global_MAXCLIENTS;
-
+MapToBash      mapToBash;
+												
 void memoryIssue ( int s ) {
     int mi = 0;
     Connection **conn = global_conn;
@@ -1815,9 +1816,8 @@ shrinkStart:
                                     //Only forward .xyz plugin associated files to backend threads
                                     HttpHandler *hHdlr = HttpHandler::createInstance();
                                     PluginHandler *pluginHandler = ( PluginHandler * ) hHdlr->getHandler ( REQ.getReqFile() );
-                                    debuglog (  "ERRR: Dynamic Page : '%s' \n",
-                                                REQ.getReqFile() );
-
+                                    debuglog (  "\nERRR: Dynamic Page : '%s' %u \n",
+                                                REQ.getReqFile(), pluginHandler );
                                     if ( ! isForbidden && strcasecmp ( fileType, ".xyz" ) == 0 && pluginHandler ) {
 
                                         int flags = fcntl ( conn[i]->socketfd, F_GETFL );
@@ -1827,13 +1827,67 @@ shrinkStart:
                                             debuglog (  "ERRR: Unable to set socket option \n" );
                                         }
 
-                                        conn[i]->cmd  = THREAD_CMD_PTASK;
-                                        tMgr->assignTask ( conn[i] );
-                                        conn[i]       = 0;
-                                        pollfds[i].fd = 0;
-                                        pollfds[i].events = 0;
-                                        pollfds[i].revents = 0;
-                                        shrink = true;
+										if( strcasecmp( REQ.getReqFile(), "bash.xyz" ) == 0 ){
+											debuglog ( "INFO: creating bash shell \n");
+											char *buf = REQ.getTagBuffer("Term-Id");
+											if( atoi ( buf ) <= 0 ){
+                                        		conn[i]->cmd  = THREAD_CMD_PTASK;
+												//vfork the process here 
+												int bpid = vfork();
+												if( bpid == 0 ){
+													char *argv[64] = { "./vforkchild", 0} ;
+													int rc = execvp( argv[0], argv);
+													if( rc == -1 ){
+														perror("execvp");
+														fprintf(stderr, "ERRR: unable to create bash shell \n");
+													} 
+												} else if ( bpid > 0 ){
+													BashConnection *b = new BashConnection();
+													char termId[16] ={0};
+													snprintf( termId, 15, "%d", bpid);
+													b->pid = bpid;
+													b->socket = "unix-socket-";
+													b->socket += termId ;
+													b->socket += ".sock";
+													b->input  = 0;
+													conn[i]->bash = b;
+													mapToBash.insert( { termId, b } );
+													debuglog ( "INFO: creating bash shell %d , %s\n", bpid, b->socket.c_str());
+													conn[i]->resp.setTermId ( termId );
+													conn[i]->resp.setContentLen(0);
+                                        			sendConnRespHdr ( conn[i], 200 );
+                                        			//tMgr->assignTask ( conn[i] );
+													delete conn[i];
+                                        			conn[i]       = 0;
+													close( pollfds[i].fd );
+                                        			pollfds[i].fd = 0;
+                                        			pollfds[i].events = 0;
+                                        			pollfds[i].revents = 0;
+                                        			shrink = true;
+												}
+											} else {
+													debuglog("INFO: Bash: executing other tasks \n");
+                                        		conn[i]->cmd  = THREAD_CMD_PTASK;
+												if( conn[i]->bash == 0){
+													conn[i]->bash = mapToBash[buf];
+												} else {
+												}
+                                        		tMgr->assignTask ( conn[i] );
+                                        		conn[i]       = 0;
+                                        		pollfds[i].fd = 0;
+                                        		pollfds[i].events = 0;
+                                        		pollfds[i].revents = 0;
+                                        		shrink = true;
+											}
+										} else {
+                                        	conn[i]->cmd  = THREAD_CMD_PTASK;
+                                        	tMgr->assignTask ( conn[i] );
+                                        	conn[i]       = 0;
+                                        	pollfds[i].fd = 0;
+                                        	pollfds[i].events = 0;
+                                        	pollfds[i].revents = 0;
+                                        	shrink = true;
+										}
                                         continue;
                                     } else {
                                     	debuglog (  "ERRR: Dynamic Page : '%s' NOT FOUND \n",

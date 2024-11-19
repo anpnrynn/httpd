@@ -9,7 +9,9 @@ LIB_DIR=-L/usr/lib -L/usr/local/lib -L./
 LIBS=-lsqlite3 -lpthread -ldl $(SSLLIB)
 ELIBS=-lhttp 
 
-CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD $(SSL) -fPIC 
+SHELLFLAGS=-DUSE_SHELL
+
+CFLAGS=-Wall -DLINUX_BUILD -DUSE_CPP11THREAD $(SSL) -fPIC $(SHELLFLAGS)
 CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-O2
@@ -29,8 +31,11 @@ PAGE_STORE=$(INSTALL_PAGE_STORE)/var/www/Pages
 
 all:libhttp.so httpdsrv 
 
-httpdsrv:libhttp.so $(PLUGINS) $(SOBJS) 
+httpdsrv:libhttp.so libp3.so liblogin.so libfileupload.so libbash.so vforkchild $(SOBJS) 
 	g++ -rdynamic -o httpdsrv $(SOBJS) $(INC_DIR) $(LIB_DIR) $(LIBS) $(ELIBS) $(CFLAGS) $(DEBUG)
+
+vforkchild:vforkchild.cpp
+	g++ vforkchild.cpp -o vforkchild $(INC_DIR) $(CFLAGS) $(DEBUG)
 
 libhttp.so:$(OBJS)
 	g++ $(OBJS) -shared -o libhttp.so $(INC_DIR) $(LIB_DIR) $(LIBS) $(CFLAGS) $(DEBUG)
@@ -85,13 +90,24 @@ libfileupload.so: fileupload.cpp
 libp3.so: p3.cpp
 	g++ p3.cpp -shared -o libp3.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
 
+libbash.so: bash.cpp chunkedencoding.h
+	g++ bash.cpp -shared -o libbash.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
+
 clean:
+<<<<<<< HEAD
 	rm -f config.h *.o httpdsrv libp1.so libp2.so $(PLUGINS) libhttp.so core.*
 
 distclean:
 	rm -f config.h *.o httpdsrv libp1.so libp2.so $(PLUGINS) libhttp.so core.* /var/local/infostore.sqlite3
+=======
+	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.* libbash.so vforkchild
+
+distclean:
+	rm -f config.h *.o httpdsrv libp1.so libp2.so libp3.so liblogin.so libhttp.so core.* /var/local/infostore.sqlite3 libbash.so vforkchild
+>>>>>>> ab4617e (shell support)
 
 install:
+	rm -f /var/local/infostore.sqlite3
 	mkdir -p $(INSTALL_HOME)/httpd/bin/
 	mkdir -p $(INSTALL_HOME)/httpd/include/
 	mkdir -p $(INSTALL_HOME)/httpd/lib/
@@ -99,9 +115,16 @@ install:
 	mkdir -p $(INSTALL_PAGE_STORE)/var/www/Pages/
 	cp -f install.sql $(INSTALL_HOME)/httpd/share/
 	cp -f httpdsrv httpdsrv.sh $(INSTALL_HOME)/httpd/bin/
+	cp -f vforkchild contextscript.bash $(INSTALL_HOME)/httpd/bin/
 	chmod 755 $(INSTALL_HOME)/httpd/bin/httpdsrv $(INSTALL_HOME)/httpd/bin/httpdsrv.sh
+<<<<<<< HEAD
 	cp -f $(PLUGINS) $(INSTALL_HOME)/httpd/lib/
 	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so $(INSTALL_HOME)/httpd/lib/libfileupload.so
+=======
+	chmod 755 $(INSTALL_HOME)/httpd/bin/vforkchild $(INSTALL_HOME)/httpd/bin/contextscript.bash
+	cp -f libhttp.so libp3.so liblogin.so libbash.so $(INSTALL_HOME)/httpd/lib/
+	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so $(INSTALL_HOME)/httpd/lib/libbash.so 
+>>>>>>> ab4617e (shell support)
 	cp -Rfp Pages/* $(INSTALL_PAGE_STORE)/var/www/Pages/ 
 	cp -f *.h $(INSTALL_HOME)/httpd/include/
 	chmod 744 $(INSTALL_HOME)/httpd/include/*.h

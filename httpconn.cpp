@@ -41,6 +41,7 @@ HttpReq::HttpReq() {
     ifModStr[0] = 0;
     connection[0] = 0;
     contentLen[0] = 0;
+	termId[0] = 0;
     method = -1;
     version = -1;
     string rawHdr = "";
@@ -235,7 +236,9 @@ char* HttpReq::getTagBuffer ( char *tag ) {
     { return connection; }
     else if ( strcasecmp ( "Keep-Alive", tag ) == 0 )
     { return keepAlive; }
-    else
+	else if ( strcasecmp ( "Term-Id", tag ) == 0 ){
+	  return termId;	
+    }else
     { return NULL; }
 }
 
@@ -838,6 +841,7 @@ HttpResp::HttpResp() {
     strcpy ( server, srvName );
     contentLen    = 0;
     acceptRanges  = 0;
+	termId[0]     = 0;
     cCtrl  = CC_NONE;
     date   = time ( NULL );
     strcpy ( contentType, "text/plain; charset=UTF-8" );
@@ -862,6 +866,18 @@ void HttpResp::setContentType ( const char *cType ) {
 void HttpResp::setContentEnc  ( const char *cEnc ) {
     if ( cEnc ) {
         strcpy ( contentEnc, cEnc );
+    }
+}
+
+void HttpResp::setTermId ( char *tid ){
+    if ( tid ) {
+        strcpy ( termId, tid );
+    }
+}
+
+void HttpResp::setTermId ( int tid ){
+    if ( tid > 0) {
+        snprintf ( termId,15, "%d", tid );
     }
 }
 
@@ -927,6 +943,9 @@ int HttpResp::getHeader ( char *hdr ) {
 
     bytesW += sprintf ( &hdr[bytesW], "Connection: %s\r\n", connection == 0 ? "Keep-Alive" : "Close" );
 
+	if( termId[0] != 0 )
+    	bytesW += sprintf ( &hdr[bytesW], "Term-Id: %s\r\n", termId);
+
     if ( contentLen < 0 )
     { bytesW += sprintf ( &hdr[bytesW], "Transfer-Encoding: chunked\r\n" ); }
     else
@@ -991,6 +1010,7 @@ void HttpResp::resetHttpHeader() {
     cCtrl  = 0;
     date = time ( NULL );
     strcpy ( contentType, "text/plain; charset=UTF-8" );
+	termId[0] = 0;
     location[0]   = 0;
     contentEnc[0] = 0;
     connection    = CONN_CLOSE;
@@ -1037,11 +1057,12 @@ void sendRemainderData ( Connection *conn ) {
 unsigned int sendConnectionData (    Connection *conn,
                                      unsigned char *buf,
                                      unsigned int len ) {
+/*
     if ( conn->resp.getContentLen() < 0 ) {
         //Use chunked transfer code here
         return 0;
     }
-
+*/
 #ifdef USE_SSL
 
     if ( conn->ssl ) {
@@ -1191,8 +1212,8 @@ unsigned int sendConnRespHdr ( Connection *conn, int status ) {
     conn->buf[conn->len] = 0;
 
     char *tempbuf = ( char * ) conn->buf;
-    debuglog (  "XTRA: Response Header:\n%s\n", tempbuf );
-    debuglog (  "XTRA: ____________________________________\n" );
+    debuglog (  "DBUG: Response Header:\n%s\n", tempbuf );
+    debuglog (  "DBUG: ____________________________________\n" );
     int tempLen = sendConnectionData ( conn, conn->buf, conn->len );
     conn->len = 0;
     return tempLen;

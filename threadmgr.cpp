@@ -193,12 +193,14 @@ void* ThreadMgr::httpthread ( void *data )
                 { aLvl = 1; }
 
                 PluginHandler *temp = ( PluginHandler * ) hHdlr->getHandler ( conn->req.getReqFile() );
+				debuglog( "INFO: pluginhandler = %u \n", temp );
                 HttpResp *tempResp   = &conn->resp;
                 tempResp->setAddOn ( 1 );
 
                 if ( temp && ( aLvl >= ( int ) temp->authLvlReq ) ) {
                     db   = mgr->db[*index];
 
+				debuglog( "INFO: pluginhandler 2 = %u \n", temp );
                     if ( !db ) {
                         tempResp->setContentLen ( 0 );
                         sendConnRespHdr ( conn, HTTP_RESP_INTERNALERR );
@@ -224,6 +226,7 @@ void* ThreadMgr::httpthread ( void *data )
                         clientmanage ( 0 );
                         continue;
                     } else {
+						debuglog( "INFO: pluginhandler 3 = %u \n", temp );
                         tempResp->setContentLen ( -1 ); //Set to chunked, Let plugin handle it
                         tempResp->setStatus ( HTTP_RESP_OK );
                         conn->db    = db;
@@ -275,6 +278,7 @@ void* ThreadMgr::httpthread ( void *data )
                     clientmanage ( 0 );
                 }
             }
+                    debuglog (  "ERRR: Reducing usage: %s \n", conn->req.getReqFile() );
 
             mgr->cmdPipe[*index]->reduceUsage();
         }
