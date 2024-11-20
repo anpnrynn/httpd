@@ -1,6 +1,9 @@
 # httpd
 HTTP Server Written in C for (embedded) Linux systems
 
+# Note: This is the shell support version of httpd server, libbash.so is present and let's you run shell commands using http request.
+# To prevent this delete the plugin or delete the entry in /var/local/infostore.sqlite3 from plugins table so that it is not loaded.
+# This is meant for embedded systems.
 
 # Release naming convention
 httpd - (MAJOR_NUMBER).(YY).(MM)-(RELEASE_NUMBER_IN_MONTH)   
