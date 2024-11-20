@@ -42,7 +42,7 @@
         }
         .container {
             display: inline-grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr 1fr 40fr;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 40fr;
             gap: 20px;
         }
     </style>
@@ -104,9 +104,10 @@
 	<div class="container" >
 	<button onclick="connectReq();">Connect</button>
 	<button onclick="cmdReq('START');">Start</button>
-	<button >Stop</button>
-	<button >Abort</button>
-	<button >Kill command</button>
+	<button onclick="cmdReq('STOP');">Stop</button>
+	<button onclick="cmdReq('ABORT');">Abort</button>
+	<button onclick="cmdReq('XCMD');">Kill command</button>
+	<button onclick="document.getElementById('textarea1').innerHTML='';">Clear Screen</button>
 	<div></div>
 	</div>
 	Bash>&nbsp;
