@@ -1,11 +1,117 @@
+<!DOCTYPE html>
 <html>
 <head>
+	<meta charset="UTF-8">
 	<title>Remote-Terminal</title>
+	<style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        
+			#div1 {
+            width: 100%;
+            height: 75%;
+            background-color: white;
+            color: black;
+            font-family: monospace;
+            font-size: 14pt;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }        
+        
+        #textarea1 {
+            width: 100%;
+            height: 75%;
+            background-color: white;
+            color: black;
+            font-family: monospace;
+            font-size: 14pt;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        #textarea2 {
+            width: 100%;
+            height: 12%;
+            box-sizing: border-box; 
+            background-color: white;
+            color: black;
+            font-family: monospace;
+            font-size: 14pt;
+        }
+        .nobr { white-space: nowrap;
+        		width: 10%;
+        }
+        .container {
+            display: inline-grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr 40fr;
+            gap: 20px;
+        }
+    </style>
+    <script type="text/javascript" charset="UTF-8">
+    var TermId = "";
+    function connectReq(){
+    		var xhttp = new XMLHttpRequest();
+			xhttp.onload = function() {
+    			if (xhttp.status == 200) {
+					TermId = xhttp.getResponseHeader("Term-Id");
+       			document.getElementById("textarea1").innerHTML = "Connected : " + TermId; + "\n"
+       			console.log(this.responseText);
+    			}
+    		}
+    		xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=utf-8');
+  			xhttp.send("");
+    }	
+	 
+    function cmdReq(cmd){
+    		var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+    			if (this.readyState == 4 && this.status == 200) {
+       			document.getElementById("textarea1").innerHTML += ", " + cmd+ ": "+ TermId +"\n";
+       			console.log(cmd+ ": Response received ");
+    			}
+    		}
+    		xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=utf-8');
+    		xhttp.setRequestHeader("Term-Id", TermId);
+  			xhttp.send("command="+cmd);
+  			console.log("\n"+TermId);
+    }
+	 
+	 function execReq(cmd){
+	 		cmd='EXECUTE';
+    		var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+    			if (this.readyState == 4 && this.status == 200) {
+       			document.getElementById("textarea1").innerHTML = document.getElementById("textarea1").innerHTML + "\n" + xhttp.responseText;
+       			//document.getElementById("textarea2").innerHTML = "";
+    			}
+    		}
+    		xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=utf-8');
+    		xhttp.setRequestHeader("Term-Id", TermId);
+    		var textarea2data = document.getElementById("textarea2").value;
+    		var postData = "command="+cmd+"&op="+textarea2data;
+  			xhttp.send(postData);
+  			console.log("\n postdata: "+postData);
+  			console.log("\n data: "+textarea2data);
+  			console.log("\n termid: "+TermId);
+    	}
+    	</script>
 </head>
-<body>
-	<input type="button" name="start"   value="start"/>
-	<input type="button" name="stop"    value="stop"/>
-	<input type="button" name="abort"   value="abort"/>
-	<input type="button" name="execute" value="execute"/>
+
+<body onload="">
+	<textarea id="textarea1" name="ShellScreen" readonly="readonly"></textarea>
+	<div class="container" >
+	<button onclick="connectReq();">Connect</button>
+	<button onclick="cmdReq('START');">Start</button>
+	<button >Stop</button>
+	<button >Abort</button>
+	<button >Kill command</button>
+	<div></div>
+	</div>
+	Bash>&nbsp;
+	<textarea id="textarea2" name="ShellInput" accept-charset="utf-8"></textarea>
+ 	<!-- <input id="textarea2" type="text" name="op" value="" />	 -->
+ 	<button onclick="execReq('EXECUTE');">Execute/Enter</button>
 </body>
-</<html>
+</html>
