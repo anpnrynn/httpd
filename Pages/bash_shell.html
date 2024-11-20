@@ -57,9 +57,10 @@
        			console.log(this.responseText);
     			}
     		}
-    		xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		//xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		xhttp.open("POST", "/bash.xyz", true);
     		xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=utf-8');
-  			xhttp.send("");
+  			xhttp.send();
     }	
 	 
     function cmdReq(cmd){
@@ -70,7 +71,8 @@
        			console.log(cmd+ ": Response received ");
     			}
     		}
-    		xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		//xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		xhttp.open("POST", "/bash.xyz", true);
     		xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=utf-8');
     		xhttp.setRequestHeader("Term-Id", TermId);
   			xhttp.send("command="+cmd);
@@ -86,7 +88,8 @@
        			//document.getElementById("textarea2").innerHTML = "";
     			}
     		}
-    		xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		//xhttp.open("POST", "http://localhost:15000/bash.xyz", true);
+    		xhttp.open("POST", "/bash.xyz", true);
     		xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=utf-8');
     		xhttp.setRequestHeader("Term-Id", TermId);
     		var textarea2data = document.getElementById("textarea2").value;
