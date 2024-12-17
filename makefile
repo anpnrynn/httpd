@@ -1,9 +1,9 @@
 #Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 INC_DIR=-I./ -I/usr/include -I/usr/local/include
 
-SSL=-DUSE_SSL
+SSL=
 SSLINC=
-SSLLIB=-lssl -lcrypto
+SSLLIB=
 
 LIB_DIR=-L/usr/lib -L/usr/local/lib -L./
 LIBS=-lsqlite3 -lpthread -ldl $(SSLLIB)
@@ -14,11 +14,11 @@ CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-O2
 
-OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o log.o
+OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o log.o multipart.o
 SOBJS=threadmgr.o server.o
 MAKELIBS=
 
-PLUGINS=libp3.so liblogin.so libfileupload.so
+PLUGINS=libp3.so liblogin.so libfileupload.so libbookrest.so
 
 #Change these
 INSTALL_HOME=/tmp
@@ -64,6 +64,9 @@ httphandlers.o: httphandlers.cpp httphandlers.h
 httpcodes.o: httpcodes.cpp httpcodes.h 
 	g++ httpcodes.cpp -c -o httpcodes.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
 
+multipart.o: multipart.cpp multipart.h
+	g++ multipart.cpp -c -o multipart.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
+
 mimetypes.o: mimetypes.cpp mimetypes.h
 	g++ mimetypes.cpp -c -o mimetypes.o  $(INC_DIR) $(CFLAGS) $(DEBUG) $(CPPFLAGS)
 
@@ -81,6 +84,9 @@ liblogin.so: login.cpp
 
 libfileupload.so: fileupload.cpp
 	g++ fileupload.cpp -shared -o libfileupload.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
+
+libbookrest.so: bookrest.cpp
+	g++ bookrest.cpp -shared -o libbookrest.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
 
 libp3.so: p3.cpp
 	g++ p3.cpp -shared -o libp3.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) 
@@ -101,6 +107,7 @@ install:
 	cp -f httpdsrv httpdsrv.sh $(INSTALL_HOME)/httpd/bin/
 	chmod 755 $(INSTALL_HOME)/httpd/bin/httpdsrv $(INSTALL_HOME)/httpd/bin/httpdsrv.sh
 	cp -f $(PLUGINS) $(INSTALL_HOME)/httpd/lib/
+	cp -f libhttp.so $(INSTALL_HOME)/httpd/lib/
 	chmod 755 $(INSTALL_HOME)/httpd/lib/libhttp.so $(INSTALL_HOME)/httpd/lib/libp3.so $(INSTALL_HOME)/httpd/lib/liblogin.so $(INSTALL_HOME)/httpd/lib/libfileupload.so
 	cp -Rfp Pages/* $(INSTALL_PAGE_STORE)/var/www/Pages/ 
 	cp -f *.h $(INSTALL_HOME)/httpd/include/

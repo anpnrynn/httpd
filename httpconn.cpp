@@ -68,6 +68,7 @@ HttpReq::HttpReq() {
 
 HttpReq::~HttpReq() {
     if ( post ) {
+	    //blah change
         removePostTempFile();
     }
 }
@@ -368,8 +369,9 @@ void HttpReq::processContentType() {
         char *boundaryPos = strstr ( contentType, "boundary=" );
 
         if ( boundaryPos ) {
-            strcpy ( boundary, boundaryPos + 9 );
-            debuglog (  "DBUG: Multipart Content Type, Boundary String Retrieved = '%s' '%s' \n", boundaryPos + 9, boundary );
+	    strcpy ( boundary, "--" );
+            strcpy ( &boundary[2], boundaryPos + 9 );
+            debuglog (  "DBUG: Multipart Content Type, Boundary String Retrieved = '%s' '%s', '%s' \n", boundaryPos + 9, boundary, contentType );
             multipart = 1;
         } else {
             debuglog (  "DBUG: Boundary String not detected, not multipart \n" );
