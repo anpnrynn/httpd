@@ -6,6 +6,10 @@ SID=`curl -vvv -d "gid=1&pid=1&qid=1&username=admin&password=adminpassword" -X P
 echo "Session ID = $SID, downloading admin page"
 curl -H "Cookie: SID=$SID" -vvv http://localhost:15000/admin.html
 echo "Accessing multipart backend script"
+
+i=0;
+while [ $i -lt 1000 ]
+do
 curl -H "Cookie: SID=$SID" -vvv --form "name=test1" --form "name2=test2" --form "name3=test3" --form "data=@testloopdown.sh;type=text/plain"  --form "data=@testloop3types.sh;type=text/plain"  \
 --form "data=@testloop3typesv6.sh;type=text/plain" \
 --form "data=@testloopdown.sh;type=text/plain" \
@@ -14,3 +18,5 @@ curl -H "Cookie: SID=$SID" -vvv --form "name=test1" --form "name2=test2" --form 
 --form "data=@testloopsmallreq.sh;type=text/plain" \
 --form "data=@testloopsmallreqv6.sh;type=text/plain" \
    http://localhost:15000/bookrest.xyz
+   i=$((i+1))
+done
