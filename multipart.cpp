@@ -119,6 +119,7 @@ int MultipartReader::processMultipartData(int postsize){
 	char name[256];
 	char filename[256];
 	char mime[64];
+	char boundaryChange[256];
 	char *line = new char[65536];
 	unsigned char *data = new unsigned char [postsize];
 	int skipboundary = 1;	
@@ -132,6 +133,15 @@ int MultipartReader::processMultipartData(int postsize){
 		bzero(line, 65536 );
 		if( skipboundary ) {
 			readline( line );
+			if( strcmp( line , boundary ) != 0 ){
+				strcpy( boundaryChange , line );
+				int l = strlen(boundaryChange);
+				if( boundaryChange[l-1] == '\n' ){
+					boundaryChange[l-1] = 0;
+					boundaryChange[l-2] = 0;
+					boundary = boundaryChange;
+				}
+			}
 			skipboundary = 0;
 		}
 		debuglog("ERRR: Boundary read : %s\n", line);
@@ -160,16 +170,13 @@ int MultipartReader::processMultipartData(int postsize){
 			mo->length = 0;
 			mo->filename = "";
 			mo->mime = "";
-			//skipboundary = 0;
 			line = new char[65536];
 			vm->push_back(mo);
 			readline( line );
-			//skipemptyline();
 		} else {
 			readline( line) ;
 			readContentType( line, mime ); 
 			int len = 0;
-			//skipemptyline();
 			readline (line);
 			readTillBoundaryEnd( data, &len );
 			readline(line);
@@ -181,7 +188,6 @@ int MultipartReader::processMultipartData(int postsize){
 			mo->data = data;
 			mo->mime = mime;	
 			debuglog("ERRR: Name=%s, filename=%s, mime=%s, length=%d \n", name, filename, mime, len );
-			//skipboundary = 1;
 			data = new unsigned char [postsize];
 			vm->push_back(mo);
 		}	
