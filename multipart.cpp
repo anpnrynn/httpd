@@ -5,31 +5,42 @@
 #include <vector>
 #include <string.h>
 #include <log.h>
+#include <unistd.h>
 
 MultipartReader::MultipartReader( int fd, char *bound ){
-	postFile = fdopen( fd, "r");
-	if( postFile ) {
-		fseek( postFile, 0L, SEEK_SET );
+	postFile = fd;
+	eof = 0;
+	//if( postFile ) {
+		lseek( postFile, 0L, SEEK_SET );
 		vm = new VectorM();
 		boundary = bound;
-	}
+	//}
 }
 
 MultipartReader::~MultipartReader( ){
-	fclose(postFile);
+	close(postFile);
 }
 
 int MultipartReader::readline( char *line ){
 	int i = 0;
 	while( 1 ){
-		if( feof( postFile ) ){
-			break;
+		//if( feof( postFile ) ){
+		//	break;
+		//}
+		//int  d = fgetc ( postFile );
+		unsigned char c = 0;
+		int d = read( postFile, &c, 1 );
+		if( d ==  0 || d < 0 ){
+			if( d == 0) {
+				eof = 1;
+				break;
+			} else if ( errno == EAGAIN ){
+				continue;
+			} else {
+				break;
+			}
 		}
-		int  d = fgetc ( postFile );
-		if( d ==  EOF ){
-			break;
-		}
-		char c = ( char ) d;
+		//char c = ( char ) d;
 		if( c == '\r' ){
 			line[i++] = c;
 		} else if ( c == '\n' ){
@@ -53,19 +64,28 @@ int MultipartReader::quickread( unsigned char *data, int &offset, int size){
 	bound[0] ='-';
 	data[offset] = '-';
 	for ( i=1; i<size; i++ ){
-		if( feof( postFile ) ){
-			break;
+		//if( feof( postFile ) ){
+		//	break;
+		//}
+		//int  d = fgetc ( postFile );
+		unsigned char c = 0;
+		int d = read (postFile, &c , 1 );
+		if( d ==  0 || d < 0 ){
+			if( d == 0) {
+				eof = 1;
+				break;
+			} else if ( errno == EAGAIN ){
+				continue;
+			} else {
+				break;
+			}
 		}
-		int  d = fgetc ( postFile );
-		if( d ==  EOF ){
-			break;
-		}
-		bound[i] = (unsigned char ) d;
+		bound[i] = (unsigned char ) c;
 		data[offset+i]  = bound[i];
 	}
 	bound[i] = 0;
 	offset += i;
-	//fprintf( stderr, "%s is a boundary ? %s  \n", bound, boundary );
+	//fdebuglog( stderr, "%s is a boundary ? %s  \n", bound, boundary );
 	return checkBoundary( bound, boundary );
 
 }
@@ -79,19 +99,27 @@ int MultipartReader::readTillBoundaryEnd(unsigned char *data , int *datasize ){
 	unsigned char c = 0;;
 	unsigned char prevc = 0;
 	while( 1 ){
-		if( feof( postFile ) ){
-			break;
-		}
-		int  d = fgetc ( postFile );
-		if( d ==  EOF ){
-			break;
-		}
+		//if( feof( postFile ) ){
+		//	break;
+		//}
+		//int  d = fgetc ( postFile );
 		prevc = c;
-		c = (unsigned char ) d;
+		int d = read( postFile, &c, 1 );
+		if( d ==  0 || d < 0){
+			if( d == 0) {
+				eof = 1;
+				break;
+			} else if ( errno == EAGAIN ){
+				continue;
+			} else {
+				break;
+			}
+		}
+		//c = (unsigned char ) d;
 		if( c == '-' && ( prevc == '\n' || prevc == '\r' )){
 			int rc = quickread( data, i, m );
 			if( rc == 0 ){
-				//fprintf(stderr, "Not a bounday \n");
+				//fdebuglog(stderr, "Not a bounday \n");
 			} else {
 				int k = 0;
 				while( k < m ){
@@ -101,7 +129,7 @@ int MultipartReader::readTillBoundaryEnd(unsigned char *data , int *datasize ){
 				data[i] = 0;
 				*datasize = i-m;
 				//if( data[*datasize-1] == '\n' ){
-				//	fprintf(stderr, "Data contains \\n \n");
+				//	fdebuglog(stderr, "Data contains \\n \n");
 				//}
 				data[*datasize-1] = 0;
 				data[*datasize-2] = 0;
@@ -144,13 +172,16 @@ int MultipartReader::processMultipartData(int postsize){
 			}
 			skipboundary = 0;
 		}
-		debuglog("ERRR: Boundary read : %s\n", line);
+		//debuglog("ERRR: Boundary read : %s\n", line);
 		do {
 			readline( line );
 		} while( strcmp(line, "\r\n") == 0 );
-		if( feof(postFile) ){
+
+		//if( feof(postFile) ){
+		//	break;
+		//}
+		if( eof )
 			break;
-		}
 		//skipemptyline();
 
 		readContentDisposition(line, name, filename );
@@ -192,7 +223,8 @@ int MultipartReader::processMultipartData(int postsize){
 			vm->push_back(mo);
 		}	
 
-	} while ( !feof(postFile) );
+	//} while ( !feof(postFile) );
+	} while ( !eof );
 	return 0;
 
 }
@@ -242,11 +274,11 @@ int MultipartReader::readContentDisposition(char *line , char * name, char *file
 }
 
 int MultipartReader::checkBoundary (char *line, char *boundary){
-	//fprintf( stderr, "Line=%s    &    boundary=%s \n",line, boundary );
+	//fdebuglog( stderr, "Line=%s    &    boundary=%s \n",line, boundary );
 	if( strncmp( line, boundary, strlen(boundary) ) == 0 ){
 		return 1;
 	} else {
-		//fprintf(stderr, "Boundary not valid \n");
+		//fdebuglog(stderr, "Boundary not valid \n");
 		return 0;
 	}
 }

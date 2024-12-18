@@ -31,8 +31,10 @@ typedef vector<MultipartObject*> VectorM;
 
 class MultipartReader {
 	private:
-		FILE *postFile;
+		//FILE *postFile;
+		int postFile; //fd
 		char *boundary;
+		int eof;
 
 	public:
 		VectorM *vm;
