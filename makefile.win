@@ -14,13 +14,11 @@ CPPFLAGS=-std=c++11
 LFLAGS=-DCOMPILER_C_LINKAGE
 DEBUG=-O2
 
-OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o log.o 
-#multipart.o
+OBJS=cookie.o httpcodes.o httpconn.o httphandlers.o mimetypes.o plugin.o session.o tools.o log.o multipart.o
 SOBJS=threadmgr.o server.o
 MAKELIBS=
 
-PLUGINS=libp3.so liblogin.so libfileupload.so 
-#libbookrest.so
+PLUGINS=libp3.so liblogin.so libfileupload.so libbookrest.so
 
 #Change these
 INSTALL_HOME=/tmp
@@ -87,8 +85,8 @@ liblogin.so: login.cpp
 libfileupload.so: fileupload.cpp
 	g++ fileupload.cpp -shared -o libfileupload.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) $(ELIBS)
 
-#libbookrest.so: bookrest.cpp
-#	g++ bookrest.cpp -shared -o libbookrest.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS)
+libbookrest.so: bookrest.cpp
+	g++ bookrest.cpp -shared -o libbookrest.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) $(ELIBS)
 
 libp3.so: p3.cpp
 	g++ p3.cpp -shared -o libp3.so $(INC_DIR) $(CFLAGS) $(DEBUG) $(LIB_DIR) $(LIBS) $(CPPFLAGS) $(ELIBS)
