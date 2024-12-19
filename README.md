@@ -1,5 +1,5 @@
 # httpd
-HTTP Server Written in C for (embedded) Linux systems
+HTTP Server Written in C for (embedded) Linux & Windows systems
 
 
 # Release naming convention
