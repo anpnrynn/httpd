@@ -19,6 +19,11 @@ MultipartReader::MultipartReader( int fd, char *bound ){
 
 MultipartReader::~MultipartReader( ){
 	close(postFile);
+	VectorM::iterator i = vm->begin();
+	while( i != vm->end() ){
+		delete *i;
+		i++;
+	}
 }
 
 int MultipartReader::readline( char *line ){
