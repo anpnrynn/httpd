@@ -68,10 +68,10 @@ cd /tmp/httpd/bin/
 
 COMPILE (Under Windows + msys2 )
 --------------------------------
-make -f makefile.win clean
-make -f makefile.win
-make -f makefile.win install
-
+make -f makefile.win clean   
+make -f makefile.win   
+make -f makefile.win install   
+   
 RUN:
 ----
 ./httpdsrv.sh    
