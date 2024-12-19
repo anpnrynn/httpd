@@ -24,6 +24,7 @@ MultipartReader::~MultipartReader( ){
 		delete *i;
 		i++;
 	}
+	delete vm;
 }
 
 int MultipartReader::readline( char *line ){
