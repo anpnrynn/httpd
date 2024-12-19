@@ -1,5 +1,6 @@
 //Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
 #include <iostream>
+#include <atomic>
 #include <exception>
 #include <prwrapper.h>
 #include <sqlite3.h>
@@ -436,19 +437,22 @@ int main ( int argc, char *argv[] ) {
     //stderr = fopen ( LOGFILE, "a+" );
     cerr << "HTTPD " << VERSION << " Server starting up... " << endl;
 
+#ifdef USEMALLOC_CHECK
     mallopt ( M_CHECK_ACTION, 0x05 );
+#endif
 
     if ( !stderr )
     { exit ( 56 ); }
 
     if ( argc < 6 ) {
         debuglog (  " %s Exited \n", argv[0] );
-        debuglog (  " Format: %s port count sslport\n", argv[0] );
+        debuglog (  " Format: %s port count dosthreshold sslport loglevel ipv6\n", argv[0] );
         debuglog (  " port    - Server port number to use \n" );
         debuglog (  " count   - Number of threads to launch \n" );
         debuglog (  " dosthrehsold   - DOS threshold \n" );
         debuglog (  " sslport - SSL server port number to use \n" );
         debuglog (  " loglevel - 1-6, 6 churning out most logs \n" );
+        debuglog (  " ipv6 address to bind to \n" );
         exit ( 1 );
     } else {
         SRVPORT = atoi ( argv[1] );
@@ -460,7 +464,7 @@ int main ( int argc, char *argv[] ) {
 
     int DOS_THRESHOLD = 50;
 
-    if ( argc == 6 ) {
+    if ( argc >= 3 ) {
         debuglog (  " Received threads count: %s \n", argv[2] );
         MAX_THREADS = atoi ( argv[2] );
         DOS_THRESHOLD = atoi ( argv[3] );
@@ -484,8 +488,9 @@ int main ( int argc, char *argv[] ) {
     signal ( SIGINT, signalStop );
     signal ( SIGSTOP, signalStop );
     signal ( SIGABRT, signalStop );
-    //signal ( SIGPIPE, signalIgnore );
-
+#ifdef  MINGW64_BUILD
+    signal ( SIGPIPE, signalIgnore );
+#else
     struct sigaction sh;
     struct sigaction osh;
     sh.sa_handler = &signalIgnore;
@@ -499,7 +504,9 @@ int main ( int argc, char *argv[] ) {
     sigset_t bs;
     sigemptyset ( &bs );
     sigaddset ( &bs, SIGPIPE );
+
     pthread_sigmask ( SIG_BLOCK, &bs, NULL );
+#endif
 #endif
 
 start:
@@ -526,8 +533,15 @@ start:
 
     *srv6 = PR_NewTCPSocket6();
     srvAddr6.sin6_family = PR_AF_INET6;
-    srvAddr6.sin6_addr = in6addr_any;
-    srvAddr6.sin6_port = htons ( SRVPORT6 );
+    SRVPORT6 = SRVPORT;
+    if( argc >= 6 && argv[6] )
+    {
+	    debuglog("WARN: using %s address \n",argv[6] );
+	    inet_pton ( AF_INET6, argv[6], &(srvAddr6.sin6_addr) );
+    }
+    else
+	    srvAddr6.sin6_addr = in6addr_any;
+    srvAddr6.sin6_port = PR_htons ( SRVPORT6 );
     debuglog (  "INFO: IPv6 Socket created successfully : Port = %d \n", SRVPORT6 );
 
 #ifdef USE_SSL
@@ -540,14 +554,19 @@ start:
 
     *sslsrv6 = PR_NewTCPSocket6();
     sslsrvAddr6.sin6_family = PR_AF_INET6;
-    sslsrvAddr6.sin6_addr = in6addr_any;
-    sslsrvAddr6.sin6_port = htons ( SSLSRVPORT6 );
+    SSLSRVPORT6 = SSLSRVPORT;
+    if( argc >= 6 && argv[6] )
+	    inet_pton ( AF_INET6, argv[6], &(sslsrvAddr6.sin6_addr) );
+    else
+	    sslsrvAddr6.sin6_addr = in6addr_any;
+    sslsrvAddr6.sin6_port = PR_htons ( SSLSRVPORT6 );
     debuglog (  "INFO: SSL IPv6 Socket created successfully : Port = %d \n", SSLSRVPORT6 );
 #endif
 
 
+#if 0
     int sockflag = 1;
-    int sockret = setsockopt ( *srv, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
+    int sockret = setsockopt ( *srv, SOL_SOCKET, SO_REUSEADDR , &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - IPv4 \n" );
@@ -555,16 +574,17 @@ start:
     }
 
     sockflag = 1;
-    sockret = setsockopt ( *srv6, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
+    sockret = setsockopt ( *srv6, SOL_SOCKET, SO_REUSEADDR , &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - IPv6 \n" );
         return 1;
     }
+#endif
 
 #ifdef USE_SSL
     sockflag = 1;
-    sockret = setsockopt ( *sslsrv, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
+    sockret = setsockopt ( *sslsrv, SOL_SOCKET, SO_REUSEADDR , &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - IPv4 \n" );
@@ -572,7 +592,7 @@ start:
     }
 
     sockflag = 1;
-    sockret = setsockopt ( *sslsrv6, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &sockflag, sizeof ( sockflag ) );
+    sockret = setsockopt ( *sslsrv6, SOL_SOCKET, SO_REUSEADDR , &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - IPv6 \n" );
@@ -589,7 +609,7 @@ start:
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
-        if ( count > 1000 ) {
+        if ( count > 10 ) {
             return 1;
         } else {
             count++;
@@ -599,11 +619,13 @@ start:
     count = 0;
 
     while ( bind ( *srv6, ( const sockaddr * ) &srvAddr6, sizeof ( sockaddr_in6 ) ) !=  0 ) {
-        debuglog (  "ERRR: Unable to Bind - IPv6 \n" );
+	char address[64];
+	inet_ntop( AF_INET6, &(srvAddr6.sin6_addr), address , 64 );
+        debuglog (  "ERRR: Unable to Bind - IPv6 , %s %d\n", address, errno );
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
 
-        if ( count > 1000 ) {
+        if ( count > 10 ) {
             return 1;
         } else {
             count++;
