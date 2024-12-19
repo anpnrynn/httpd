@@ -59,6 +59,7 @@ int bookrest_processReq ( Connection *conn ) {
 	debuglog( "ERRR: multipart data handling being done, with boundary : %s \n", conn->req.getBoundary() );
         MultipartReader *mpr = new MultipartReader ( conn->req.postfd, conn->req.getBoundary() );
 	mpr->processMultipartData( 1048576 );
+	delete mpr;
     }
     
     conn->req.removePostTempFile();
