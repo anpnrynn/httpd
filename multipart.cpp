@@ -95,7 +95,7 @@ int MultipartReader::readTillBoundaryEnd(unsigned char *data , int *datasize ){
 	char bound[256];
 	int m = strlen( boundary );
 	int i = 0;
-	bzero( bound, 256 );
+	memset( bound, 0, 256 );
 	unsigned char c = 0;;
 	unsigned char prevc = 0;
 	while( 1 ){
@@ -155,10 +155,10 @@ int MultipartReader::processMultipartData(int postsize){
 		name[0] = 0;
 		filename[0] = 0;
 		line[0] = 0;
-		bzero( name, 256);
-		bzero( filename, 256);
-		bzero( mime, 64);
-		bzero(line, 65536 );
+		memset( name, 0, 256);
+		memset( filename, 0, 256);
+		memset( mime, 0, 64);
+		memset(line, 0, 65536 );
 		if( skipboundary ) {
 			readline( line );
 			if( strcmp( line , boundary ) != 0 ){
