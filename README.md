@@ -79,7 +79,7 @@ log file httpd.log is generated in the same folder, and by default loglevel is s
 
 httpdsrv arguments
 ------------------
-./httpdsrv <ipv4/ipv6 port> <number of threads> <dosthreshold> <ssl ipv4&ipv6 port> <debuglevel> <ipv6 address to bind to>
+./httpdsrv <ipv4&ipv6_port> <number_of_threads> <dos_threshold> <ssl_ipv4&ipv6_port> <debug_level> <ipv6_address_to_bind_to>
 
 
 NOTE (VERY IMPORTANT, PLEASE READ):
@@ -105,6 +105,8 @@ image.jpg -> image.jpg
 index.sthtml -> index.sthtml   
 login.xyz    -> plugin liblogin.so dynamic page   
 p3.xyz       -> plugin libp3.so dynamic page   
+fileupload.xyz -> plugin libfileupload.so dynamic page   
+bookrest.xyz -> plugin libbookrest.so dynamic page   
 
 When logged in as super   
 root.html -> super_root.html   
@@ -112,6 +114,8 @@ image.jpg -> image.jpg
 index.sthtml -> index.sthtml   
 login.xyz    -> plugin liblogin.so dynamic page   
 p3.xyz       -> plugin libp3.so dynamic page   
+fileupload.xyz -> plugin libfileupload.so dynamic page   
+bookrest.xyz -> plugin libbookrest.so dynamic page   
 
 
 Default Username and Password:
