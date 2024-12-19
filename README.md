@@ -55,6 +55,8 @@ Features:
 12. Supports trivial DOS prevention.    
 13. Supports both IPv4 and IPv6 sockets, http over IPv4 and IPv6 is now possible.    
 14. Supports native SSL sockets.
+15. Supports multipart.
+16. Supports both linux and windows (use makefile.win under msys2 environment).
 
 
 COMPILE:
@@ -62,12 +64,22 @@ COMPILE:
 make distclean   
 make    
 make install    
-cd /tmp/httpd/bin/    
+cd /tmp/httpd/bin/ 
+
+COMPILE (Under Windows + msys2 )
+--------------------------------
+make -f makefile.win clean
+make -f makefile.win
+make -f makefile.win install
 
 RUN:
 ----
 ./httpdsrv.sh    
 log file httpd.log is generated in the same folder, and by default loglevel is set to 1 which is the lowest.    
+
+httpdsrv arguments
+------------------
+./httpdsrv <ipv4/ipv6 port> <number of threads> <dosthreshold> <ssl ipv4&ipv6 port> <debuglevel> <ipv6 address to bind to>
 
 
 NOTE (VERY IMPORTANT, PLEASE READ):
