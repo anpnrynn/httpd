@@ -1,3 +1,33 @@
+29/05/2025
+==========
+Removed file close from multipart.cpp   
+Added file pointer set to zero after fileclose in server.cpp     
+Updated testhttpd.py    
+Changed file names of some html files.
+
+
+27/04/2025 - 01/01/2025   
+=======================    
+Updated compilation on codeblocks.    
+Changes to delete connection objects so as to not cause memory loss.    
+Additon of captcha.xyz plugin.   
+Changes to send data to applicable level only during poll write time.    
+Changes to where keys are picked up from.    
+Changes to include where static files are picked up from.    
+Addition of multipart support and update chunked transfer of data.    
+Updating one of the multipart plugin to read from newer multipart code.    
+
+
+19/01/2025 - 1
+==============
+Updates for compilation on Codeblocks      
+Changes for static file download     
+Changes for removal of authenticated static files    
+Codeblocks project file creation     
+Removal of older codeblocks files     
+Updated Readme file    
+
+
 18/01/2024 - 2
 ==============
 File upload plugin added, now you can upload files but the data will be stored in /tmp/post_%d.tmp as a multipart file
