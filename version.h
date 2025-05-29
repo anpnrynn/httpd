@@ -2,7 +2,7 @@
 #ifndef HTTPD_VERSION_H
 #define HTTPD_VERSION_H
 
-#define VERSION "NAME=httpd-0.25.04-1"
+#define VERSION "NAME=httpd-0.25.05-1"
 
 
 
