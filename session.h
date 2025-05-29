@@ -12,7 +12,7 @@ using namespace std;
 #include <stdlib.h>
 #include <log.h>
 
-#define  SESSVAR_BUFSIZE 64
+#define  SESSVAR_BUFSIZE 256
 #define  SESSVAR_EXPIRED 3600000000
 
 class SessionVar {
