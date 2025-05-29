@@ -58,7 +58,7 @@ int bookrest_processReq ( Connection *conn ) {
 	//int fd = open(argv[1], O_LARGEFILE );
 	debuglog( "ERRR: multipart data handling being done, with boundary : %s \n", conn->req.getBoundary() );
         MultipartReader *mpr = new MultipartReader ( conn->req.post, conn->req.getBoundary() );
-	mpr->processMultipartData( 1048576 );
+	mpr->processMultipartData( 10485760 );
 	delete mpr;
     }
     

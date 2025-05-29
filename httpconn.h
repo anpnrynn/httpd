@@ -303,7 +303,7 @@ class Connection {
         Connection() {
             index   = indexCount++;
             delobj  = false;
-            debuglog ( " Connection Object created with index-%016ld \n", index );
+            debuglog ( " Connection Object created with 0x%X, index-%016ld \n", this, index );
             len     = 0;
             hLen    = 0;
             sent    = 0;
@@ -339,7 +339,7 @@ class Connection {
         }
 
         ~Connection() {
-	    debuglog( "WARN: +++++++++++++++++++++ Closing and deleting connection 0x%X, %d \n", this, index );
+	    debuglog( "WARN: +++++++++++++++++++++ Closing and deleting connection 0x%llX, %d \n", this, index );
 	    fflush(stdout);
             if ( socketfd )
             { close( socketfd ); }
@@ -348,9 +348,9 @@ class Connection {
             { fclose ( file ); }
             isFileOpened = false;
             if ( index < 0 )
-            { debuglog ( " Connection Object already deleted with index%016ld \n", index ); }
+            { debuglog ( "ERRR: @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ Connection Object already deleted with 0x%llX, index%016ld \n", this, index ); }
             else
-            { debuglog ( " Connection Object deleted with index-%016ld \n", index ); }
+            { debuglog ( " Connection Object deleted with 0x%llX, index-%016ld \n", this, index ); }
 
             index   = -index;
             len     = 0;

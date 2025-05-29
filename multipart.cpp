@@ -18,7 +18,7 @@ MultipartReader::MultipartReader( FILE *fd, char *bound ){
 }
 
 MultipartReader::~MultipartReader( ){
-	fclose(postFile);
+	//fclose(postFile);
 	VectorM::iterator i = vm->begin();
 	while( i != vm->end() ){
 		delete *i;

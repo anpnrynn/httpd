@@ -112,6 +112,7 @@ install:
 	cp -Rfp Pages/* $(INSTALL_PAGE_STORE)/var/www/Pages/ 
 	cp -f *.h $(INSTALL_HOME)/httpd/include/
 	chmod 744 $(INSTALL_HOME)/httpd/include/*.h
+	cp -Rfp cert.sh $(INSTALL_HOME)/httpd/share/
 
 
 installclean:

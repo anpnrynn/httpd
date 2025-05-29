@@ -45,7 +45,7 @@ HttpSession:: HttpSession ( unsigned int i, unsigned int addr, time_t e ) {
     sid = sessionId;
     //debuglog (  "INFO: SessionId for id=%d randoms=%08u %08u %08u %08u %08u %08u %08u %08u \n",
     //    id, randoms[0], randoms[1], randoms[2], randoms[3], randoms[4], randoms[5], randoms[6], randoms[7] );
-    debuglog (  "DBUG: SessionId for id=%d sessionId='%s'\n", id, sessionId );
+    //debuglog (  "DBUG: SessionId for id=%d sessionId='%s'\n", id, sessionId );
 }
 
 HttpSession::~HttpSession() {
@@ -469,11 +469,11 @@ HttpSession* HttpSessionMgr::loadSession ( unsigned int rand, unsigned int ipadd
         MapSidSess::iterator itr1 = mapSid->find ( temp->sid );
 
         if ( itr1 != mapSid->end() ) {
-            debuglog (  "DBUG: Retrieved session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
+            //debuglog (  "DBUG: Retrieved session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
             delete temp;
             temp = itr1->second;
         } else {
-            debuglog (  "DBUG: Adding Session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
+            //debuglog (  "DBUG: Adding Session '%s': %d %x %u \n", temp->sid.c_str(), rand, ipaddr, ( unsigned int ) expires );
             mapSid->insert ( pair<string, HttpSession*> ( temp->sid, temp ) );
         }
     }
@@ -624,18 +624,18 @@ int  HttpSessionMgr::deleteStoredSessions() {
 
 int  HttpSessionMgr::readSessionInfo ( void *udata, int argc, char **argv, char **cName ) {
     HttpSessionMgr *hTemp = ( HttpSessionMgr * ) udata;
-    debuglog (  "INFO: Reading Session Data \n" );
+    //debuglog (  "INFO: Reading Session Data \n" );
 
     if ( argv[0] && argv[1] && argv[2] ) {
         HttpSession *temp = hTemp ->loadSession ( atoi ( argv[0] ), atoi ( argv[1] ), atoi ( argv[2] ) );
 
         if ( argv[3] && argv[4] && argv[5] ) {
-            debuglog (  "INFO: Adding Variable %s %s %s\n", argv[3], argv[4], argv[5] );
+            //debuglog (  "INFO: Adding Variable %s %s %s\n", argv[3], argv[4], argv[5] );
             temp->loadVariable ( ( const char * ) argv[4], argv[5], atoi ( argv[3] ), atoi ( argv[2] ) );
         }
     }
 
-    debuglog (  "INFO: Read Session Data \n" );
+    //debuglog (  "INFO: Read Session Data \n" );
 
     return 0;
 }

@@ -185,7 +185,7 @@ void* ThreadMgr::httpthread ( void *data )
             continue;
         } else {
             //Process the request here
-            debuglog (  " HttpThread %d received task %llu  Connection Object = %016lld \n", *index, ( unsigned long long int ) conn, conn->index );
+            debuglog (  " HttpThread %d received task 0x%X  Connection Object = %016lld \n", *index, conn, conn->index );
             cmd = conn->cmd;
 
             if ( cmd == THREAD_CMD_PTASK ) {
@@ -221,7 +221,7 @@ void* ThreadMgr::httpthread ( void *data )
                         conn->socketfd = 0;
                         conn->delobj = true;
                         reduce_ipbin ( conn );
-			debuglog("WARN: ---------------------- Deleting connection object 1 : 0x%x \n", conn);
+			debuglog("WARN: ---------------------- Deleting connection object 1 : 0x%llX \n", conn);
                         delete conn;
                         deleteCounter++;
                         clientmanage ( 0 );
@@ -249,7 +249,7 @@ void* ThreadMgr::httpthread ( void *data )
                         conn->socketfd = 0;
                         conn->delobj = true;
                         reduce_ipbin ( conn );
-			debuglog("WARN: ----------------------- Deleting connection object 2 : 0x%x \n", conn);
+			debuglog("WARN: ----------------------- Deleting connection object 2 : 0x%llX \n", conn);
                         delete conn;
                         deleteCounter++;
                         clientmanage ( 0 );
@@ -274,7 +274,7 @@ void* ThreadMgr::httpthread ( void *data )
                     conn->socketfd = 0;
                     conn->delobj = true;
                     reduce_ipbin ( conn );
-		    debuglog("WARN: -----------------------  Deleting connection object 3 : 0x%x \n", conn);
+		    debuglog("WARN: -----------------------  Deleting connection object 3 : 0x%llX \n", conn);
                     delete conn;
                     deleteCounter++;
                     clientmanage ( 0 );
@@ -287,9 +287,10 @@ void* ThreadMgr::httpthread ( void *data )
 
     if ( cmd == THREAD_CMD_EXIT && conn ) {
         reduce_ipbin ( conn );
-        debuglog("WARN: --------------------------- Deleting connection object 4 : 0x%x \n", conn);
-        delete conn;
-	conn = 0;
+        debuglog("WARN: --------------------------- Deleting connection object 4 : 0x%llX \n", conn);
+		//This happens when the thread is exiting as in program exit, so no need to delete it
+        //delete conn;
+		conn = 0;
         deleteCounter++;
         clientmanage ( 0 );
     }

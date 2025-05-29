@@ -381,7 +381,8 @@ void HttpReq::processContentType() {
         if ( boundaryPos ) {
 	    strcpy ( boundary, "--" );
             strcpy ( &boundary[2], boundaryPos + 9 );
-            debuglog (  "DBUG: Multipart Content Type, Boundary String Retrieved = '%s' '%s', '%s' \n", boundaryPos + 9, boundary, contentType );
+            //debuglog (  "DBUG: Multipart Content Type, Boundary String Retrieved = '%s' '%s', '%s' \n", boundaryPos + 9, boundary, contentType );
+            debuglog (  "DBUG: Multipart Content Type, Boundary String Retrieved = '%s' \n", boundary );
             multipart = 1;
         } else {
             debuglog (  "DBUG: Boundary String not detected, not multipart \n" );
@@ -489,7 +490,7 @@ char *HttpReq::getReqFileAuth ( int auth ) {
             authUrl += decodedUrl;
             return const_cast<char*> ( authUrl.c_str() );
         }
-
+/*
         switch ( auth ) {
             case AUTH_SUPERUSER:
                 //strcat ( authUrl, "super_" );
@@ -512,6 +513,7 @@ char *HttpReq::getReqFileAuth ( int auth ) {
                 authUrl += "all_";
                 break;
         };
+*/
 
         if ( ( strcmp ( decodedUrl, "HTTP/1.1" ) == 0 ) || ( strcmp ( decodedUrl, "HTTP/1.0" ) == 0 ) ) {
             //strcat ( authUrl, "index.html" );

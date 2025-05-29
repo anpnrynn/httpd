@@ -50,8 +50,8 @@ int            global_MAXCLIENTS;
 
 void memoryIssue ( int s ) {
     int mi = 0;
-    fflush(stdout);
-    sleep(10);
+    fflush ( stdout );
+    sleep ( 10 );
     Connection **conn = global_conn;
 
     while ( mi < global_MAXCLIENTS && conn[mi] ) {
@@ -76,7 +76,7 @@ int srv6 = 0, client6 = 0;
 #ifdef USE_SSL
 //int sslsrvSocket = 0;
 //int sslclientSocket = 0;
-int sslsrv =0, sslclient = 0;
+int sslsrv = 0, sslclient = 0;
 
 int sslsrvSocket6 = 0;
 int sslclientSocket6 = 0;
@@ -93,9 +93,9 @@ bool isBoundSsl  = false;
 bool isBoundSsl6 = false;
 extern int MAX_THREADS;
 
-std::atomic<int> assignCounter(0);
-std::atomic<int> createCounter(0);
-std::atomic<int> deleteCounter(0);
+std::atomic<int> assignCounter ( 0 );
+std::atomic<int> createCounter ( 0 );
+std::atomic<int> deleteCounter ( 0 );
 
 //Clean up operations
 void performCleanupOperations() {
@@ -121,8 +121,10 @@ void signalStop ( int signal ) {
 
     if ( srv )
     { close ( srv ); }
+
     if ( srv6 )
     { close ( srv6 ); }
+
     performCleanupOperations();
     exit ( 0 );
 }
@@ -294,11 +296,11 @@ int installTheNeededStuff() {
 
     //int filefd = 0;
     FILE *file = 0;
-    debuglog (  "INFO: reading sql tables from : %s \n", INSTALL_HOME "/share/install.sql" );
+    debuglog (  "INFO: reading sql tables from : %s \n", SERVER_HOME "/share/install.sql" );
 #ifndef CODEBLOCKS_BUILD
-    file = fopen ( INSTALL_HOME "/share/install.sql", "r+" );
+    file = fopen ( SERVER_HOME "/share/install.sql", "r+" );
 #else
-    file = fopen ( INSTALL_HOME "/share/install.sql", "r+" );
+    file = fopen ( SERVER_HOME "/share/install.sql", "r+" );
 #endif
 
 
@@ -315,14 +317,14 @@ int installTheNeededStuff() {
     //while ( ( bRead = ifs->ifsRead( file, fData, (unsigned char *)&buf, 256, &offset ) ) > 0 )
     while ( ( bRead = fread ( ( unsigned char * ) &buf, 1, 256, file ) ) > 0 ) {
         i = 0;
-        debuglog("DBUG: Read %d bytes from install.sql \n", bRead);
+        debuglog ( "DBUG: Read %d bytes from install.sql \n", bRead );
+
         while ( i < bRead ) {
-            if ( buf[i] == '\r' )
-            { cmd[j] = 0;
-                debuglog("DBUG: Encountered cr in the data \n");
-            }
-            else if ( buf[i] == '\n' ) {
-                    debuglog("DBUG: Encountered lf in the data \n");
+            if ( buf[i] == '\r' ) {
+                cmd[j] = 0;
+                debuglog ( "DBUG: Encountered cr in the data \n" );
+            } else if ( buf[i] == '\n' ) {
+                debuglog ( "DBUG: Encountered lf in the data \n" );
                 cmd[j] = 0;
                 error  = NULL;
                 debuglog (  "DBUG: Running Cmd '%s' \n", cmd );
@@ -346,6 +348,7 @@ int installTheNeededStuff() {
             i++;
         }
     }
+
     debuglog (  "DBUG: Commiting changes \n" );
     rc = sqlexecute ( db, "COMMIT;", NULL, NULL, NULL );
     sqlite3_close ( db );
@@ -425,20 +428,63 @@ void reverse ( unsigned char *data, int len ) {
 }
 
 
-void safe_delete( Connection *curconn ){
-	typedef std::map<void*, int> freedmemory;
-	static freedmemory fm;
-	if( fm.find(curconn) == fm.end() ){
-		fm.insert(std::pair<void*,int>(curconn, 0));
-		debuglog("ERRR: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Deleting now  0x%X \n", curconn );
-		delete curconn;
-	} else {
-		debuglog("ERRR: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Already deleted 0x%X \n", curconn );
-	}
+void safe_delete ( Connection *curconn ) {
+    typedef std::map<void*, int> freedmemory;
+    static freedmemory fm;
+
+    if ( fm.find ( curconn ) == fm.end() ) {
+        fm.insert ( std::pair<void*, int> ( curconn, 0 ) );
+        debuglog ( "ERRR: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Deleting now  0x%llX \n", curconn );
+        delete curconn;
+    } else {
+        debuglog ( "ERRR: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Already deleted 0x%llX \n", curconn );
+    }
+}
+
+
+void *freeaddress[1024 * 1024];
+
+bool isFreedElsewhere ( void *address ) {
+    int i = 0;
+    Connection * conn = ( Connection* ) address;
+
+    while ( i < 1024 * 1024 ) {
+        if ( freeaddress[i] == address ) {
+            if ( conn->index != i + 1 ) {
+                debuglog ( "ERRR: ******************* 1 first free = 0x%llX, %d =? %d \n", address, i + 1, conn->index );
+                return false;
+            } else {
+                debuglog ( "ERRR: ******************* 1 second free = 0x%llX, %d =? %d\n", address, i + 1, conn->index );
+                return true;
+            }
+        }
+
+        i++;
+    }
+
+    return false;
 }
 
 void conn_close ( Connection *curconn ) {
     if ( curconn ) {
+        bool second = false;
+
+#if 0
+        if ( freeaddress[curconn->index] == 0 ) {
+            if ( isFreedElsewhere ( curconn ) ) {
+                debuglog ( "ERRR: ******************* ???2 second free = 0x%llX, %d \n", curconn, curconn->index );
+                second = true;
+            } else {
+                debuglog ( "ERRR: *******************2 first free = 0x%llX, %d \n", curconn, curconn->index );
+                freeaddress[curconn->index] = curconn;
+            }
+        } else {
+            debuglog ( "ERRR: ******************* second free = 0x%llX, %d \n", curconn, curconn->index );
+            second = true;
+            freeaddress[curconn->index] = 0;
+        }
+#endif
+
 #ifdef USE_SSL
 
         if ( curconn->ssl ) {
@@ -450,18 +496,25 @@ void conn_close ( Connection *curconn ) {
         }
 
 #endif
-        if( curconn->file != 0 ){
-            fclose( curconn->file );
+
+        if ( curconn->file != 0 ) {
+            fclose ( curconn->file );
+			curconn->file = 0;
         }
+
         reduce_ipbin ( curconn );
         curconn->delobj = true;
         clientmanage ( 0 );
-        debuglog("ERRR: ***************************** Closing & deleting connection, 0x%X, %d \n",curconn, curconn->index);
+
         //safe_delete( curconn );
-	delete curconn;
+        if ( !second ) {
+            debuglog ( "ERRR: ***************************** Closing & deleting connection, 0x%llX, %d \n", curconn, curconn->index );
+            delete curconn;
+        }
+
         deleteCounter++;
     } else {
-        debuglog("ERRR: conn_close called on null object \n");
+        debuglog ( "ERRR: conn_close called on null object \n" );
     }
 }
 
@@ -479,6 +532,12 @@ int main ( int argc, char *argv[] ) {
     //stderr = NULL;
     //stderr = fopen ( LOGFILE, "a+" );
     cerr << "HTTPD " << VERSION << " Server starting up... " << endl;
+
+    int q = 0;
+
+    for ( q = 0; q < 1024 * 1024; q++ ) {
+        freeaddress[q] = 0;
+    }
 
 #ifdef USEMALLOC_CHECK
     mallopt ( M_CHECK_ACTION, 0x05 );
@@ -568,51 +627,52 @@ start:
 #endif
 
     debuglog (  "INFO: Creating socket(s) \n" );
-    srv = socket(PF_INET,  SOCK_STREAM, IPPROTO_TCP);
+    srv = socket ( PF_INET,  SOCK_STREAM, IPPROTO_TCP );
     srvAddr.sin_family  = AF_INET;
     srvAddr.sin_addr.s_addr     = 0x00000000;
     srvAddr.sin_port   = htons ( SRVPORT );
     debuglog (  "INFO: IPv4 Socket created successfully : Port = %d \n", SRVPORT );
 
-    srv6 = socket(PF_INET6,  SOCK_STREAM, IPPROTO_TCP);
-    memset(&srvAddr6, 0, sizeof(struct sockaddr_in6));
+    srv6 = socket ( PF_INET6,  SOCK_STREAM, IPPROTO_TCP );
+    memset ( &srvAddr6, 0, sizeof ( struct sockaddr_in6 ) );
     srvAddr6.sin6_family = AF_INET6;
     SRVPORT6 = SRVPORT;
-    if( argc >= 6 && argv[6] )
-    {
-	    debuglog("WARN: using %s address \n",argv[6] );
-	    inet_pton ( AF_INET6, argv[6], &(srvAddr6.sin6_addr) );
-    }
-    else
-	    srvAddr6.sin6_addr = in6addr_loopback;
+
+    if ( argc >= 6 && argv[6] ) {
+        debuglog ( "WARN: using %s address \n", argv[6] );
+        inet_pton ( AF_INET6, argv[6], & ( srvAddr6.sin6_addr ) );
+    } else
+    { srvAddr6.sin6_addr = in6addr_loopback; }
 
     srvAddr6.sin6_port = htons ( SRVPORT6 );
     debuglog (  "INFO: IPv6 Socket created successfully : Port = %d \n", SRVPORT6 );
 
 #ifdef USE_SSL
     debuglog (  "INFO: Creating ssl socket(s) \n" );
-    sslsrv = socket(PF_INET,  SOCK_STREAM, IPPROTO_TCP);
+    sslsrv = socket ( PF_INET,  SOCK_STREAM, IPPROTO_TCP );
     sslsrvAddr.sin_family  = AF_INET;
     sslsrvAddr.sin_addr.s_addr     = 0x00000000;
     sslsrvAddr.sin_port   = htons ( SSLSRVPORT );
     debuglog (  "INFO: SSL IPv4 Socket created successfully : Port = %d \n", SSLSRVPORT );
 
-    sslsrv6 = socket(PF_INET6,  SOCK_STREAM, IPPROTO_TCP);
-    memset(&sslsrvAddr6, 0, sizeof(struct sockaddr_in6));
+    sslsrv6 = socket ( PF_INET6,  SOCK_STREAM, IPPROTO_TCP );
+    memset ( &sslsrvAddr6, 0, sizeof ( struct sockaddr_in6 ) );
     sslsrvAddr6.sin6_family = AF_INET6;
     SSLSRVPORT6 = SSLSRVPORT;
-    if( argc >= 6 && argv[6] ){
-        debuglog("WARN: using %s address for ssl \n",argv[6] );
-	    inet_pton ( AF_INET6, argv[6], &(sslsrvAddr6.sin6_addr) );
-    }else
-	    sslsrvAddr6.sin6_addr = in6addr_loopback;
+
+    if ( argc >= 6 && argv[6] ) {
+        debuglog ( "WARN: using %s address for ssl \n", argv[6] );
+        inet_pton ( AF_INET6, argv[6], & ( sslsrvAddr6.sin6_addr ) );
+    } else
+    { sslsrvAddr6.sin6_addr = in6addr_loopback; }
+
     sslsrvAddr6.sin6_port = htons ( SSLSRVPORT6 );
     debuglog (  "INFO: SSL IPv6 Socket created successfully : Port = %d \n", SSLSRVPORT6 );
 #endif
 
 
     int sockflag = 1;
-    int sockret = setsockopt ( srv, SOL_SOCKET, SO_REUSEADDR , (char *)&sockflag, sizeof ( sockflag ) );
+    int sockret = setsockopt ( srv, SOL_SOCKET, SO_REUSEADDR, ( char * ) &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - IPv4 \n" );
@@ -620,7 +680,7 @@ start:
     }
 
     sockflag = 1;
-    sockret = setsockopt ( srv6, SOL_SOCKET, SO_REUSEADDR , (char *)&sockflag, sizeof ( sockflag ) );
+    sockret = setsockopt ( srv6, SOL_SOCKET, SO_REUSEADDR, ( char * ) &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - IPv6 \n" );
@@ -629,7 +689,7 @@ start:
 
 #ifdef USE_SSL
     sockflag = 1;
-    sockret = setsockopt ( sslsrv, SOL_SOCKET, SO_REUSEADDR , (char *)&sockflag, sizeof ( sockflag ) );
+    sockret = setsockopt ( sslsrv, SOL_SOCKET, SO_REUSEADDR, ( char * ) &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - SSLIPv4 \n" );
@@ -637,7 +697,7 @@ start:
     }
 
     sockflag = 1;
-    sockret = setsockopt ( sslsrv6, SOL_SOCKET, SO_REUSEADDR , (char *)&sockflag, sizeof ( sockflag ) );
+    sockret = setsockopt ( sslsrv6, SOL_SOCKET, SO_REUSEADDR, ( char * ) &sockflag, sizeof ( sockflag ) );
 
     if ( sockret == -1 ) {
         debuglog (  "ERRR: Unable to setsockopt - SSLIPv6 \n" );
@@ -649,8 +709,9 @@ start:
 
     int count = 0;
     isBound = true;
+
     while ( bind ( srv, ( const sockaddr * ) &srvAddr, sizeof ( sockaddr_in ) ) == -1 ) {
-            perror ( "bind" );
+        perror ( "bind" );
         debuglog (  "ERRR: Unable to Bind - IPv4 \n" );
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
@@ -668,8 +729,8 @@ start:
 
 
     while ( bind ( srv6, ( const sockaddr * ) &srvAddr6, sizeof ( sockaddr_in6 ) ) !=  0 ) {
-	char address[64];
-	inet_ntop( AF_INET6, &(srvAddr6.sin6_addr), address , 64 );
+        char address[64];
+        inet_ntop ( AF_INET6, & ( srvAddr6.sin6_addr ), address, 64 );
         debuglog (  "ERRR: Unable to Bind - IPv6 , %s %d\n", address, errno );
         perror ( "bind" );
         std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
@@ -688,6 +749,7 @@ start:
 #ifdef USE_SSL
 
     isBoundSsl = true;
+
     while ( bind ( sslsrv, ( const sockaddr * ) &sslsrvAddr, sizeof ( sockaddr_in ) ) == -1 ) {
         debuglog (  "ERRR: Unable to Bind - SSL IPv4 \n" );
         perror ( "bind" );
@@ -704,6 +766,7 @@ start:
     count = 0;
 
     isBoundSsl6 = true;
+
     while ( bind ( sslsrv6, ( const sockaddr * ) &sslsrvAddr6, sizeof ( sockaddr_in6 ) ) == -1 ) {
         debuglog (  "ERRR: Unable to Bind - SSL IPv6 \n" );
         perror ( "bind" );
@@ -757,10 +820,10 @@ start:
     //opt.value.non_blocking = true;
     u_long mode = 1; // 1 to enable non-blocking mode
 #if 0
-    ioctlsocket(srv, FIONBIO, &mode);
-    ioctlsocket(srv6, FIONBIO, &mode);
-    ioctlsocket(sslsrv, FIONBIO, &mode);
-    ioctlsocket(sslsrv6, FIONBIO, &mode);
+    ioctlsocket ( srv, FIONBIO, &mode );
+    ioctlsocket ( srv6, FIONBIO, &mode );
+    ioctlsocket ( sslsrv, FIONBIO, &mode );
+    ioctlsocket ( sslsrv6, FIONBIO, &mode );
 #endif
 
     //if( PR_SetSocketOption(srv, &opt) == PR_FAILURE )
@@ -789,6 +852,7 @@ start:
         PR_Cleanup();
         return 3;
     }
+
 #endif
 
     debuglog (  "INFO: Non blocking successfully - IPv4 & IPv6 \n" );
@@ -1122,7 +1186,8 @@ shrinkStart:
         }
 
         int q = 0;
-        while( q < 1 ){
+
+        while ( q < 1 ) {
             //debuglog( "DBUG: Polling on : %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d \n", pollfds[q].fd, pollfds[q+1].fd , pollfds[q+2].fd, pollfds[q+3].fd, pollfds[q+4].fd,
             //         pollfds[q+5].fd, pollfds[q+6].fd, pollfds[q+7].fd, pollfds[q+8].fd, pollfds[q+9].fd, pollfds[q+10].fd , pollfds[q+11].fd, pollfds[q+12].fd,
             //         pollfds[q+13].fd, pollfds[q+14].fd, pollfds[q+15].fd );
@@ -1215,7 +1280,8 @@ shrinkStart:
                                     pollfds[nClients].revents = 0;
                                     continue;
                                 }
-				debuglog( "WARN: @@@@@@@@@@@@@@@@@@@ new connection object created = 0x%X , %d \n", conn[nClients], conn[nClients]->index );
+
+                                debuglog ( "WARN: Connection Object created = 0x%llX , %d \n", conn[nClients], conn[nClients]->index );
                                 createCounter ++;
                                 conn[nClients]->socketfd = client;
 #ifdef USE_SSL
@@ -1226,7 +1292,7 @@ shrinkStart:
                                 conn[nClients]->ip     = tempIp;
                                 conn[nClients]->setAuthLvl();
                                 nClients++;
-				continue;
+                                continue;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 shutdown ( client, 2 );
@@ -1319,7 +1385,8 @@ shrinkStart:
                                     pollfds[nClients].revents = 0;
                                     continue;
                                 }
-				debuglog( "WARN: @@@@@@@@@@@@@@@@@@@ new connection object created = 0x%X , %d \n", conn[nClients], conn[nClients]->index );
+
+                                debuglog ( "WARN: Connection object created = 0x%llX , %d \n", conn[nClients], conn[nClients]->index );
                                 createCounter ++;
                                 //conn[nClients] = new Connection;
                                 conn[nClients]->socketfd = client6;
@@ -1332,7 +1399,7 @@ shrinkStart:
                                 memcpy ( conn[nClients]->ipv6, &clientAddr6.sin6_addr, sizeof ( clientAddr6.sin6_addr ) );
                                 conn[nClients]->setAuthLvl();
                                 nClients++;
-				continue;
+                                continue;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 shutdown ( client6, 2 );
@@ -1362,7 +1429,8 @@ shrinkStart:
                 if ( pollfds[2].revents & PR_POLL_READ ) {
                     socklen_t ssladdrlen = sizeof ( sockaddr_in );
 
-                    debuglog ("INFO: Receive socket accepting on ssl ipv4 fd \n");
+                    debuglog ( "INFO: Receive socket accepting on ssl ipv4 fd \n" );
+
                     if ( ( sslclient = accept ( sslsrv, ( sockaddr * ) &sslclientAddr, &ssladdrlen ) ) ) {
                         //TODO:
                         //allowConnect = false;
@@ -1412,6 +1480,7 @@ shrinkStart:
                                 if ( fcntl ( sslclient, F_SETFL, flags ) != 0 ) {
                                     debuglog (  "ERRR: Unable to set socket option \n" );
                                 }
+
                                 debuglog (  "INFO: Received Connection on ssl ipv4 fd=%d\n", sslclient );
                                 pollfds[nClients].fd = sslclient;
                                 pollfds[nClients].events = PR_POLL_READ  | PR_POLL_WRITE | PR_POLL_ERR ;
@@ -1421,14 +1490,15 @@ shrinkStart:
                                 if ( ! ( conn[nClients] = new Connection ) ) {
                                     debuglog ( "ERRR: [NEWFAIL] Connection object create failed - %016lld\n", Connection::indexCount );
                                     conn[nClients] = 0;
-                                    shutdown( pollfds[nClients].fd, 2 );
+                                    shutdown ( pollfds[nClients].fd, 2 );
                                     close ( pollfds[nClients].fd );
                                     pollfds[nClients].fd = 0;
                                     pollfds[nClients].events = 0;
                                     pollfds[nClients].revents = 0;
                                     continue;
                                 }
-				debuglog( "WARN: @@@@@@@@@@@@@@@@@@@ new connection object created = 0x%X , %d \n", conn[nClients], conn[nClients]->index );
+
+                                debuglog ( "WARN: Connection object created = 0x%llX , %d \n", conn[nClients], conn[nClients]->index );
                                 createCounter ++;
                                 //conn[nClients] = new Connection;
                                 conn[nClients]->socketfd = sslclient;
@@ -1450,7 +1520,7 @@ shrinkStart:
                                 }
 
                                 nClients++;
-				continue;
+                                continue;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 shutdown ( sslclient, 2 );
@@ -1477,7 +1547,7 @@ shrinkStart:
                 /* SSL IPv6 server socket */
                 if ( pollfds[3].revents & PR_POLL_READ ) {
                     socklen_t addrlen = sizeof ( sockaddr_in6 );
-                    debuglog ("INFO: Receive socket accepting on ssl ipv6 fd \n");
+                    debuglog ( "INFO: Receive socket accepting on ssl ipv6 fd \n" );
 
                     if ( ( sslclient6 = accept ( sslsrv6, ( sockaddr * ) &sslclientAddr6, &addrlen ) ) ) {
                         //TODO:
@@ -1528,6 +1598,7 @@ shrinkStart:
                                 if ( fcntl ( sslclient6, F_SETFL, flags ) != 0 ) {
                                     debuglog (  "ERRR: Unable to set socket option \n" );
                                 }
+
                                 debuglog (  "INFO: Received Connection on ssl fd=%d\n", sslclient6 );
                                 pollfds[nClients].fd = sslclient6;
                                 pollfds[nClients].events = PR_POLL_READ | PR_POLL_WRITE | PR_POLL_ERR ;
@@ -1544,7 +1615,8 @@ shrinkStart:
                                     pollfds[nClients].revents = 0;
                                     continue;
                                 }
-				debuglog( "WARN: @@@@@@@@@@@@@@@@@@@ new connection object created = 0x%X , %d \n", conn[nClients], conn[nClients]->index );
+
+                                debuglog ( "WARN: Connection object created = 0x%llX , %d \n", conn[nClients], conn[nClients]->index );
                                 createCounter ++;
                                 //conn[nClients] = new Connection;
                                 conn[nClients]->socketfd   = sslclient6;
@@ -1565,7 +1637,7 @@ shrinkStart:
                                 }
 
                                 nClients++;
-				continue;
+                                continue;
                             } else {
                                 debuglog (  "WARN: Connection closed due to max clients exceeded : %s \n", clientAddress );
                                 shutdown ( sslclient6, 2 );
@@ -1595,12 +1667,11 @@ shrinkStart:
             for ( i = MIN_PORT_COUNT ; i < nClients; i++ ) {
                 bool isWritable = false;
 
-                if ( pollfds[i].revents & PR_POLL_WRITE )
-                {
+                if ( pollfds[i].revents & PR_POLL_WRITE ) {
                     //debuglog (  "DBUG: Fd is now writable \n" );
                     isWritable = true;
                 } else {
-                    debuglog (  "DBUG: Fd is not writable %d \n", pollfds[i].fd );
+                    //debuglog (  "DBUG: Fd is not writable %d \n", pollfds[i].fd );
                 }
 
                 if ( pollfds[i].revents & PR_POLL_NVAL || pollfds[i].revents & PR_POLL_ERR || pollfds[i].revents & PR_POLL_HUP ) {
@@ -1633,7 +1704,7 @@ shrinkStart:
 
                 if ( /*pollfds[i].fd > MIN_PORT_COUNT && */ pollfds[i].revents & PR_POLL_READ ) {
 
-                        debuglog (  "DBUG: Read event received %d ---------------------------------------------------------------------------------\n", pollfds[i].fd);
+                    //debuglog (  "DBUG: Read event received %d ---------------------------------------------------------------------------------\n", pollfds[i].fd );
 #ifdef USE_SSL
 
                     if ( conn[i]->ssl && !conn[i]->ssl_accept ) {
@@ -1694,7 +1765,8 @@ shrinkStart:
                         { tempLen   = SSL_read ( conn[i]->ssl, & ( REQ.buf[REQ.hLen] ), MAXBUF - REQ.hLen ); }
                     } else {
 #endif
-                        debuglog (  "DBUG: Header read, Received Header %d \n", pollfds[i].fd);
+                        //debuglog (  "DBUG: Header read, Received Header %d \n", pollfds[i].fd );
+
                         if ( REQ.hLen <= 0 )
                         { tempLen   = recv ( pollfds[i].fd, & ( REQ.buf[REQ.len] ), MAXBUF - REQ.len, 0 ); }
                         else
@@ -1704,16 +1776,18 @@ shrinkStart:
                     }
 
 #endif
-                    debuglog (  "DBUG: Header read, Received Header :\n %d \n", tempLen );
+                    //debuglog (  "DBUG: Header read, Received Header :\n %d \n", tempLen );
+
                     if ( tempLen > 0 ) {
                         REQ.len += tempLen; // Total Data Length;
-                        debuglog (  "DBUG: Header read, Received Header :\n %s \n", REQ.buf );
+                        //debuglog (  "DBUG: Header read, Received Header :\n %s \n", REQ.buf );
+
                         if ( REQ.hLen <= 0 ) {
                             REQ.readHttpHeader();
 
                             if ( REQ.isHdrInvalid() ) {
                                 REQ.buf[REQ.len] = 0;
-                                debuglog (  "ERRR: Header invalid, Received Header :\n %s \n", REQ.buf );
+                                //debuglog (  "ERRR: Header invalid, Received Header :\n %s \n", REQ.buf );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 shutdown ( pollfds[i].fd, 2 );
@@ -1810,8 +1884,10 @@ shrinkStart:
                                ) {
                                 char *authFile = REQ.getReqFileAuth ( conn[i]->authLvl );
                                 conn[i]->file  = fopen ( authFile, "rb+" );
-                                if( conn[i]->file )
-                                    conn[i]->isFileOpened = true;
+
+                                if ( conn[i]->file )
+                                { conn[i]->isFileOpened = true; }
+
                                 //fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
                                 debuglog (  "WARN: Requesting static/scriptfile file type : %s \n", authFile );
 
@@ -1828,8 +1904,10 @@ shrinkStart:
                                         ( strcasecmp ( fileType, ".bin" )  == 0 ) ) {
                                 char *authFile = REQ.getReqFileAuth ( );
                                 conn[i]->file = fopen ( authFile, "rb+" );
-                                if( conn[i]->file )
-                                    conn[i]->isFileOpened = true;
+
+                                if ( conn[i]->file )
+                                { conn[i]->isFileOpened = true; }
+
                                 debuglog (  "WARN: Requesting static file : %s \n", authFile );
                                 //fInfoStatus    = PR_GetFileInfo64 ( * ( conn[i]->file ), & ( conn[i]->fInfo ) );
 
@@ -1864,11 +1942,14 @@ shrinkStart:
                                 //HttpResp *tempResp   = &conn[i]->resp;
                                 //tempResp->setContentLen( conn[i]->fid->fileSize);
 
-                                if (fseek(conn[i]->file, 0, SEEK_END) != 0) { debuglog("ERRR: fseek failed"); fclose(conn[i]->file); conn[i]->file = 0; }
+                                if ( fseek ( conn[i]->file, 0, SEEK_END ) != 0 ) { debuglog ( "ERRR: fseek failed" ); fclose ( conn[i]->file ); conn[i]->file = 0; }
+
                                 // Get the current file pointer position
-                                long fileSize = ftell(conn[i]->file);
-                                if (fileSize == -1) { debuglog("ERRR: ftell failed"); fclose(conn[i]->file); conn[i]->file = 0; fileSize = 0; }
-                                if (fseek(conn[i]->file, 0, SEEK_SET) != 0) { debuglog("ERRR: fseek failed"); fclose(conn[i]->file); conn[i]->file = 0; }
+                                long fileSize = ftell ( conn[i]->file );
+
+                                if ( fileSize == -1 ) { debuglog ( "ERRR: ftell failed" ); fclose ( conn[i]->file ); conn[i]->file = 0; fileSize = 0; }
+
+                                if ( fseek ( conn[i]->file, 0, SEEK_SET ) != 0 ) { debuglog ( "ERRR: fseek failed" ); fclose ( conn[i]->file ); conn[i]->file = 0; }
 
                                 RESP.setContentLen ( fileSize );
                                 RESP.setAddOn ( 1 );
@@ -1936,7 +2017,7 @@ shrinkStart:
                                             debuglog (  "ERRR: Unable to set socket option \n" );
                                         }
 
-                                        debuglog("WARN: assigning task to thread as this is dynamic page \n");
+                                        debuglog ( "WARN: assigning task to thread as this is dynamic page \n" );
                                         conn[i]->cmd  = THREAD_CMD_PTASK;
                                         tMgr->assignTask ( conn[i] );
                                         assignCounter ++;
@@ -1947,8 +2028,8 @@ shrinkStart:
                                         shrink = true;
                                         continue;
                                     } else {
-                                    	debuglog (  "ERRR: Dynamic Page : '%s' NOT FOUND \n",
-                                                REQ.getReqFile() );
+                                        debuglog (  "ERRR: Dynamic Page : '%s' NOT FOUND \n",
+                                                    REQ.getReqFile() );
 
                                         sendConnRespHdr ( conn[i], 404 );
                                         conn_close ( conn[i] );
@@ -1966,10 +2047,9 @@ shrinkStart:
                         }
 
                         fflush ( stderr );
-                    } 
-		    else if( tempLen == 0 ){
-		    
-		    } else {
+                    } else if ( tempLen == 0 ) {
+
+                    } else {
 
 #ifdef USE_SSL
 
@@ -1977,12 +2057,12 @@ shrinkStart:
                             if ( SSL_get_error ( conn[i]->ssl, tempLen ) == SSL_ERROR_WANT_READ )
                             { /*goto writesection;*/ }
                             else {
-                                debuglog (  "ERRR: SSL_read Error:  0x%X, '%s' file %d -> socket %d pollfd %d \n", conn[i], 
+                                debuglog (  "ERRR: SSL_read Error:  0x%llX, '%s' file %d -> socket %d pollfd %d \n", conn[i],
                                             conn[i]->req.getReqFileAuth(), conn[i]->file, conn[i]->socketfd, pollfds[i].fd );
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 shutdown ( pollfds[i].fd, 2 );
-				close(pollfds[i].fd);
+                                close ( pollfds[i].fd );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
@@ -1991,11 +2071,11 @@ shrinkStart:
                             }
                         } else {
 #endif
-                            debuglog("ERRR: Non-SSL read error: 0x%X %d %d\n", conn[i], i, __LINE__);
+                            debuglog ( "ERRR: Non-SSL read error: 0x%llX %d %d\n", conn[i], i, __LINE__ );
                             conn_close ( conn[i] );
                             conn[i] = 0;
                             shutdown ( pollfds[i].fd, 2 );
-			    close(pollfds[i].fd);
+                            close ( pollfds[i].fd );
                             pollfds[i].fd = 0;
                             pollfds[i].events = 0;
                             pollfds[i].revents = 0;
@@ -2012,11 +2092,11 @@ shrinkStart:
                     }
                 }
 
-                if( !(pollfds[i].revents & PR_POLL_WRITE) ){
-                    debuglog ( "DBUG: No write event received %d\n",pollfds[i].fd );
+                if ( ! ( pollfds[i].revents & PR_POLL_WRITE ) ) {
+                    //debuglog ( "DBUG: No write event received %d\n",pollfds[i].fd );
                 }
 
-                if ( /*pollfds[i].fd > MIN_PORT_COUNT && */ pollfds[i].revents & PR_POLL_WRITE && conn[i] && conn[i]->file /*&& * ( conn[i]->file ) > MIN_PORT_COUNT */) {
+                if ( /*pollfds[i].fd > MIN_PORT_COUNT && */ pollfds[i].revents & PR_POLL_WRITE && conn[i] && conn[i]->file /*&& * ( conn[i]->file ) > MIN_PORT_COUNT */ ) {
 #ifdef USE_SSL
 
                     if ( conn[i]->ssl && !conn[i]->ssl_accept ) {
@@ -2033,7 +2113,7 @@ shrinkStart:
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 shutdown ( pollfds[i].fd, 2 );
-				close( pollfds[i].fd);
+                                close ( pollfds[i].fd );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
@@ -2052,7 +2132,7 @@ shrinkStart:
                                 conn_close ( conn[i] );
                                 conn[i] = 0;
                                 shutdown ( pollfds[i].fd, 2 );
-				close( pollfds[i].fd);
+                                close ( pollfds[i].fd );
                                 pollfds[i].fd = 0;
                                 pollfds[i].events = 0;
                                 pollfds[i].revents = 0;
@@ -2078,37 +2158,39 @@ shrinkStart:
                     }
                     */
 
-                    debuglog("DBUG: Send info : fd:%d, hdr:%d, sent:%d, len:%d\n", pollfds[i].fd, conn[i]->hLen, conn[i]->sent, conn[i]->len );
+                    debuglog ( "DBUG: Send info : fd:%d, hdr:%d, sent:%d, len:%d\n", pollfds[i].fd, conn[i]->hLen, conn[i]->sent, conn[i]->len );
                     int len = conn[i]->len;
-                    debuglog("DBUG: Reading bytes fd:%d, len:%d, file:0x%x \n",pollfds[i].fd, len, conn[i]->file  );
+                    debuglog ( "DBUG: Reading bytes fd:%d, len:%d, file:0x%llX \n", pollfds[i].fd, len, conn[i]->file  );
+
                     if ( len < SMALLBUF && conn[i]->file && conn[i]->sent < conn[i]->resp.getContentLen() + conn[i]->hLen ) {
                         //read in some more data
-                        int temp = ftell(conn[i]->file);
-                        debuglog("DBUG: >>>>>>>> Reading bytes from %d position in file\n", temp );
+                        int temp = ftell ( conn[i]->file );
+                        debuglog ( "DBUG: >>>>>>>> Reading bytes from %d position in file\n", temp );
                         fread ( & ( conn[i]->buf[len] ), SMALLBUF - len, 1, conn[i]->file );
-                        temp = ftell(conn[i]->file) - temp;
+                        temp = ftell ( conn[i]->file ) - temp;
 
                         //writeToFile( tmpFile2, &(conn[i]->buf[len]), temp );
 
                         //debuglog(" DBUG: Read bytes = %d \n", temp );
 
-                        debuglog("DBUG: Read bytes info : fd:%d, len:%d, temp:%d, SB-len:%d, fpos:%d file:0x%x\n",pollfds[i].fd, len, temp, SMALLBUF-len, ftell(conn[i]->file), conn[i]->file  );
-                        if( temp > 0 ) {
+                        debuglog ( "DBUG: Read bytes info : fd:%d, len:%d, temp:%d, SB-len:%d, fpos:%d file:0x%llX\n", pollfds[i].fd, len, temp, SMALLBUF - len, ftell ( conn[i]->file ), conn[i]->file  );
+
+                        if ( temp > 0 ) {
                             len += temp;
                             conn[i]->len = len;
-                            debuglog("DBUG: Reading bytes info : fd:%d, len:%d, connLen:%d, contentLen:%d \n",pollfds[i].fd, len, conn[i]->len, conn[i]->resp.getContentLen()  );
+                            debuglog ( "DBUG: Reading bytes info : fd:%d, len:%d, connLen:%d, contentLen:%d \n", pollfds[i].fd, len, conn[i]->len, conn[i]->resp.getContentLen()  );
                         } else {
 
-                            if( feof(conn[i]->file) ){
-                                debuglog("DBUG: EOF reached \n");
+                            if ( feof ( conn[i]->file ) ) {
+                                debuglog ( "DBUG: EOF reached \n" );
                                 fclose ( conn[i]->file );
                                 conn[i]->file = 0;
-                            } else if( ferror(conn[i]->file ) ){
-                                debuglog("DBUG: ERROR using the file \n");
+                            } else if ( ferror ( conn[i]->file ) ) {
+                                debuglog ( "DBUG: ERROR using the file \n" );
                                 fclose ( conn[i]->file );
                                 conn[i]->file = 0;
                             } else {
-                                debuglog("DBUG: Not eof or error \n");
+                                debuglog ( "DBUG: Not eof or error \n" );
                             }
                         }
                     }
@@ -2117,107 +2199,108 @@ shrinkStart:
                         int bytesW = 0;
 
                         //do {
-                            int temp = 0;
+                        int temp = 0;
 #ifdef USE_SSL
 
-                            if ( conn[i]->ssl ) {
-                                temp = SSL_write ( conn[i]->ssl, & ( conn[i]->buf[bytesW] ), conn[i]->len - bytesW );
-                                debuglog("DBUG: Sent temp:%d , bytesW:%d , len:%d, connLen:%d bytes (SSL)\n", temp, bytesW, len, conn[i]->len );
-                                if ( temp  >  0 ) {
-                                    bytesW += temp;
-                                    //conn[i]->bufNotSent = conn[i]->len - bytesW;
-                                    //memcpy( conn[i]->buf, &conn[i]->buf[conn[i]->len-conn[i]->bufNotSent], conn[i]->bufNotSent );
-                                    debuglog("DBUG: Wrote bytes (SSL) = %d\n", temp );
-                                } else {
-                                    int rc = 0;
+                        if ( conn[i]->ssl ) {
+                            temp = SSL_write ( conn[i]->ssl, & ( conn[i]->buf[bytesW] ), conn[i]->len - bytesW );
+                            debuglog ( "DBUG: Sent temp:%d , bytesW:%d , len:%d, connLen:%d bytes (SSL)\n", temp, bytesW, len, conn[i]->len );
 
-                                    if ( ( rc = SSL_get_error ( conn[i]->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ) {
-                                        memcpy ( conn[i]->buf, & ( conn[i]->buf[bytesW] ), len - bytesW );
-                                        debuglog("DBUG: SSL error (SSL) %d, wrote=%d len=%d, bytesW=%d\n", rc, temp, len, bytesW );
-                                        //break;
-                                        (conn[i]->ssl_failures)++;
-                                    } else {
-                                        //fclose(conn[i]->file);
-                                        //conn[i]->file = 0;
-                                        (conn[i]->ssl_failures)++;
-                                        debuglog("ERRR: -999 (SSL) scenario occurred (SSL)\n");
-                                        bytesW = -999;
-                                        //break; delete
-                                    }
-                                }
+                            if ( temp  >  0 ) {
+                                bytesW += temp;
+                                //conn[i]->bufNotSent = conn[i]->len - bytesW;
+                                //memcpy( conn[i]->buf, &conn[i]->buf[conn[i]->len-conn[i]->bufNotSent], conn[i]->bufNotSent );
+                                debuglog ( "DBUG: Wrote bytes (SSL) = %d\n", temp );
                             } else {
+                                int rc = 0;
+
+                                if ( ( rc = SSL_get_error ( conn[i]->ssl, temp ) ) == SSL_ERROR_WANT_WRITE ) {
+                                    memcpy ( conn[i]->buf, & ( conn[i]->buf[bytesW] ), len - bytesW );
+                                    debuglog ( "DBUG: SSL error (SSL) %d, wrote=%d len=%d, bytesW=%d\n", rc, temp, len, bytesW );
+                                    //break;
+                                    ( conn[i]->ssl_failures )++;
+                                } else {
+                                    //fclose(conn[i]->file);
+                                    //conn[i]->file = 0;
+                                    ( conn[i]->ssl_failures )++;
+                                    debuglog ( "ERRR: -999 (SSL) scenario occurred (SSL)\n" );
+                                    bytesW = -999;
+                                    //break; delete
+                                }
+                            }
+                        } else {
 #endif
-                                //temp = PR_Write ( conn[i]->socket, conn[i]->buf, conn[i]->len );
-                                temp = send ( conn[i]->socketfd, &(conn[i]->buf[bytesW]), conn[i]->len-bytesW, 0 );
-                                debuglog("DBUG: Sent temp:%d , bytesW:%d , len:%d, connLen:%d bytes (SSL)\n", temp, bytesW, len, conn[i]->len );
-                                if ( temp >= 0 )
-                                {
-                                    //writeToFile( tmpFile, &(conn[i]->buf[bytesW]), temp );
-                                    bytesW += temp;
-                                    //conn[i]->bufNotSent = conn[i]->len - bytesW;
-                                    //memcpy( conn[i]->buf, &conn[i]->buf[conn[i]->len-conn[i]->bufNotSent], conn[i]->bufNotSent );
-                                    debuglog("DBUG: Wrote bytes = %d \n", temp );
-                                }
-                                else {
-                                    //PRErrorCode error = PR_GetError();
+                            //temp = PR_Write ( conn[i]->socket, conn[i]->buf, conn[i]->len );
+                            temp = send ( conn[i]->socketfd, & ( conn[i]->buf[bytesW] ), conn[i]->len - bytesW, 0 );
+                            debuglog ( "DBUG: Sent temp:%d , bytesW:%d , len:%d, connLen:%d bytes (SSL)\n", temp, bytesW, len, conn[i]->len );
 
-                                    if ( temp == -1 ) {
-                                            //CHECK
-                                        //fclose(conn[i]->file);
-                                        //conn[i]->file = 0;
-                                        //debuglog("ERRR: int_ERROR on send scenario occurred \n");
-                                        int errorCode = errno;
-                                        if (errorCode == ECONNRESET ) //|| errorCode == WSAENETRESET || errorCode == WSAECONNABORTED)
-                                        {
-                                            debuglog("ERRR: The connection has been closed by the peer.\n");
-                                        }
-                                        else
-                                        {
-                                            debuglog("ERRR: Send failed with error code: %d\n", errorCode);
-                                        }
-                                        //memcpy ( conn[i]->buf, & ( conn[i]->buf[bytesW] ), len - bytesW );
-                                        //break;
+                            if ( temp >= 0 ) {
+                                //writeToFile( tmpFile, &(conn[i]->buf[bytesW]), temp );
+                                bytesW += temp;
+                                //conn[i]->bufNotSent = conn[i]->len - bytesW;
+                                //memcpy( conn[i]->buf, &conn[i]->buf[conn[i]->len-conn[i]->bufNotSent], conn[i]->bufNotSent );
+                                debuglog ( "DBUG: Wrote bytes = %d \n", temp );
+                            } else {
+                                //PRErrorCode error = PR_GetError();
+
+                                if ( temp == -1 ) {
+                                    //CHECK
+                                    //fclose(conn[i]->file);
+                                    //conn[i]->file = 0;
+                                    //debuglog("ERRR: int_ERROR on send scenario occurred \n");
+                                    int errorCode = errno;
+
+                                    if ( errorCode == ECONNRESET ) { //|| errorCode == WSAENETRESET || errorCode == WSAECONNABORTED)
+                                        debuglog ( "ERRR: The connection has been closed by the peer.\n" );
                                     } else {
-                                        //fclose(conn[i]->file);
-                                        //conn[i]->file = 0;
-                                        debuglog("ERRR: -999 scenario occurred \n");
-                                        bytesW = -999;
-                                        //break;
+                                        debuglog ( "ERRR: Send failed with error code: %d\n", errorCode );
                                     }
-                                    (conn[i]->failures)++;
+
+                                    //memcpy ( conn[i]->buf, & ( conn[i]->buf[bytesW] ), len - bytesW );
+                                    //break;
+                                } else {
+                                    //fclose(conn[i]->file);
+                                    //conn[i]->file = 0;
+                                    debuglog ( "ERRR: -999 scenario occurred \n" );
+                                    bytesW = -999;
+                                    //break;
                                 }
 
-#ifdef USE_SSL
+                                ( conn[i]->failures )++;
                             }
 
+#ifdef USE_SSL
+                        }
+
 #endif
-                       // } while ( bytesW < len );
+                        // } while ( bytesW < len );
 
                         if ( bytesW != -999 ) {
-                            debuglog("DBUG: Sent? temp:%d , bytesW:%d , len:%d, connLen:%d bytes\n", temp, bytesW, len, conn[i]->len );
+                            debuglog ( "DBUG: Sent? temp:%d , bytesW:%d , len:%d, connLen:%d bytes\n", temp, bytesW, len, conn[i]->len );
                             conn[i]->len   = len - bytesW;
                             conn[i]->sent += bytesW;
-                            debuglog("DBUG: Sent? temp:%d , bytesW:%d , len:%d, connLen:%d bytes\n", temp, bytesW, len, conn[i]->len );
-                            if( conn[i]->len == 0 ){
-                                debuglog("INFO: Sent the complete data in the buffer \n");
-                            } else if (conn[i]->len > 0 ){
-                                debuglog("INFO: Couldn't Sent the complete data in the buffer \n");
+                            debuglog ( "DBUG: Sent? temp:%d , bytesW:%d , len:%d, connLen:%d bytes\n", temp, bytesW, len, conn[i]->len );
+
+                            if ( conn[i]->len == 0 ) {
+                                debuglog ( "INFO: Sent the complete data in the buffer \n" );
+                            } else if ( conn[i]->len > 0 ) {
+                                debuglog ( "INFO: Couldn't Sent the complete data in the buffer \n" );
                             } else {
-                                debuglog("INFO: Sent the more data than there was in the buffer \n");
+                                debuglog ( "INFO: Sent the more data than there was in the buffer \n" );
                             }
                         } else {
 #ifdef USE_SSL
 
-                            if ( conn[i]->ssl ){
-                                if( conn[i]->ssl_failures > 100 ) {
+                            if ( conn[i]->ssl ) {
+                                if ( conn[i]->ssl_failures > 100 ) {
                                     debuglog (  "ERRR: SSL_write Error: '%s' file %d -> socket %d pollfd %d \n",
                                                 conn[i]->req.getReqFileAuth(), conn[i]->file, conn[i]->socketfd, pollfds[i].fd );
-                                    fclose(conn[i]->file);
+                                    fclose ( conn[i]->file );
                                     conn[i]->file = 0;
                                     conn_close ( conn[i] );
                                     conn[i] = 0;
                                     shutdown ( pollfds[i].fd, 2 );
-				    close( pollfds[i].fd);
+                                    close ( pollfds[i].fd );
                                     pollfds[i].fd = 0;
                                     pollfds[i].events = 0;
                                     pollfds[i].revents = 0;
@@ -2226,21 +2309,23 @@ shrinkStart:
                                 }
                             } else {
 #endif
-                                if( conn[i]->failures > 100 ){
+
+                                if ( conn[i]->failures > 100 ) {
                                     debuglog (  "ERRR: Socket Write Error: '%s' file %d -> socket %d pollfd %d \n",
                                                 conn[i]->req.getReqFileAuth(), conn[i]->file, conn[i]->socketfd, pollfds[i].fd );
-                                    fclose(conn[i]->file);
+                                    fclose ( conn[i]->file );
                                     conn[i]->file = 0;
                                     conn_close ( conn[i] );
                                     conn[i] = 0;
                                     shutdown ( pollfds[i].fd, 2 );
-				    close( pollfds[i].fd);
+                                    close ( pollfds[i].fd );
                                     pollfds[i].fd = 0;
                                     pollfds[i].events = 0;
                                     pollfds[i].revents = 0;
                                     shrink = true;
                                     continue;
                                 }
+
 #ifdef USE_SSL
                             }
 
@@ -2250,15 +2335,17 @@ shrinkStart:
                         //debuglog (  "\nINFO: --------------------------------------------------------------------------\n" );
                         //debuglog (  "xxxxINFO: Sent File='%s' Fd=%d Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), pollfds[i].fd,  conn[i]->sent );
                         debuglog (  " [Complete] Sent File='%s' Fd=%d Total bytes=%d (including header)\n", conn[i]->req.getReqFile(), pollfds[i].fd,  conn[i]->sent );
+
                         //debuglog (  "INFO: --------------------------------------------------------------------------\n\n\n" );
-                        if( conn[i] ){
-                            fclose( conn[i]->file );
-			    conn[i]->file = 0;
+                        if ( conn[i] ) {
+                            fclose ( conn[i]->file );
+                            conn[i]->file = 0;
                             conn_close ( conn[i] );
                             conn[i] = 0;
                         }
+
                         shutdown ( pollfds[i].fd, 2 );
-                        close( pollfds[i].fd );
+                        close ( pollfds[i].fd );
                         pollfds[i].fd = 0;
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
@@ -2268,11 +2355,11 @@ shrinkStart:
                 } else {
                     if ( conn[i] && conn[i]->file == 0 && conn[i]->isFileOpened == true ) {
 //#if 0
-                        debuglog("ERRR: Closing connection, 0x%x, %d \n",conn[i], pollfds[i].fd );
+                        debuglog ( "ERRR: Closing connection, 0x%llX, %d \n", conn[i], pollfds[i].fd );
                         conn_close ( conn[i] );
                         conn[i] = 0;
                         shutdown ( pollfds[i].fd, 2 );
-                        close( pollfds[i].fd );
+                        close ( pollfds[i].fd );
                         pollfds[i].fd = 0;
                         pollfds[i].events = 0;
                         pollfds[i].revents = 0;
@@ -2281,10 +2368,12 @@ shrinkStart:
 //#endif
                     }
                 }
-                if( pollfds[i].fd != 0 )
-                    pollfds[i].events  =  PR_POLL_READ | PR_POLL_WRITE; //| PR_POLL_HUP | PR_POLL_ERR | PR_POLL_NVAL;
+
+                if ( pollfds[i].fd != 0 )
+                { pollfds[i].events  =  PR_POLL_READ | PR_POLL_WRITE; } //| PR_POLL_HUP | PR_POLL_ERR | PR_POLL_NVAL;
                 else
-                    pollfds[i].events  = 0;
+                { pollfds[i].events  = 0; }
+
                 pollfds[i].revents = 0;
                 //debuglog("DBUG: setting all  events on fd %d ", pollfds[i].fd);
             }
@@ -2293,13 +2382,14 @@ shrinkStart:
             //debuglog("DBUG: last error on WSAPoll() is %d \n", WSAGetLastError());
             if ( retVal == -1 ) {
                 //PR_Sleep ( 1 );
-                std::this_thread::sleep_for ( std::chrono::microseconds ( 100 ) );
+                std::this_thread::sleep_for ( std::chrono::microseconds ( 100000 ) );
                 int r = MIN_PORT_COUNT;
                 bool mustShrink = false;
-                while( r < 1024){
-                    if( pollfds[r].fd !=0 && pollfds[r].revents & (PR_POLL_ERR | PR_POLL_HUP | PR_POLL_NVAL ) ){
-                        debuglog("DBUG: #################### removing fd from polling %d ", pollfds[r].fd);
-                        close(pollfds[r].fd);
+
+                while ( r < 1024 ) {
+                    if ( pollfds[r].fd != 0 && pollfds[r].revents & ( PR_POLL_ERR | PR_POLL_HUP | PR_POLL_NVAL ) ) {
+                        debuglog ( "DBUG: #################### removing fd from polling %d ", pollfds[r].fd );
+                        close ( pollfds[r].fd );
                         //conn_close( conn[r] );
                         //conn[r] = 0;
                         pollfds[r].fd = 0;
@@ -2308,22 +2398,27 @@ shrinkStart:
                         mustShrink = true;
 
                     }
+
                     r++;
                 }
 
-                if( mustShrink ){
+                if ( mustShrink ) {
                     shrink = true;
                 }
+
                 debuglog (  "ERRR: Poll failed \n" );
-                if( ( pollfds[0].revents & (PR_POLL_ERR | PR_POLL_HUP | PR_POLL_NVAL ) ) || (pollfds[1].revents & (PR_POLL_ERR | PR_POLL_HUP | PR_POLL_NVAL ) ) ){
+
+                if ( ( pollfds[0].revents & ( PR_POLL_ERR | PR_POLL_HUP | PR_POLL_NVAL ) ) || ( pollfds[1].revents & ( PR_POLL_ERR | PR_POLL_HUP | PR_POLL_NVAL ) ) ) {
                     debuglog (  "ERRR: Poll failed on listening sockets \n" );
                     return 10;
                 }
             }
         }
-            q++;
-            if( q % 1000 == 0 )
-                std::cerr<<" *********WARN : Delete connection stats "<<assignCounter<<"/"<<deleteCounter<<"/"<<createCounter<<std::endl;
+
+        q++;
+
+        if ( q % 1000 == 0 )
+        { std::cerr << " *********WARN : Delete connection stats " << assignCounter << "/" << deleteCounter << "/" << createCounter << std::endl; }
     }
 
     shutdown ( srv, 2 );
