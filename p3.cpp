@@ -1,4 +1,8 @@
 //Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
+#include <iostream>
+#include <thread>
+using namespace std;
+
 #include <httpconn.h>
 #include <plugin.h>
 #include <httphandlers.h>
@@ -63,7 +67,7 @@ int p3_processReq ( Connection *conn ) {
 
 
     string xmldata = "<plugininfo>"
-                     "This is a plugin output and nothing else"
+                     "This is a plugin output and nothing else."
                      "</plugininfo>";
     *output << xmldata;
     *output << "</data></xml>";

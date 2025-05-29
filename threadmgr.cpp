@@ -154,6 +154,8 @@ void ThreadMgr::stopThreads() {
 
 extern int clientmanage ( int );
 extern int reduce_ipbin ( Connection * );
+extern std::atomic<int>deleteCounter;
+
 
 #ifdef  USE_CPP11THREAD
 void ThreadMgr::httpthread ( int *data )
@@ -213,14 +215,15 @@ void* ThreadMgr::httpthread ( void *data )
                         }
 
 #endif
-                        PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
+                        shutdown ( conn->socketfd, 0 );
                         debuglog (  "INFO: Shuting down socket \n" );
-                        PR_Close ( conn->socket );
-                        * ( conn->socket ) = -1;
-                        conn->socket = 0;
+                        close ( conn->socketfd );
+                        conn->socketfd = 0;
                         conn->delobj = true;
                         reduce_ipbin ( conn );
+			debuglog("WARN: ---------------------- Deleting connection object 1 : 0x%x \n", conn);
                         delete conn;
+                        deleteCounter++;
                         clientmanage ( 0 );
                         continue;
                     } else {
@@ -241,13 +244,14 @@ void* ThreadMgr::httpthread ( void *data )
                         }
 
 #endif
-                        PR_Shutdown ( conn->socket, PR_SHUTDOWN_BOTH );
-                        PR_Close ( conn->socket );
-                        * ( conn->socket ) = -1;
-                        conn->socket = 0;
+                        shutdown ( conn->socketfd, 0 );
+                        close ( conn->socketfd );
+                        conn->socketfd = 0;
                         conn->delobj = true;
                         reduce_ipbin ( conn );
+			debuglog("WARN: ----------------------- Deleting connection object 2 : 0x%x \n", conn);
                         delete conn;
+                        deleteCounter++;
                         clientmanage ( 0 );
                         debuglog (  "INFO: Deleted connection \n" );
                     }
@@ -266,12 +270,13 @@ void* ThreadMgr::httpthread ( void *data )
                     }
 
 #endif
-                    PR_Close ( conn->socket );
-                    * ( conn->socket ) = -1;
-                    conn->socket = 0;
+                    close ( conn->socketfd );
+                    conn->socketfd = 0;
                     conn->delobj = true;
                     reduce_ipbin ( conn );
+		    debuglog("WARN: -----------------------  Deleting connection object 3 : 0x%x \n", conn);
                     delete conn;
+                    deleteCounter++;
                     clientmanage ( 0 );
                 }
             }
@@ -282,7 +287,10 @@ void* ThreadMgr::httpthread ( void *data )
 
     if ( cmd == THREAD_CMD_EXIT && conn ) {
         reduce_ipbin ( conn );
+        debuglog("WARN: --------------------------- Deleting connection object 4 : 0x%x \n", conn);
         delete conn;
+	conn = 0;
+        deleteCounter++;
         clientmanage ( 0 );
     }
 

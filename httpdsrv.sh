@@ -3,4 +3,4 @@
 
 export LD_LIBRARY_PATH=`pwd`/../lib/
 # httpdsrv port threads dosthreshold(large value like 10000 means disabled) sslport loglevel
-./httpdsrv 15000 40 10000 16000 1 ::1 > httpd.log 2>&1
+./httpdsrv 8080 40 10000 8081 6 ::1 > httpd.log 2>&1

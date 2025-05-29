@@ -15,12 +15,14 @@
 using namespace std;
 
 //#define  MAXBUF    16384
-#define  MAXBUF    65536
+//#define  MAXBUF    65536
+#define  MAXBUF    1048576
 #define  GMT_INDIA 19800
 //#define  SMALLBUF  4096
-#define  SMALLBUF  65536
+//#define  SMALLBUF  65536
+#define SMALLBUF 1048576
 
-class ACL {
+class Acl {
     public:
         bool invert;
         bool ipv4;
@@ -34,7 +36,7 @@ class ACL {
 
 #ifdef LINUX_BUILD
 typedef unordered_map<string, int>    MapActivePlugins;
-typedef unordered_map<string, ACL*>   MapACL;
+typedef unordered_map<string, Acl*>   MapACL;
 typedef unordered_map<int, string>    MapIntStr;
 typedef unordered_map<int, string>    HttpCodes;
 typedef unordered_map<string, string> MapStrStr;
@@ -43,7 +45,7 @@ typedef unordered_map<string, void*>  MapHttpHdlr;
 typedef vector<string>     Vector;
 #else
 typedef map<string, int>    MapActivePlugins;
-typedef map<string, ACL*>   MapACL;
+typedef map<string, Acl*>   MapACL;
 typedef map<int, string>    MapIntStr;
 typedef map<int, string>    HttpCodes;
 typedef map<string, string> MapStrStr;

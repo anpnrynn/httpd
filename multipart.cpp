@@ -7,18 +7,18 @@
 #include <log.h>
 #include <unistd.h>
 
-MultipartReader::MultipartReader( int fd, char *bound ){
+MultipartReader::MultipartReader( FILE *fd, char *bound ){
 	postFile = fd;
 	eof = 0;
 	//if( postFile ) {
-		lseek( postFile, 0L, SEEK_SET );
+		fseek( postFile, 0L, SEEK_SET );
 		vm = new VectorM();
 		boundary = bound;
 	//}
 }
 
 MultipartReader::~MultipartReader( ){
-	close(postFile);
+	fclose(postFile);
 	VectorM::iterator i = vm->begin();
 	while( i != vm->end() ){
 		delete *i;
@@ -35,7 +35,7 @@ int MultipartReader::readline( char *line ){
 		//}
 		//int  d = fgetc ( postFile );
 		unsigned char c = 0;
-		int d = read( postFile, &c, 1 );
+		int d = fread(&c, 1, 1, postFile );
 		if( d ==  0 || d < 0 ){
 			if( d == 0) {
 				eof = 1;
@@ -60,7 +60,7 @@ int MultipartReader::readline( char *line ){
 		} else {
 			line[i++] = c;
 		}
-	}	
+	}
 	return i;
 }
 
@@ -75,7 +75,7 @@ int MultipartReader::quickread( unsigned char *data, int &offset, int size){
 		//}
 		//int  d = fgetc ( postFile );
 		unsigned char c = 0;
-		int d = read (postFile, &c , 1 );
+		int d = fread (&c , 1, 1 , postFile );
 		if( d ==  0 || d < 0 ){
 			if( d == 0) {
 				eof = 1;
@@ -110,7 +110,7 @@ int MultipartReader::readTillBoundaryEnd(unsigned char *data , int *datasize ){
 		//}
 		//int  d = fgetc ( postFile );
 		prevc = c;
-		int d = read( postFile, &c, 1 );
+		int d = fread( &c, 1, 1, postFile);
 		if( d ==  0 || d < 0){
 			if( d == 0) {
 				eof = 1;
@@ -129,7 +129,7 @@ int MultipartReader::readTillBoundaryEnd(unsigned char *data , int *datasize ){
 			} else {
 				int k = 0;
 				while( k < m ){
-					data[i-m+k] = 0; 
+					data[i-m+k] = 0;
 					k++;
 				}
 				data[i] = 0;
@@ -156,7 +156,7 @@ int MultipartReader::processMultipartData(int postsize){
 	char boundaryChange[256];
 	char *line = new char[65536];
 	unsigned char *data = new unsigned char [postsize];
-	int skipboundary = 1;	
+	int skipboundary = 1;
 	do {
 		name[0] = 0;
 		filename[0] = 0;
@@ -212,7 +212,7 @@ int MultipartReader::processMultipartData(int postsize){
 			readline( line );
 		} else {
 			readline( line) ;
-			readContentType( line, mime ); 
+			readContentType( line, mime );
 			int len = 0;
 			readline (line);
 			readTillBoundaryEnd( data, &len );
@@ -223,11 +223,11 @@ int MultipartReader::processMultipartData(int postsize){
 			mo->filename = filename;
 			mo->length = len;
 			mo->data = data;
-			mo->mime = mime;	
+			mo->mime = mime;
 			debuglog("ERRR: Name=%s, filename=%s, mime=%s, length=%d \n", name, filename, mime, len );
 			data = new unsigned char [postsize];
 			vm->push_back(mo);
-		}	
+		}
 
 	//} while ( !feof(postFile) );
 	} while ( !eof );
@@ -247,7 +247,7 @@ int MultipartReader::readContentType (char *line , char *mime){
 int MultipartReader::readContentDisposition(char *line , char * name, char *filename){
 	const char *nameprefix = "Content-Disposition: form-data; name=\"";
 	size_t n = strlen( nameprefix );
-	if( n > strlen(line) ) { 
+	if( n > strlen(line) ) {
 		name[0] = 0;
 		filename[0] = 0;
 		return 0;
@@ -255,8 +255,8 @@ int MultipartReader::readContentDisposition(char *line , char * name, char *file
 	size_t i = n;
 	int j = 0;
 	while( line[i] != '"' ){
-		name[j++] = line[i++]; 
-	}	
+		name[j++] = line[i++];
+	}
 	name[j] = 0;
 
 	const char *filenameprefix = "\"; filename=\"";
@@ -267,7 +267,7 @@ int MultipartReader::readContentDisposition(char *line , char * name, char *file
 	}
 	j=0;
 	while( line[i] != '"' ){
-		filename[j++] = line[i++]; 
+		filename[j++] = line[i++];
 	}
 	filename[j] = 0;
 	n = 2;

@@ -11,7 +11,7 @@ using namespace std;
 
 
 class MultipartObject {
-	private: 
+	private:
 	public:
 		string name;
 		string value;
@@ -31,15 +31,15 @@ typedef vector<MultipartObject*> VectorM;
 
 class MultipartReader {
 	private:
-		//FILE *postFile;
-		int postFile; //fd
+		FILE *postFile;
+		//int postFile; //fd
 		char *boundary;
 		int eof;
 
 	public:
 		VectorM *vm;
 
-		MultipartReader( int fd, char *bound );
+		MultipartReader( FILE *fd, char *bound );
 		~MultipartReader( );
 
 		int readline( char *line );

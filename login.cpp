@@ -1,4 +1,7 @@
 //Copyright Anoop Kumar Narayanan <anoop.kumar.narayanan@gmail.com> , LICENSE - GPLv2 / GPLv3
+#include <iostream>
+#include <thread>
+using namespace std;
 #include <httpconn.h>
 #include <plugin.h>
 #include <httphandlers.h>
@@ -127,7 +130,7 @@ int login_processReq ( Connection *conn ) {
 
             if ( rc != SQLITE_OK ) {
                 if ( rc == SQLITE_BUSY )
-                { PR_Sleep ( 10 ); }
+                { std::this_thread::sleep_for ( std::chrono::microseconds ( 1 ) ); }
                 else {
                     debuglog (  "DBUG: %s:SQL error (qtype:0): %s, %s\n", __FUNCTION__, rcmd, error );
 

@@ -65,15 +65,15 @@ enum HTTP_TAG_CONN {
 };
 
 enum HTTP_TAG_CC {
-    CC_NONE       = 0x00,
-    CC_PUBLIC     = 0x01,
-    CC_PRIVATE    = 0x02,
-    CC_NOCACHE    = 0x04,
-    CC_NOSTORE    = 0x08,
-    CC_NOTRANS    = 0x10,
-    CC_MUSTREVAL  = 0x20,
-    CC_PROXREVAL  = 0x40,
-    CC_MAX
+    HTCC_NONE       = 0,
+    HTCC_PUBLIC     = 1,
+    HTCC_PRIVATE    = 2,
+    HTCC_NOCACHE    = 4,
+    HTCC_NOSTORE    = 8,
+    HTCC_NOTRANS    = 16,
+    HTCC_MUSTREVAL  = 32,
+    HTCC_PROXREVAL  = 64,
+    HTCC_MAX
 };
 
 enum HTTP_TAG_CENC {
@@ -117,6 +117,9 @@ class HttpReq {
         char connection[32];
         char contentLen[32];
         char keepAlive[64];
+        char callsign[64];
+        char password[64];
+        char randuuid[64];
 
         char  *query;
         int    method;
@@ -161,8 +164,8 @@ class HttpReq {
         size_t      rLen;
         size_t      hLen;
 
-        int          postfd;
-        PRFileDesc  *post;
+        //int          postfd;
+        FILE        *post;
         unsigned char buf[MAXBUF];
         unsigned char *dataPtr;
         string rawHdr;
@@ -179,16 +182,17 @@ class HttpReq {
         void  removePostTempFile() {
             debuglog (  "DBUG: Removing post temp file: %s \n", postFileName );
 
-            if ( post && postfd >= 0 ) {
-                PR_Close ( post );
+            if ( post  ) {
+                fclose ( post );
                 post = 0;
-                postfd = -1;
+                //postfd = -1;
             } else {
                 post = 0;
-                postfd = -1;
+                //postfd = -1;
             }
 
-            PR_Unlink ( postFileName );
+            //CHECK
+            //unlink ( postFileName );
             postFileName[0] = 0;
         }
         bool  isMultipart () { return ( bool ) multipart; }
@@ -264,25 +268,30 @@ class Connection {
         long long int            index;
         bool           delobj;
         unsigned char  buf[SMALLBUF];
-        unsigned int   sent;
+        unsigned int   sent; // total sent
         unsigned int   len;
+        unsigned int   hLen;
         unsigned int   offset;
+        unsigned int   failures;
 #ifdef USE_SSL
         //0 - nossl, 1 ssv1, 2 sslv2, 3 sslv3, 100 tls 1.0, 101 tls 1.1, 102 tls 1.2, ... etc
         SSL            *ssl;
         bool           ssl_accept;
         bool           is_ssl;
+        unsigned int   ssl_failures;
 #endif
         unsigned int   ip;
         unsigned short ipv6[8];
 
         unsigned int  authLvl;
         unsigned int  cmd;
-        int32_t        filefd;
-        PRFileDesc    *file;
-        PRFileInfo64  fInfo;
-        int32_t        socketfd;
-        PRFileDesc    *socket;
+        //int32_t        filefd;
+        bool           isFileOpened;
+        FILE          *file;
+        //PRFileInfo64  fInfo;
+        //BY_HANDLE_FILE_INFORMATION fInfo;
+        int        socketfd;
+        //PRFileDesc    *socket;
         sqlite3       *db; //link to per thread sqlite3 db
         //FileIndexData *fid;
         void *fid;
@@ -296,12 +305,16 @@ class Connection {
             delobj  = false;
             debuglog ( " Connection Object created with index-%016ld \n", index );
             len     = 0;
+            hLen    = 0;
             sent    = 0;
             offset  = 0;
+            //memset(buf, 0, SMALLBUF);
+            failures = 0;
 #ifdef USE_SSL
             is_ssl  = false;
             ssl_accept = false;
             ssl     = 0;
+            ssl_failures = 0;
 #endif
             ip      = 0;
             ipv6[0] = 0;
@@ -314,10 +327,11 @@ class Connection {
             ipv6[7] = 0;
             authLvl = AUTH_PUBLIC;
             cmd    = 0;
-            filefd   = -1;
-            file = &filefd;
-            socketfd = -1;
-            socket = &socketfd;
+            //filefd   = -1;
+            isFileOpened = false;
+            file = 0;
+            socketfd = 0;
+            //socket = &socketfd;
             fid = 0;
             udata = 0;
             sess  = 0;
@@ -325,12 +339,14 @@ class Connection {
         }
 
         ~Connection() {
-            if ( socket )
-            { PR_Close ( socket ); }
+	    debuglog( "WARN: +++++++++++++++++++++ Closing and deleting connection 0x%X, %d \n", this, index );
+	    fflush(stdout);
+            if ( socketfd )
+            { close( socketfd ); }
 
             if ( file )
-            { PR_Close ( file ); }
-
+            { fclose ( file ); }
+            isFileOpened = false;
             if ( index < 0 )
             { debuglog ( " Connection Object already deleted with index%016ld \n", index ); }
             else
@@ -338,8 +354,10 @@ class Connection {
 
             index   = -index;
             len     = 0;
+            hLen    = 0;
             sent    = 0;
             offset  = 0;
+            //memset(buf, 0, SMALLBUF);
 #ifdef USE_SSL
             is_ssl  = false;
             ssl_accept = false;
@@ -356,9 +374,9 @@ class Connection {
             ipv6[7] = 0;
             authLvl = AUTH_PUBLIC;
             cmd    = 0;
-            filefd = -1;
+            //filefd = -1;
             socketfd = -1;
-            socket = 0;
+            //socket = 0;
             file   = 0;
             fid    = 0;
             udata  = 0;
@@ -384,7 +402,7 @@ class Connection {
 };
 
 unsigned int sendConnRespHdr    ( Connection *conn, int status = HTTP_RESP_OK );
-unsigned int sendConnectionDataToSock ( PRFileDesc *socket, unsigned char *buffer, unsigned int length );
+unsigned int sendConnectionDataToSock ( int socket, unsigned char *buffer, unsigned int length );
 unsigned int sendConnectionData ( Connection *conn, unsigned char *buffer, unsigned int length );
 void         sendRemainderData  ( Connection *conn );
 

@@ -10,6 +10,7 @@
 
 #include <thread>
 #include <chrono>
+#include <algorithm>
 using namespace std;
 
 
@@ -41,6 +42,9 @@ HttpReq::HttpReq() {
     ifModStr[0] = 0;
     connection[0] = 0;
     contentLen[0] = 0;
+    callsign[0] = 0;
+    password[0] = 0;
+    randuuid[0] = 0;
     method = -1;
     version = -1;
     string rawHdr = "";
@@ -220,6 +224,12 @@ char* HttpReq::getTagBuffer ( char *tag ) {
     { return referer; }
     else if ( strcasecmp ( "Cookie", tag ) == 0 )
     { return cookie; }
+    else if ( strcasecmp ( "Callsign", tag ) == 0 )
+    { return callsign; }
+    else if ( strcasecmp ( "Password", tag ) == 0 )
+    { return password; }
+    else if ( strcasecmp ( "Randuuid", tag ) == 0 )
+    { return randuuid; }
     else if ( strcasecmp ( "Encoding", tag ) == 0 )
     { return encoding; }
     else if ( strcasecmp ( "Content-Type", tag ) == 0 )
@@ -457,7 +467,7 @@ char *HttpReq::getReqFileAuth ( ) {
         authUrl += PAGE_STORE;
         authUrl += decodedUrl;
     }
-
+    debuglog (  "DBUG: Auth Request file = '%s' \n", authUrl.c_str() );
     return const_cast<char*> ( authUrl.c_str() );
 }
 
@@ -524,8 +534,8 @@ int postCount = 0;
 int HttpReq::processHttpPostData ( Connection *conn ) {
     if ( conn && post ) {
         while ( rLen < cLen ) {
-            size_t bytesR  = PR_Recvfd ( * ( conn->socket ), buf, MAXBUF, 0, 1 );
-            size_t bytesW  = PR_Write ( post, buf, bytesR );
+            size_t bytesR  = recv (  ( conn->socketfd ), buf, MAXBUF, 0 );
+            size_t bytesW  = fwrite ( buf, 1, bytesR, conn->file );
             rLen += bytesR;
 
             if ( bytesW < bytesR ) {
@@ -551,9 +561,9 @@ int HttpReq::processHttpPostData ( size_t hPkt, size_t dLen ) {
         sprintf ( postFileName, "%s\\post_%d.tmp", "tmp", postCount );
 #endif
         postCount++;
-        post = &postfd;
+        //post = &postfd;
         //post = PR_Open( fName, PR_CREATE_FILE|PR_TRUNCATE|PR_RDWR, 660 );
-        *post = PR_Open ( postFileName, PR_CREATE_FILE | PR_TRUNCATE | PR_RDWR, PR_IRWXO | PR_IRWXG | PR_IRWXU );
+        post = fopen ( postFileName, "wb+" );
 
         if ( !post ) {
             debuglog (  "ERRR: Unable to open post data file '%s'\n", postFileName );
@@ -568,7 +578,7 @@ int HttpReq::processHttpPostData ( size_t hPkt, size_t dLen ) {
 
         //int bufLen = hPkt ? (len-hLen): dLen;
         while ( tempLen < dLen ) {
-            bytesW = PR_Write ( post, &buf[hLen], dLen - tempLen );
+            bytesW = fwrite ( &buf[hLen], 1, dLen - tempLen, post );
 
             if ( bytesW <= 0 )
             { break; }
@@ -673,9 +683,9 @@ int HttpReq::convertPostDataToMap ( MapStrStr *param, const char *stopAt ) {
     unsigned int  j = 0, dataLen = 0;
 
     //TODO
-    PR_Seek64 ( post, 0, PR_SEEK_SET );
+    fseek ( post, 0, SEEK_SET );
 
-    while ( ( dataLen = PR_Read ( post, &buf[l], MAXBUF - l ) ) > 0 ) {
+    while ( ( dataLen = fread (  &buf[l], 1,  MAXBUF - l , post ) ) > 0 ) {
         dataLen += l;
         l = 0;
 
@@ -757,9 +767,9 @@ int HttpReq::convertPostDataToVector ( Vector *param, const char *stopAt ) {
     unsigned int  j = 0, dataLen = 0;
 
     //TODO:
-    PR_Seek64 ( post, 0, PR_SEEK_SET );
+    fseek ( post, 0, SEEK_SET );
 
-    while ( ( dataLen = PR_Read ( post, &buf[l], MAXBUF - l ) ) > 0 ) {
+    while ( ( dataLen = fread ( &buf[l], 1, MAXBUF - l, post ) ) > 0 ) {
         dataLen += l;
         l = 0;
 
@@ -840,7 +850,7 @@ HttpResp::HttpResp() {
     strcpy ( server, srvName );
     contentLen    = 0;
     acceptRanges  = 0;
-    cCtrl  = CC_NONE;
+    cCtrl  = HTCC_NONE;
     date   = time ( NULL );
     strcpy ( contentType, "text/plain; charset=UTF-8" );
     location[0]   = 0;
@@ -939,9 +949,9 @@ int HttpResp::getHeader ( char *hdr ) {
     }
 
     if ( cCtrl ) {
-        bytesW += sprintf ( &hdr[bytesW], "Pragma: no-cache\r\nCache-Control: %s%s%s%s%s%s%s\r\n", cCtrl & CC_PUBLIC ? " public," : "",
-                            cCtrl & CC_PRIVATE ? " private," : "", cCtrl & CC_NOCACHE ? " no-cache," : "", cCtrl & CC_NOSTORE ? " no-store," : "", cCtrl & CC_NOTRANS ? " no-transform" : "",
-                            cCtrl & CC_MUSTREVAL ? " must-revalidate," : "", cCtrl & CC_PROXREVAL ? " proxy-revalidate," : "" );
+        bytesW += sprintf ( &hdr[bytesW], "Pragma: no-cache\r\nCache-Control: %s%s%s%s%s%s%s\r\n", cCtrl & HTCC_PUBLIC ? " public," : "",
+                            cCtrl & HTCC_PRIVATE ? " private," : "", cCtrl & HTCC_NOCACHE ? " no-cache," : "", cCtrl & HTCC_NOSTORE ? " no-store," : "", cCtrl & HTCC_NOTRANS ? " no-transform" : "",
+                            cCtrl & HTCC_MUSTREVAL ? " must-revalidate," : "", cCtrl & HTCC_PROXREVAL ? " proxy-revalidate," : "" );
     }
 
     if ( lastModified ) {
@@ -1088,27 +1098,27 @@ unsigned int sendConnectionData (    Connection *conn,
 
     } else {
 #endif
-        PRFileDesc *sock = conn->socket;
+        int sock = conn->socketfd;
         unsigned int bytesW = 0;
         int temp = 0;
-        PRErrorCode error = 0;
+        //PRErrorCode error = 0;
         debuglog (  "INFO: Write: Sending %d bytes \n", len );
 
         do {
             //temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
-            temp = PR_Send ( sock, buf + bytesW, len - bytesW  );
+            temp = send ( sock, buf + bytesW, len - bytesW , 0 );
 
             if ( temp > 0 ) {
                 bytesW += temp;
                 debuglog (  "DBUG: Write: Sent %d bytes, sent=%d, data size=%d\n", temp, bytesW, len );
             } else {
-                error = PR_GetError();
+                //error = PR_GetError();
 
-                if ( error == EWOULDBLOCK || error == EAGAIN ) {
+                if ( temp == 0 ) {
                     debuglog (  "WARN: Write: Blocking, temp=%d \n", temp );
                     std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
                 } else {
-                    debuglog (  "ERRR: Write: Problem sending data %d,%d\n", error, errno );
+                    debuglog (  "ERRR: Write: Problem sending data \n");
                     bytesW = 0;
                     break;
                 }
@@ -1116,7 +1126,7 @@ unsigned int sendConnectionData (    Connection *conn,
         } while ( bytesW < len );
 
         if ( bytesW != len ) {
-            debuglog (  "ERRR: Write: Unable to send all data, bytes sent %d, data size %d, error %d)\n", bytesW, len, error );
+            debuglog (  "ERRR: Write: Unable to send all data, bytes sent %d, data size %d\n", bytesW, len );
             len = len + 1;
         } else {
             len = 0;
@@ -1129,30 +1139,30 @@ unsigned int sendConnectionData (    Connection *conn,
 #endif
 }
 
-unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
+unsigned int sendConnectionDataToSock (    int sock,
         unsigned char *buf,
         unsigned int len ) {
     unsigned int bytesW = 0;
     int temp = 0;
-    PRErrorCode error = 0;
+    //PRErrorCode error = 0;
     debuglog (  "INFO: Sending %d bytes \n", len );
 
     do {
         //temp = PR_Write ( sock, buf + bytesW, len - bytesW  );
-        temp = PR_Send ( sock, buf + bytesW, len - bytesW  );
+        temp = send ( sock, buf + bytesW, len - bytesW, 0  );
 
         if ( temp > 0 ) {
             bytesW += temp;
             debuglog (  "DBUG: Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
         } else {
             debuglog (  "DBUG: Less Sent %d bytes, totalsent=%d , totaldatalen=%d\n", temp, bytesW, len );
-            error = PR_GetError();
+            //error = PR_GetError();
 
-            if ( error == EWOULDBLOCK || error == EAGAIN ) {
+            if ( temp == 0 ) {
                 debuglog (  "WARN: Blocking, temp=%d \n", temp );
                 std::this_thread::sleep_for ( std::chrono::microseconds ( 10 ) ); /*PR_Sleep ( 1 );*/
             } else {
-                debuglog (  "ERRR: Problem sending data %d,%d\n", error, errno );
+                debuglog (  "ERRR: Problem sending data %d,%d\n", temp, errno );
                 bytesW = 0;
                 break;
             }
@@ -1160,7 +1170,7 @@ unsigned int sendConnectionDataToSock (    PRFileDesc *sock,
     } while ( bytesW < len );
 
     if ( bytesW != len ) {
-        debuglog (  "ERRR: Unable to send data (%d,%d,%d)\n", bytesW, len, error );
+        debuglog (  "ERRR: Unable to send data %d,%d,\n", bytesW, len);
         len = len + 1;
     } else {
         len = 0;
